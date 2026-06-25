@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "Arda",
+    "tag": "Vxture"
+  },
+  "header": {
+    "display": "显示设置",
+    "theme": "切换主题",
+    "language": "切换语言",
+    "fullscreenEnter": "进入全屏",
+    "fullscreenExit": "退出全屏",
+    "nav": "主导航"
+  },
+  "nav": {
+    "dataAssets": "数据资产",
+    "integration": "集成",
+    "management": "管理",
+    "governance": "治理",
+    "services": "服务",
+    "overview": "概览"
+  },
+  "overview": {
+    "title": "数据资产 · 概览",
+    "description": "查看数据资产的整体健康度、规模与治理覆盖情况。",
+    "metrics": {
+      "dataSources": "数据源",
+      "datasets": "数据集",
+      "qualityScore": "质量评分",
+      "governanceCoverage": "治理覆盖"
+    },
+    "tableTitle": "最近数据集",
+    "tableDescription": "最近接入与更新的数据集将显示在这里。",
+    "emptyTitle": "暂无数据集",
+    "emptyDescription": "接入第一个数据源后,数据集将在此处展示。"
+  },
+  "placeholder": {
+    "title": "建设中",
+    "description": "该模块正在建设中,敬请期待。"
+  },
+  "entitlement": {
+    "title": "需要有效订阅",
+    "description": "你的工作区当前没有有效的 Arda 订阅。升级后即可使用数据资产工作台。",
+    "upgrade": "升级订阅",
+    "subscribe": "订阅",
+    "loading": "正在校验订阅..."
+  }
+}

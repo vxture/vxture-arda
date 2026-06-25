@@ -1,0 +1,23 @@
+# gitleaks config for the secret-scan CI gate (quality-gate secret-scan step).
+# Extends the built-in ruleset and allowlists the repo's known-safe, non-secret
+# patterns: env-var placeholders and obvious template placeholders. Real secrets
+# never live in tracked files (see .gitignore: .env*, private/, *.pem, *.key).
+title = "arda secret-scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe placeholders and env-var references in tracked files"
+# Env-var placeholders substituted at install/render time, not literal secrets.
+regexes = [
+  '''\$\{NODE_AUTH_TOKEN\}''',
+  '''\{\{\s*[A-Z0-9_]+\s*\}\}''',
+  '''change-me-[a-z-]+''',
+  '''sk-\.\.\.''',
+]
+# .env.example files are templates of placeholders by design.
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''(^|/)deploy/\.env\.example$''',
+]

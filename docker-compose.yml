@@ -1,0 +1,100 @@
+# Arda - two-service stack (app + redis) behind the shared worker-01 edge.
+#
+# worker-02 is private compute (Tailscale-only, no public IP). This stack runs
+# arda-app + arda-redis ONLY. There is NO per-service nginx and NO TLS here:
+# the shared vxture public edge (worker-01) terminates TLS with the wildcard
+# *.vxture.com cert and reverse-proxies to arda-app's published port over
+# tailscale. See configs/edge/ for the vhost arda contributes to that edge.
+#
+# The same file deploys two independent stacks on worker-02 by pointing at a
+# different env file / root. PROJECT_NAME drives both the compose project name
+# and the container_name prefix, so prod (arda-) and beta (arda-beta-) never
+# collide:
+#   prod : PROJECT_NAME=arda       containers arda-app / arda-redis
+#   beta : PROJECT_NAME=arda-beta  containers arda-beta-app / arda-beta-redis
+#
+# REDIS_URL in .env points at ${PROJECT_NAME}-redis, which resolves to the
+# redis container_name on this stack's network, so the app always reaches its
+# own Redis and never the other environment's.
+name: ${PROJECT_NAME:-arda}
+
+networks:
+  arda-net:
+    driver: bridge
+
+services:
+
+  # -- App: Arda Next.js application (OIDC RP / app-bff) ------------------------
+  # Single Next.js server on internal port 3230. It is the OIDC Authorization-
+  # Code + PKCE relying party against accounts.vxture.com: tokens live server-
+  # side in Redis and the browser only ever holds an opaque vx_rp_session cookie.
+  arda-app:
+    image: ${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/arda-app:${IMAGE_TAG:-latest}
+    container_name: ${PROJECT_NAME:-arda}-app
+    restart: always
+    depends_on:
+      - arda-redis
+    # Publish the app port so the worker-01 edge can reach it over tailscale.
+    # worker-02 has NO public IP, so this bind is reachable only via the
+    # tailscale/LAN interface; the host firewall must allow ingress on the
+    # tailscale interface ONLY (never the public interface). prod uses 3230,
+    # beta uses 3231 (APP_PUBLISH_PORT), so both stacks coexist on one host.
+    ports:
+      - "${APP_PUBLISH_PORT:-3230}:3230"
+    environment:
+      PORT: "3230"
+      # -- OIDC RP (Vxture App Integration Standard v1.0) --------------------
+      OIDC_ISSUER: "${OIDC_ISSUER:-}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-arda}"
+      OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
+      OIDC_REDIRECT_URI: "${OIDC_REDIRECT_URI:-}"
+      OIDC_SCOPES: "${OIDC_SCOPES:-openid profile email phone arda}"
+      OIDC_POST_LOGOUT_REDIRECT_URI: "${OIDC_POST_LOGOUT_REDIRECT_URI:-}"
+      # -- Server-side RP session store (this stack's redis container) --------
+      REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"
+      RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
+      RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
+      # Host-only cookie (no leading dot): scoped to this exact domain.
+      RP_SESSION_COOKIE_DOMAIN: "${RP_SESSION_COOKIE_DOMAIN:-}"
+      # -- App config --------------------------------------------------------
+      DEFAULT_LANDING: "${DEFAULT_LANDING:-/data-assets/overview}"
+      MOCK_TIER: "${MOCK_TIER:-pro}"
+    networks:
+      - arda-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3230/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # -- Redis: server-side OIDC RP session store --------------------------------
+  # Holds the OIDC authreq handshake, RP sessions (identity claims), the token
+  # bundle (BFF-only), and the sid->rpsid back-channel logout index. OIDC tokens
+  # never reach the browser. Internal-only (no published ports). Append-only
+  # persistence under DATA_DIR survives restarts and redeploys.
+  arda-redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME:-arda}-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--save", "", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - ${DATA_DIR}/redis:/data
+    networks:
+      - arda-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,47 @@
+{
+  "brand": {
+    "name": "Arda",
+    "tag": "Vxture"
+  },
+  "header": {
+    "display": "Display controls",
+    "theme": "Switch theme",
+    "language": "Language",
+    "fullscreenEnter": "Enter fullscreen",
+    "fullscreenExit": "Exit fullscreen",
+    "nav": "Primary navigation"
+  },
+  "nav": {
+    "dataAssets": "Data Assets",
+    "integration": "Integration",
+    "management": "Management",
+    "governance": "Governance",
+    "services": "Services",
+    "overview": "Overview"
+  },
+  "overview": {
+    "title": "Data Assets / Overview",
+    "description": "Review the overall health, scale, and governance coverage of your data assets.",
+    "metrics": {
+      "dataSources": "Data Sources",
+      "datasets": "Datasets",
+      "qualityScore": "Quality Score",
+      "governanceCoverage": "Governance Coverage"
+    },
+    "tableTitle": "Recent Datasets",
+    "tableDescription": "Recently connected and updated datasets will appear here.",
+    "emptyTitle": "No datasets yet",
+    "emptyDescription": "Once you connect your first data source, datasets will show up here."
+  },
+  "placeholder": {
+    "title": "Under construction",
+    "description": "This module is under construction. Stay tuned."
+  },
+  "entitlement": {
+    "title": "An active subscription is required",
+    "description": "Your workspace does not have an active Arda subscription. Upgrade to access the data assets workspace.",
+    "upgrade": "Upgrade plan",
+    "subscribe": "Subscribe",
+    "loading": "Verifying subscription..."
+  }
+}

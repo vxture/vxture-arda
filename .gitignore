@@ -1,0 +1,56 @@
+# Environment - never commit real secrets
+.env
+*.env
+.env.*
+!.env.example
+.env.bak.*
+.npmrc
+# The workspace .npmrc files only declare the @vxture GitHub Packages registry
+# and reference ${NODE_AUTH_TOKEN} (no literal secret). They MUST be committed so
+# CI `npm ci` can resolve @vxture/* packages.
+!.npmrc
+!portals/.npmrc
+
+# Runtime data and generated configs
+data/
+backup/
+private/
+runtime/
+generated/
+
+# TLS / certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# Logs
+*.log
+logs/
+
+# Node / Next.js
+node_modules/
+.npm-cache/
+.next/
+out/
+build/
+dist/
+portals/app/.next/
+portals/packages/shared/dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+.claude/

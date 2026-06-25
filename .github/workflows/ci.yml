@@ -1,0 +1,166 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - develop
+      # main never receives PRs in the normal flow (it only advances via
+      # promote.yml's fast-forward). This trigger is a deliberate guard: if a
+      # PR is ever opened against main directly, the quality gate still runs.
+      - main
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+jobs:
+  # Repo-global checks that do not depend on portal node_modules. Runs in
+  # parallel with the portal-build job.
+  static-checks:
+    name: static-checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Static script checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          for file in deploy/*.sh deploy/scripts/*.sh deploy/lib/*.sh scripts/checks/*.sh scripts/github/*.ps1; do
+            [ -f "$file" ] || continue
+            case "$file" in
+              *.sh) bash -n "$file" ;;
+            esac
+          done
+          # services/ is optional in arda; compile only the dirs that exist.
+          compile_targets=(deploy scripts)
+          [ -d services ] && compile_targets+=(services)
+          python -m compileall -q "${compile_targets[@]}"
+          python scripts/checks/06-check-deploy-contracts.py
+          # The single arda app must consume @vxture/design-system only - no
+          # self-built design primitives (raw colors, local fonts, duplicated
+          # component CSS).
+          python scripts/checks/09-check-ds-usage.py --strict
+
+      - name: Docker Compose config validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --env-file .env.example config --quiet
+
+  # Single arda app. type-check + production build run together. The Next.js
+  # build cache is restored/saved to make repeat builds incremental instead of
+  # cold.
+  portal-build:
+    name: portal-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: portals/package-lock.json
+
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: portals/app/.next/cache
+          key: nextcache-app-${{ hashFiles('portals/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nextcache-app-${{ hashFiles('portals/package-lock.json') }}-
+            nextcache-app-
+
+      # Install the whole npm workspace once from the portals/ root with a
+      # co-located .npmrc (no --prefix), mirroring the app Dockerfile.
+      # A co-located .npmrc is required because npm authenticates the package
+      # metadata request but drops the token on the GitHub Packages /download/
+      # tarball fetch, so @vxture downloads fail 401 ("authentication token not
+      # provided") without it. The placeholder is written literally; npm
+      # substitutes NODE_AUTH_TOKEN from the environment, so the secret never
+      # passes through the shell.
+      - name: Install dependencies
+        shell: bash
+        working-directory: portals
+        run: |
+          set -euo pipefail
+          printf '@vxture:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
+          trap 'rm -f .npmrc' EXIT
+          npm ci
+
+      - name: Type check
+        shell: bash
+        working-directory: portals
+        run: |
+          set -euo pipefail
+          npm run type-check -w ./app
+
+      - name: Production build
+        shell: bash
+        working-directory: portals
+        run: |
+          set -euo pipefail
+          npm run build -w ./app
+
+  # Secret scan: fail the gate if a token/key/credential is committed to a
+  # tracked file. Runs the gitleaks binary directly (the gitleaks Action
+  # requires a license for orgs). Allowlist of known-safe placeholders lives in
+  # .gitleaks.toml.
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Scan working tree for secrets (gitleaks)
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=8.21.2
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          curl -fsSL "$url" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          # Scan the checked-out tree (what would merge). --redact keeps any
+          # match value out of the logs; a finding exits non-zero and fails CI.
+          /tmp/gitleaks dir . --config .gitleaks.toml --redact --no-banner --exit-code 1
+
+  # Aggregator that preserves the required status-check name. Branch rulesets
+  # require "quality-gate"; keeping this job named exactly that means the
+  # required check still maps after splitting the work into parallel jobs. It
+  # only succeeds when every upstream job succeeds; any failure leaves this job
+  # skipped, which the ruleset treats as not-passing and blocks the merge.
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [static-checks, portal-build, secret-scan]
+
+    steps:
+      - name: Confirm upstream gates passed
+        shell: bash
+        run: echo "static-checks, portal-build and secret-scan succeeded"

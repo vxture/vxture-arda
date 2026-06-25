@@ -1,0 +1,448 @@
+name: release
+
+on:
+  push:
+    branches:
+      # develop -> beta environment, main -> production environment. The detect
+      # job maps the pushed branch to its GitHub Environment; the deploy job
+      # binds to that environment so beta and production each carry their own
+      # DEPLOY_* secrets.
+      - develop
+      - main
+
+# Serialize releases per branch: a build+deploy for one environment must finish
+# before the next one on the same branch starts, and an in-flight deploy must
+# never be cancelled. Keying on the branch keeps beta (develop) and production
+# (main) in separate queues so a beta deploy never blocks a production deploy.
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: detect-deployable-changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      deployable: ${{ steps.scope.outputs.deployable }}
+      build_images: ${{ steps.scope.outputs.build_images }}
+      environment: ${{ steps.scope.outputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Determine target environment, deployable scope and changed images
+        id: scope
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          # Branch -> GitHub Environment routing. develop ships to beta, main to
+          # production. Any other branch must never reach a deploy.
+          case "$BRANCH" in
+            develop) environment=beta ;;
+            main)    environment=production ;;
+            *) echo "release.yml triggered on unsupported branch: $BRANCH" >&2; exit 1 ;;
+          esac
+
+          # The allow-list classifier in scripts/checks/ is the single source of
+          # truth for path -> image / deployable rules. This step only handles
+          # the base lookup and the fail-open cases; it holds no path logic.
+          all_json="$(python3 scripts/checks/classify_changes.py --all-images)"
+
+          base="$(gh run list --repo "$REPO" --workflow release.yml --branch "$BRANCH" \
+            --status success --limit 1 --json headSha --jq '.[0].headSha' 2>/dev/null || true)"
+
+          if [[ -z "$base" ]]; then
+            # First release on this branch with no known-good base: deploy and
+            # rebuild all - fail-open, because we cannot prove what changed.
+            deployable=true; reason=no-known-base; build_json="$all_json"
+          elif ! files="$(gh api "repos/$REPO/compare/$base...$HEAD_SHA" --jq '.files[].filename')"; then
+            # The compare API call itself failed (infra/flake). Fail OPEN: a gate
+            # that cannot classify must never silently skip a real release.
+            deployable=true; reason=compare-failed; build_json="$all_json"
+          elif [[ -z "$files" ]]; then
+            deployable=false; reason=no-changes; build_json='[]'
+          else
+            # Allow-list / default-skip: a path is non-deployable unless a rule
+            # claims it.
+            scope_json="$(printf '%s\n' "$files" | python3 scripts/checks/classify_changes.py)"
+            deployable="$(printf '%s' "$scope_json" | jq -r '.deployable')"
+            build_json="$(printf '%s' "$scope_json" | jq -c '.build_images')"
+            reason=classified
+          fi
+
+          echo "deployable=$deployable" >> "$GITHUB_OUTPUT"
+          echo "build_images=$build_json" >> "$GITHUB_OUTPUT"
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "scope: env=$environment deployable=$deployable reason=$reason build_images=$build_json ($base...$HEAD_SHA)"
+
+  build:
+    name: docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: detect
+    if: ${{ needs.detect.outputs.deployable == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      PASSED_SHA: ${{ github.sha }}
+      GHCR_NAMESPACE: vxture
+      ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+      ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+      VXTURE_NPM_REGISTRY: https://npm.pkg.github.com
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: arda-app
+            context: ./portals
+            dockerfile: ./portals/app/Dockerfile
+
+    steps:
+      - name: Validate registry secrets
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$PASSED_SHA"
+          test -n "$ACR_REGISTRY"
+          test -n "$ACR_NAMESPACE"
+          test -n "$ALIYUN_ACR_USERNAME"
+          test -n "$ALIYUN_ACR_PASSWORD"
+          test -n "$NODE_AUTH_TOKEN"
+
+      - name: Checkout passed revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Compute image metadata
+        id: meta
+        shell: bash
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          short_sha="${PASSED_SHA::7}"
+          echo "short_sha=$short_sha" >> "$GITHUB_OUTPUT"
+          # sha-<short> is the immutable per-commit deploy tag (identical on
+          # develop and main after a fast-forward promotion). The branch tag is
+          # the moving pointer for humans/rollback.
+          echo "image_tag=sha-$short_sha" >> "$GITHUB_OUTPUT"
+          echo "branch_tag=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      # Buildx setup intermittently fails pulling the buildkit image (infra
+      # flake, not code). Tolerate the first failure and retry once before the
+      # job gives up, so a transient flake does not fail the whole release.
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v4
+        continue-on-error: true
+
+      - name: Set up Docker Buildx (retry)
+        if: ${{ steps.buildx.outcome == 'failure' }}
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Aliyun ACR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
+      - name: Decide build vs retag
+        id: decide
+        shell: bash
+        env:
+          BUILD_IMAGES: ${{ needs.detect.outputs.build_images }}
+          IMAGE: ${{ matrix.image }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          ghcr_repo="ghcr.io/${GHCR_NAMESPACE}/${IMAGE}"
+
+          if printf '%s' "$BUILD_IMAGES" | jq -e --arg i "$IMAGE" 'any(. == $i)' >/dev/null; then
+            changed=true
+          else
+            changed=false
+          fi
+
+          # Build the SAME image only once across develop and main. The deploy
+          # tag is commit-addressed, so after a fast-forward promotion main sees
+          # the exact sha-<short> tag the develop release already published. If
+          # it is already present, retag-by-digest instead of rebuilding.
+          if docker buildx imagetools inspect "${ghcr_repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
+            exists=true
+          else
+            exists=false
+          fi
+
+          if [ "$changed" = true ] && [ "$exists" = false ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "decide: image=$IMAGE changed=$changed exists=$exists"
+
+      - name: Build and push image
+        if: ${{ steps.decide.outputs.build == 'true' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          build-args: |
+            VXTURE_NPM_REGISTRY=${{ env.VXTURE_NPM_REGISTRY }}
+          secrets: |
+            npm_token=${{ secrets.NODE_AUTH_TOKEN }}
+          tags: |
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}
+
+      - name: Retag unchanged image by digest
+        if: ${{ steps.decide.outputs.build == 'false' }}
+        shell: bash
+        env:
+          IMAGE: ${{ matrix.image }}
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          BRANCH_TAG: ${{ steps.meta.outputs.branch_tag }}
+        run: |
+          set -euo pipefail
+          # The image's source did not change this revision (or the same commit
+          # was already built on develop), so do not rebuild (a rebuild would
+          # mint a new digest and force a pointless container recreate on
+          # deploy). Re-point the immutable sha tag and the moving branch tag at
+          # the existing digest; the digest is preserved, so the deploy keeps the
+          # running container.
+          for repo in \
+            "ghcr.io/${GHCR_NAMESPACE}/${IMAGE}" \
+            "${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE}"; do
+            if docker buildx imagetools inspect "${repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
+              source_ref="${repo}:${IMAGE_TAG}"
+            else
+              source_ref="${repo}:${BRANCH_TAG}"
+            fi
+            echo "Retagging ${source_ref} -> ${repo}:${IMAGE_TAG}, ${repo}:${BRANCH_TAG}"
+            docker buildx imagetools create \
+              -t "${repo}:${IMAGE_TAG}" \
+              -t "${repo}:${BRANCH_TAG}" \
+              "${source_ref}"
+          done
+
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [detect, build]
+    if: ${{ needs.detect.outputs.deployable == 'true' }}
+    permissions:
+      contents: read
+      packages: read
+    # Branch-routed environment: develop -> beta, main -> production. The
+    # environment supplies its own DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
+    # DEPLOY_KNOWN_HOSTS/DEPLOY_REPO_DIR, so the same job deploys to the right
+    # host with the right credentials.
+    environment:
+      name: ${{ needs.detect.outputs.environment }}
+
+    steps:
+      # rsync pushes the deploy subset from the runner checkout (no git on the
+      # server), so the deploy job must check out the built revision first.
+      - name: Checkout deploy sources
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Validate deployment secrets
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+          ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$ALIYUN_ACR_REGISTRY"
+          test -n "$ALIYUN_ACR_NAMESPACE"
+
+      - name: Prepare SSH
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          port="${DEPLOY_PORT:-22}"
+          if [ -n "${DEPLOY_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "$port" "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy over SSH
+        shell: bash
+        env:
+          DEPLOY_ENV: ${{ needs.detect.outputs.environment }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_REPO_DIR: ${{ secrets.DEPLOY_REPO_DIR }}
+          PASSED_SHA: ${{ github.sha }}
+          ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+          ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+          ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+          ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_REGISTRY: ghcr.io
+          GHCR_NAMESPACE: vxture
+        run: |
+          set -euo pipefail
+          port="${DEPLOY_PORT:-22}"
+          # Per-environment default deploy directory; the DEPLOY_REPO_DIR
+          # environment secret overrides it when set.
+          case "$DEPLOY_ENV" in
+            production) default_dir="/srv/arda/deploy" ;;
+            beta)       default_dir="/srv/arda-beta/deploy" ;;
+            *) echo "unknown environment: $DEPLOY_ENV" >&2; exit 1 ;;
+          esac
+          deploy_dir="${DEPLOY_REPO_DIR:-$default_dir}"
+          short_sha="${PASSED_SHA::7}"
+          image_tag="sha-$short_sha"
+
+          # No git clone on the server. Push only the deploy subset (deploy/,
+          # configs/, docker-compose.yml) with rsync; the runner checkout is the
+          # exact built SHA, so a VERSION file records provenance in place of a
+          # remote `git rev-parse`. deploy/ is disposable: the operator .env lives
+          # at <root>/etc/.env, outside the rsync target, so --delete is safe.
+          ssh -i ~/.ssh/deploy_key -p "$port" \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o ConnectTimeout=30 \
+            "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$deploy_dir'"
+
+          rsync_srcs=(deploy/ configs docker-compose.yml)
+          rsync -az --delete --exclude='VERSION' \
+            -e "ssh -i ~/.ssh/deploy_key -p $port -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o ConnectTimeout=30" \
+            "${rsync_srcs[@]}" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$deploy_dir/"
+
+          ssh -i ~/.ssh/deploy_key -p "$port" \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o ConnectTimeout=30 \
+            "$DEPLOY_USER@$DEPLOY_HOST" "printf '%s\n' '$PASSED_SHA' > '$deploy_dir/VERSION'"
+
+          cat > /tmp/deploy.sh <<'REMOTE_SCRIPT'
+          set -euo pipefail
+
+          cd "$REPO_DIR"
+
+          export IMAGE_REGISTRY="$GHCR_REGISTRY"
+          export IMAGE_NAMESPACE="$GHCR_NAMESPACE"
+          export IMAGE_TAG="$IMAGE_TAG"
+
+          docker_login_with_retry() {
+            local attempt
+            for attempt in 1 2 3 4 5 6; do
+              curl -fsSI "https://${ALIYUN_ACR_REGISTRY}/v2/" >/dev/null 2>&1 || true
+              if printf '%s' "$ALIYUN_ACR_PASSWORD" \
+                | timeout 45 docker login "$ALIYUN_ACR_REGISTRY" -u "$ALIYUN_ACR_USERNAME" --password-stdin; then
+                return 0
+              fi
+              sleep $((attempt * 5))
+            done
+            return 1
+          }
+
+          if [ -n "${ALIYUN_ACR_USERNAME:-}" ] && [ -n "${ALIYUN_ACR_PASSWORD:-}" ]; then
+            docker_login_with_retry
+          fi
+
+          if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
+            printf '%s' "$GHCR_TOKEN" \
+              | docker login "$GHCR_REGISTRY" -u "$GHCR_USERNAME" --password-stdin
+          fi
+
+          export FALLBACK_IMAGE_REGISTRY="$ALIYUN_ACR_REGISTRY"
+          export FALLBACK_IMAGE_NAMESPACE="$ALIYUN_ACR_NAMESPACE"
+
+          bash deploy.sh all
+          bash deploy.sh verify
+          REMOTE_SCRIPT
+
+          scp -i ~/.ssh/deploy_key -P "$port" \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o ConnectTimeout=30 \
+            /tmp/deploy.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy.sh"
+
+          remote_env=(
+            "REPO_DIR=$deploy_dir"
+            "PASSED_SHA=$PASSED_SHA"
+            "IMAGE_TAG=$image_tag"
+            "ALIYUN_ACR_REGISTRY=$ALIYUN_ACR_REGISTRY"
+            "ALIYUN_ACR_NAMESPACE=$ALIYUN_ACR_NAMESPACE"
+            "ALIYUN_ACR_USERNAME=$ALIYUN_ACR_USERNAME"
+            "ALIYUN_ACR_PASSWORD=$ALIYUN_ACR_PASSWORD"
+            "GHCR_USERNAME=$GHCR_USERNAME"
+            "GHCR_TOKEN=$GHCR_TOKEN"
+            "GHCR_REGISTRY=$GHCR_REGISTRY"
+            "GHCR_NAMESPACE=$GHCR_NAMESPACE"
+          )
+          remote_cmd=""
+          for item in "${remote_env[@]}"; do
+            key="${item%%=*}"
+            value="${item#*=}"
+            printf -v escaped '%q=%q ' "$key" "$value"
+            remote_cmd+="$escaped"
+          done
+          remote_cmd+="bash /tmp/deploy.sh"
+
+          ssh -i ~/.ssh/deploy_key -p "$port" \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
+            -o ConnectTimeout=30 \
+            "$DEPLOY_USER@$DEPLOY_HOST" "$remote_cmd"

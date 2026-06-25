@@ -1,0 +1,95 @@
+name: branch-promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Promotion target branch.
+        required: true
+        type: choice
+        options:
+          - main
+      expected_sha:
+        description: Expected source SHA. Must equal origin/develop.
+        required: true
+        type: string
+      release_confirmed:
+        description: Confirm this develop revision is approved for production.
+        required: true
+        type: boolean
+      release_note:
+        description: Production release note or validation summary.
+        required: true
+        type: string
+
+concurrency:
+  group: branch-promotion-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  checks: read
+
+jobs:
+  fast-forward-promotion:
+    name: fast-forward-promotion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      GH_TOKEN: ${{ secrets.PROMOTION_TOKEN || github.token }}
+      TARGET: ${{ inputs.target }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      RELEASE_CONFIRMED: ${{ inputs.release_confirmed }}
+      RELEASE_NOTE: ${{ inputs.release_note }}
+
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target }}
+          token: ${{ secrets.PROMOTION_TOKEN || github.token }}
+
+      - name: Validate promotion request
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$TARGET" = "main"
+          test "$RELEASE_CONFIRMED" = "true"
+          test -n "$RELEASE_NOTE"
+
+          git fetch origin main develop
+          develop_sha="$(git rev-parse origin/develop)"
+          main_sha="$(git rev-parse origin/main)"
+
+          test "$develop_sha" = "$EXPECTED_SHA"
+          git merge-base --is-ancestor origin/main origin/develop
+
+          conclusion="$(
+            gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs" \
+              --jq '[.check_runs[] | select(.name == "quality-gate") | .conclusion][0] // ""'
+          )"
+          test "$conclusion" = "success"
+
+          {
+            echo "target=$TARGET"
+            echo "source=develop"
+            echo "main_sha=$main_sha"
+            echo "promoted_sha=$develop_sha"
+            echo "actor=${GITHUB_ACTOR}"
+            echo "release_note=$RELEASE_NOTE"
+          } | tee promotion-audit.txt
+
+      - name: Fast-forward target branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout main
+          git reset --hard origin/main
+          git merge --ff-only origin/develop
+          git push origin HEAD:main
