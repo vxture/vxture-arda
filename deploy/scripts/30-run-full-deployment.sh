@@ -84,7 +84,7 @@ BACKUP_CRON_LINE="0 2 * * * $REPO_DIR/ops.sh backup >> /var/log/${PROJECT_NAME}-
 add_cron() {
   local line="$1"
   if ! crontab -l 2>/dev/null | grep -qF "$line"; then
-    ( crontab -l 2>/dev/null; echo "$line" ) | crontab -
+    ( crontab -l 2>/dev/null || true; echo "$line" ) | crontab -
     log_ok "Cron added: $line"
   else
     log_info "Cron already exists: $(echo "$line" | cut -c1-60)..."
