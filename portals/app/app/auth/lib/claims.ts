@@ -10,12 +10,52 @@ import { type ArdaClaim, type ArdaState, type Tier, TIER_ORDER } from "../../ent
 
 const ARDA_STATES: readonly ArdaState[] = ["trial", "subscribed", "expired", "free"];
 
+/**
+ * Parse the `arda` nested claim from the access token.
+ *
+ * Supports two wire formats:
+ *
+ * A) Platform format (accounts.vxture.com v1):
+ *      { subscribed: boolean, plan: string, status: "active"|"expired"|"none" }
+ *    Limitations of this format:
+ *      - Cannot distinguish "trial" from "free" (both have subscribed=false).
+ *        Until the platform adds a `trial` flag, trial users appear as "free"
+ *        and EnvGuard cannot route them to the beta stack automatically.
+ *      - `had_trial` is absent; defaults to false.
+ *    => Requested platform additions: `trial: boolean`, `had_trial: boolean`.
+ *
+ * B) Arda-native format (future, once platform aligns):
+ *      { state: ArdaState, tier: Tier, had_trial: boolean }
+ */
 function toArdaClaim(v: unknown): ArdaClaim | null {
   if (typeof v !== "object" || v === null) return null;
   const o = v as Record<string, unknown>;
+
+  // Format A: platform supplies `subscribed` + `plan` + `status`
+  if ("subscribed" in o || "plan" in o) {
+    const plan = typeof o.plan === "string" ? o.plan : "free";
+    const status = typeof o.status === "string" ? o.status : "active";
+    const subscribed = o.subscribed === true;
+    const tier: Tier = (TIER_ORDER as string[]).includes(plan) ? (plan as Tier) : "free";
+
+    let state: ArdaState;
+    if (subscribed && status === "active") {
+      state = "subscribed";
+    } else if (status === "expired") {
+      state = "expired";
+    } else {
+      // subscribed=false + status="active"|"none": cannot distinguish trial vs free.
+      // Default to "free" until platform adds a `trial` boolean field.
+      state = o.trial === true ? "trial" : "free";
+    }
+
+    return { state, tier, had_trial: o.had_trial === true };
+  }
+
+  // Format B: arda-native { state, tier, had_trial }
   const state = typeof o.state === "string" ? o.state : "";
-  const tier = typeof o.tier === "string" ? o.tier : "";
   if (!(ARDA_STATES as string[]).includes(state)) return null;
+  const tier = typeof o.tier === "string" ? o.tier : "";
   return {
     state: state as ArdaState,
     tier: (TIER_ORDER as string[]).includes(tier) ? (tier as Tier) : "free",
