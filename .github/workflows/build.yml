@@ -1,6 +1,7 @@
 name: build
 
 on:
+  # Called by release.yml after the detect job determines deployable changes.
   workflow_call:
     inputs:
       build_images:
@@ -24,6 +25,21 @@ on:
       ALIYUN_ACR_PASSWORD:
         required: true
 
+  # Manual trigger so the workflow has a visible execution record in the
+  # Actions UI. Defaults build the current branch's HEAD.
+  workflow_dispatch:
+    inputs:
+      build_images:
+        description: JSON array of images to rebuild (empty = skip build, retag only)
+        required: false
+        type: string
+        default: '["arda-app"]'
+      pass_sha:
+        description: Commit SHA to build and tag (defaults to branch HEAD)
+        required: false
+        type: string
+        default: ''
+
 permissions:
   contents: read
   packages: write
@@ -35,7 +51,6 @@ jobs:
     timeout-minutes: 45
 
     env:
-      PASSED_SHA: ${{ inputs.pass_sha }}
       GHCR_NAMESPACE: vxture
       ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
       ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
@@ -50,9 +65,25 @@ jobs:
             dockerfile: ./portals/app/Dockerfile
 
     steps:
+      - name: Resolve build SHA
+        id: sha
+        shell: bash
+        env:
+          CALLER_SHA: ${{ inputs.pass_sha }}
+          DEFAULT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # workflow_call always passes pass_sha; workflow_dispatch leaves it
+          # empty by default, so fall back to the branch HEAD.
+          resolved="${CALLER_SHA:-$DEFAULT_SHA}"
+          test -n "$resolved"
+          echo "sha=$resolved" >> "$GITHUB_OUTPUT"
+          echo "resolved: sha=$resolved"
+
       - name: Validate registry secrets
         shell: bash
         env:
+          PASSED_SHA: ${{ steps.sha.outputs.sha }}
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
           ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
           ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
@@ -68,12 +99,13 @@ jobs:
       - name: Checkout passed revision
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.pass_sha }}
+          ref: ${{ steps.sha.outputs.sha }}
 
       - name: Compute image metadata
         id: meta
         shell: bash
         env:
+          PASSED_SHA: ${{ steps.sha.outputs.sha }}
           BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
