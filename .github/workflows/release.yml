@@ -181,7 +181,7 @@ jobs:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
           tags: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
-          args: --hostname arda-ci-${{ github.run_id }}
+          args: --accept-routes
           ping: ${{ secrets.DEPLOY_HOST }}
 
       - name: Prepare SSH
