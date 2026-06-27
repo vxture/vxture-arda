@@ -180,7 +180,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
-          tags: tag:promation
+          tags: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
           args: --hostname arda-ci-${{ github.run_id }}
           ping: ${{ secrets.DEPLOY_HOST }}
 
