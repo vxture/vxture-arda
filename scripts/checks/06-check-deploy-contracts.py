@@ -18,6 +18,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RELEASE_WORKFLOW = ".github/workflows/release.yml"
+BUILD_WORKFLOW = ".github/workflows/build.yml"
 CI_WORKFLOW = ".github/workflows/ci.yml"
 
 # arda owns exactly one image (TLS/proxy moved to the shared worker-01 edge, so
@@ -80,7 +81,7 @@ SKIP_NAME_SUFFIXES = (".bak", ".backup", ".old", ".tmp", ".swp", ".swo")
 CHECKS: list[tuple[str, Path, list[str]]] = [
     (
         "release builds the owned image for both branches with private npm + ACR",
-        Path(RELEASE_WORKFLOW),
+        Path(BUILD_WORKFLOW),
         [
             "name: docker-build",
             "arda-app",
@@ -96,7 +97,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
     ),
     (
         "release builds an image once and retags the rest by digest",
-        Path(RELEASE_WORKFLOW),
+        Path(BUILD_WORKFLOW),
         [
             "Decide build vs retag",
             "steps.decide.outputs.build == 'true'",
@@ -118,7 +119,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         Path(RELEASE_WORKFLOW),
         [
             "name: deploy",
-            "needs: [detect, build]",
+            "needs: [detect, call-build]",
             "packages: read",
             "cancel-in-progress: false",
             'export IMAGE_REGISTRY="$GHCR_REGISTRY"',
@@ -250,9 +251,9 @@ def check_compose_image_refs() -> list[str]:
 
 
 def check_docker_build_image_matrix() -> list[str]:
-    path = PROJECT_ROOT / RELEASE_WORKFLOW
+    path = PROJECT_ROOT / BUILD_WORKFLOW
     if not path.exists():
-        return [f"[{RELEASE_WORKFLOW}] not found"]
+        return [f"[{BUILD_WORKFLOW}] not found"]
     text = read(path)
     matrix_images = set(re.findall(r"^\s+- image: (arda-[a-z0-9-]+)\s*$", text, flags=re.MULTILINE))
     problems: list[str] = []
