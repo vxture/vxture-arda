@@ -80,14 +80,25 @@ SKIP_NAME_SUFFIXES = (".bak", ".backup", ".old", ".tmp", ".swp", ".swo")
 
 CHECKS: list[tuple[str, Path, list[str]]] = [
     (
-        "release builds the owned image for both branches with private npm + ACR",
+        "release triggers on develop and main branches, passes SHA and secrets",
+        Path(RELEASE_WORKFLOW),
+        [
+            "- develop",
+            "- main",
+            "${{ github.sha }}",
+            "NODE_AUTH_TOKEN",
+            "ALIYUN_ACR_REGISTRY",
+            "ALIYUN_ACR_NAMESPACE",
+            "ALIYUN_ACR_USERNAME",
+            "ALIYUN_ACR_PASSWORD",
+        ],
+    ),
+    (
+        "build workflow builds the owned image with private npm + ACR",
         Path(BUILD_WORKFLOW),
         [
             "name: docker-build",
             "arda-app",
-            "- develop",
-            "- main",
-            "${{ github.sha }}",
             "NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}",
             "ALIYUN_ACR_REGISTRY",
             "ALIYUN_ACR_NAMESPACE",
