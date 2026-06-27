@@ -87,7 +87,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "- develop",
             "- main",
             "${{ github.sha }}",
-            "NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}",
+            "NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}",
             "ALIYUN_ACR_REGISTRY",
             "ALIYUN_ACR_NAMESPACE",
             "ALIYUN_ACR_USERNAME",
