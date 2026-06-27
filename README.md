@@ -71,6 +71,8 @@ tailnet port (`APP_PUBLISH_PORT`); the edge upstream targets
 push to `develop`; prod advances only via the manual `develop` -> `main`
 promotion. See [CLAUDE.md](CLAUDE.md) for the branch and promotion model.
 
+> [OK] **CI/CD pipeline fully operational** -- `develop` -> beta (auto), promote -> `main` -> prod (manual confirm).
+
 ---
 
 ## Local development
