@@ -9,6 +9,20 @@ on:
       # DEPLOY_* secrets.
       - develop
       - main
+  # workflow_dispatch allows manual triggering from the Actions UI or CLI.
+  # This is used for the initial production bootstrap; once the production
+  # environment is initialized, the promote.yml fast-forward with a valid
+  # PROMOTION_TOKEN secret will trigger release.yml automatically on push.
+  workflow_dispatch:
+    inputs:
+      explicit_environment:
+        description: "Override environment detection (develop->beta, main->production). Use only for debugging."
+        required: false
+        type: choice
+        options:
+          - ""
+          - beta
+          - production
 
 # Serialize releases per branch: a build+deploy for one environment must finish
 # before the next one on the same branch starts, and an in-flight deploy must
@@ -45,16 +59,23 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ github.ref_name }}
+          EXPLICIT_ENV: ${{ inputs.explicit_environment || '' }}
         run: |
           set -euo pipefail
 
           # Branch -> GitHub Environment routing. develop ships to beta, main to
           # production. Any other branch must never reach a deploy.
-          case "$BRANCH" in
-            develop) environment=beta ;;
-            main)    environment=production ;;
-            *) echo "release.yml triggered on unsupported branch: $BRANCH" >&2; exit 1 ;;
-          esac
+          # workflow_dispatch can override via explicit_environment input.
+          if [ -n "$EXPLICIT_ENV" ]; then
+            environment="$EXPLICIT_ENV"
+            echo "override: environment=$environment (explicit via workflow_dispatch)"
+          else
+            case "$BRANCH" in
+              develop) environment=beta ;;
+              main)    environment=production ;;
+              *) echo "release.yml triggered on unsupported branch: $BRANCH" >&2; exit 1 ;;
+            esac
+          fi
 
           # The allow-list classifier in scripts/checks/ is the single source of
           # truth for path -> image / deployable rules. This step only handles
