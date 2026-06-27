@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Operations lifecycle dispatcher.
 #
+# Trigger: initial beta deployment marker.
+#
 # Usage:
 #   bash deploy/ops.sh <command> [args]
 #
