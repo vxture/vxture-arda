@@ -257,12 +257,13 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           no-cache: true
-          # Try GITHUB_TOKEN first (auto-scoped to packages: write in this job);
-          # if @vxture packages live under a different repo, switch back to
-          # a valid PAT secret.
+          # GITHUB_TOKEN lacks read_package permission for @vxture/* packages
+          # (they live under a different repo). Use NODE_AUTH_TOKEN PAT instead.
+          # If Docker build fails with 401, the PAT has likely expired and
+          # needs to be renewed with read:packages scope.
           build-args: |
             VXTURE_NPM_REGISTRY=${{ env.VXTURE_NPM_REGISTRY }}
-            NODE_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}
