@@ -60,7 +60,7 @@ jobs:
           test "$RELEASE_CONFIRMED" = "true"
           test -n "$RELEASE_NOTE"
 
-          git fetch origin main develop
+          git fetch origin main:refs/remotes/origin/main develop:refs/remotes/origin/develop
           develop_sha="$(git rev-parse origin/develop)"
           main_sha="$(git rev-parse origin/main)"
 
