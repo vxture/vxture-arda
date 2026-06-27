@@ -259,8 +259,7 @@ jobs:
           no-cache: true
           build-args: |
             VXTURE_NPM_REGISTRY=${{ env.VXTURE_NPM_REGISTRY }}
-          secrets: |
-            npm_token=${{ secrets.NODE_AUTH_TOKEN }}
+            NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}

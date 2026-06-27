@@ -6,17 +6,18 @@ ARG NODE_BASE_IMAGE=node:22-alpine
 FROM ${NODE_BASE_IMAGE} AS deps
 WORKDIR /app
 ARG VXTURE_NPM_REGISTRY=https://npm.pkg.github.com
+ARG NODE_AUTH_TOKEN
 # Root manifest + single lockfile + every workspace member manifest (npm ci
 # needs them all to resolve the workspace).
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
-RUN --mount=type=secret,id=npm_token \
-    npm_token="$(cat /run/secrets/npm_token 2>/dev/null || true)" \
-    && printf "@vxture:registry=%s\n" "$VXTURE_NPM_REGISTRY" > .npmrc \
-    && if [ -n "$npm_token" ]; then \
-      NPM_TOKEN="$npm_token" node -e "const u=new URL(process.env.VXTURE_NPM_REGISTRY); console.log('//' + u.host + '/:_authToken=' + process.env.NPM_TOKEN)" >> .npmrc; \
-    fi \
+# .npmrc uses ${NODE_AUTH_TOKEN} variable (npm substitutes at runtime), matching
+# the ci.yml approach exactly. The ARG is available as an env var during RUN so
+# npm can resolve the placeholder. This is simpler and more reliable than the
+# --mount=type=secret approach which was causing intermittent BuildKit failures.
+RUN printf '@vxture:registry=%s\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' \
+      "$VXTURE_NPM_REGISTRY" > .npmrc \
     && npm ci \
     && rm -f .npmrc
 
