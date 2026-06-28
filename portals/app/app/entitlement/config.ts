@@ -6,7 +6,7 @@ import type { Tier } from "./types";
  * Override with the DEFAULT_LANDING env var without a code change.
  */
 export const DEFAULT_LANDING: string =
-  process.env.DEFAULT_LANDING ?? "/data-assets/overview";
+  process.env.DEFAULT_LANDING ?? "/dashboard";
 
 /**
  * Minimum subscription tier required to use the app. Anything below this (or an

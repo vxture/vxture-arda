@@ -5,6 +5,8 @@
  * the DS package instead.
  */
 
+@import "./ui/console.css";
+
 :root {
   /* Fixed header height. */
   --arda-header-height: 64px;
@@ -87,7 +89,7 @@
   max-width: calc(var(--arda-shell-max-width) + 2 * var(--arda-shell-margin-x));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: var(--arda-sidebar-width) minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--vx-space-2xl);
   padding:
     calc(var(--arda-header-height) + var(--vx-space-xl))

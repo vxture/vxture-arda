@@ -3,35 +3,155 @@
     "name": "Arda",
     "tag": "Vxture"
   },
+  "shell": {
+    "nav": "Primary navigation",
+    "navExpand": "Expand navigation",
+    "navCollapse": "Collapse navigation",
+    "complianceTitle": "Compliance posture",
+    "complianceMeta": "Classification coverage 96.8%"
+  },
   "header": {
-    "display": "Display controls",
-    "theme": "Switch theme",
-    "language": "Language",
+    "launcher": "Modules",
+    "searchPlaceholder": "Search data assets, services, standards...",
+    "systemActions": "System actions",
+    "help": "Help",
+    "notifications": "Notifications",
+    "settings": "Settings",
     "fullscreenEnter": "Enter fullscreen",
     "fullscreenExit": "Exit fullscreen",
-    "nav": "Primary navigation"
+    "theme": "Theme",
+    "theme_system": "System",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "language": "Language"
+  },
+  "board": {
+    "asset": "Data Assets",
+    "assetDesc": "Catalog & asset inventory",
+    "integrate": "Integration",
+    "integrateDesc": "Ingestion & data development",
+    "govern": "Governance",
+    "governDesc": "Standards / quality / security",
+    "analyze": "Analytics",
+    "analyzeDesc": "Lineage & insights",
+    "serve": "Data Services",
+    "serveDesc": "API supply & sharing"
+  },
+  "navGroup": {
+    "overview": "Overview",
+    "assets": "Asset Governance",
+    "sharing": "Shared Apps"
   },
   "nav": {
-    "dataAssets": "Data Assets",
-    "integration": "Integration",
-    "management": "Management",
-    "governance": "Governance",
-    "services": "Services",
-    "overview": "Overview"
+    "dashboard": "Dashboard",
+    "catalog": "Asset Catalog",
+    "standards": "Data Standards",
+    "quality": "Data Quality",
+    "lineage": "Data Lineage",
+    "security": "Data Security",
+    "service": "Data Services",
+    "etl": "Data Development"
   },
-  "overview": {
-    "title": "Data Assets / Overview",
-    "description": "Review the overall health, scale, and governance coverage of your data assets.",
+  "user": {
+    "menu": "User menu",
+    "initial": "A",
+    "name": "Data Admin",
+    "verified": "Verified",
+    "email": "admin@vxture.com",
+    "role": "Role",
+    "locked": "Locked",
+    "profile": "Profile",
+    "tenantAdmin": "Tenant admin",
+    "signOut": "Sign out"
+  },
+  "level": {
+    "l1": "Member",
+    "l2": "Verified",
+    "l3": "Advanced",
+    "l4": "Admin",
+    "l5": "Super admin"
+  },
+  "notif": {
+    "title": "Notifications",
+    "n1Title": "Pipeline JOB-1006 failed",
+    "n1Meta": "Data development - 12m ago",
+    "n2Title": "Timeliness below threshold",
+    "n2Meta": "Data quality - Q-159 - 1h ago",
+    "n3Title": "3 unauthorized API calls blocked",
+    "n3Meta": "Data security - 2h ago",
+    "n4Title": "Classification standard pending review",
+    "n4Meta": "Data standards - STD-005 - today"
+  },
+  "dashboard": {
+    "eyebrow": "Intelligent Data Platform",
+    "title": "Data Asset Cockpit",
+    "description": "A one-screen overview of data assets, quality, and sharing posture.",
+    "range": "Last 30 days",
+    "refresh": "Refresh",
+    "export": "Export report",
     "metrics": {
-      "dataSources": "Data Sources",
-      "datasets": "Datasets",
-      "qualityScore": "Quality Score",
-      "governanceCoverage": "Governance Coverage"
+      "assets": "Total Data Assets",
+      "assetsTrend": "+667 this month",
+      "volume": "Ingested Volume",
+      "volumeTrend": "+3.4% MoM",
+      "calls": "Service Calls Today",
+      "callsTrend": "+7.6% MoM",
+      "compliance": "Classification Compliance",
+      "complianceTrend": "+0.4% MoM"
     },
-    "tableTitle": "Recent Datasets",
-    "tableDescription": "Recently connected and updated datasets will appear here.",
-    "emptyTitle": "No datasets yet",
-    "emptyDescription": "Once you connect your first data source, datasets will show up here."
+    "growthTitle": "Data Asset Growth",
+    "growthSub": "Tables ingested over the last 6 months",
+    "growthLegend": "Tables",
+    "teamsTitle": "Contribution by Team",
+    "teamsSub": "By tables ingested - Top 6",
+    "domainTitle": "Domain Distribution",
+    "domainCaption": "tables",
+    "qualityTitle": "Overall Data Quality",
+    "qualityRating": "Excellent",
+    "dim": {
+      "completeness": "Completeness",
+      "accuracy": "Accuracy",
+      "consistency": "Consistency",
+      "timeliness": "Timeliness",
+      "uniqueness": "Uniqueness",
+      "validity": "Validity"
+    },
+    "topTitle": "Popular Data Assets",
+    "topSub": "Ranked by subscriptions and call volume",
+    "topLink": "Open catalog",
+    "col": {
+      "asset": "Data Asset",
+      "domain": "Domain",
+      "level": "Level",
+      "quality": "Quality",
+      "subs": "Subs"
+    },
+    "level": {
+      "public": "Public",
+      "internal": "Internal",
+      "sensitive": "Sensitive",
+      "core": "Core"
+    },
+    "domain": {
+      "customer": "Customer",
+      "product": "Product",
+      "marketing": "Marketing",
+      "finance": "Finance",
+      "operations": "Operations",
+      "web": "Web"
+    },
+    "alertsTitle": "Governance Alerts",
+    "alertsCount": "4 pending",
+    "alert": {
+      "a1Title": "Pipeline JOB-1006 failed",
+      "a1Meta": "Data development - 12m ago",
+      "a2Title": "Timeliness below threshold",
+      "a2Meta": "Data quality - Q-159 - 1h ago",
+      "a3Title": "3 unauthorized API calls blocked",
+      "a3Meta": "Data security - 2h ago",
+      "a4Title": "Classification standard pending review",
+      "a4Meta": "Data standards - STD-005 - today"
+    }
   },
   "placeholder": {
     "title": "Under construction",

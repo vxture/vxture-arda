@@ -1,41 +1,161 @@
 {
   "brand": {
-    "name": "Arda",
+    "name": "智能数据中台",
     "tag": "Vxture"
   },
+  "shell": {
+    "nav": "主导航",
+    "navExpand": "展开导航",
+    "navCollapse": "收起导航",
+    "complianceTitle": "合规态势",
+    "complianceMeta": "分级分类覆盖率 96.8%"
+  },
   "header": {
-    "display": "显示设置",
-    "theme": "切换主题",
-    "language": "切换语言",
+    "launcher": "功能板块",
+    "searchPlaceholder": "搜索数据资产、服务、标准…",
+    "systemActions": "系统操作",
+    "help": "帮助",
+    "notifications": "告警通知",
+    "settings": "系统设置",
     "fullscreenEnter": "进入全屏",
     "fullscreenExit": "退出全屏",
-    "nav": "主导航"
+    "theme": "主题",
+    "theme_system": "跟随系统",
+    "theme_light": "亮色",
+    "theme_dark": "暗色",
+    "language": "语言"
+  },
+  "board": {
+    "asset": "数据资产域",
+    "assetDesc": "数据目录与资产编目",
+    "integrate": "数据集成域",
+    "integrateDesc": "采集汇聚与开发集成",
+    "govern": "数据治理域",
+    "governDesc": "标准 · 质量 · 安全",
+    "analyze": "数据分析域",
+    "analyzeDesc": "血缘洞察与分析",
+    "serve": "数据服务域",
+    "serveDesc": "API 服务供给与共享"
+  },
+  "navGroup": {
+    "overview": "概览",
+    "assets": "资产治理",
+    "sharing": "共享应用"
   },
   "nav": {
-    "dataAssets": "数据资产",
-    "integration": "集成",
-    "management": "管理",
-    "governance": "治理",
-    "services": "服务",
-    "overview": "概览"
+    "dashboard": "数据总览",
+    "catalog": "资产目录",
+    "standards": "数据标准",
+    "quality": "数据质量",
+    "lineage": "数据血缘",
+    "security": "数据安全",
+    "service": "数据服务",
+    "etl": "数据开发"
   },
-  "overview": {
-    "title": "数据资产 · 概览",
-    "description": "查看数据资产的整体健康度、规模与治理覆盖情况。",
+  "user": {
+    "menu": "用户菜单",
+    "initial": "数",
+    "name": "数据管理员",
+    "verified": "实名认证",
+    "email": "admin@vxture.com",
+    "role": "角色",
+    "locked": "待解锁",
+    "profile": "个人信息",
+    "tenantAdmin": "租户管理",
+    "signOut": "退出登录"
+  },
+  "level": {
+    "l1": "普通用户",
+    "l2": "认证用户",
+    "l3": "高级用户",
+    "l4": "管理员",
+    "l5": "超级管理员"
+  },
+  "notif": {
+    "title": "消息中心",
+    "n1Title": "JOB-1006 数据清洗失败",
+    "n1Meta": "数据开发 · 12 分钟前",
+    "n2Title": "刷卡流水及时性低于阈值",
+    "n2Meta": "数据质量 · Q-159 · 1 小时前",
+    "n3Title": "服务越权调用拦截 3 次",
+    "n3Meta": "数据安全 · 2 小时前",
+    "n4Title": "分类标准待评审",
+    "n4Meta": "数据标准 · STD-005 · 今日"
+  },
+  "dashboard": {
+    "eyebrow": "智能数据中台",
+    "title": "数据资产驾驶舱",
+    "description": "全域数据资产、质量与共享态势一屏总览。",
+    "range": "近 30 天",
+    "refresh": "刷新",
+    "export": "导出报告",
     "metrics": {
-      "dataSources": "数据源",
-      "datasets": "数据集",
-      "qualityScore": "质量评分",
-      "governanceCoverage": "治理覆盖"
+      "assets": "数据资产总量",
+      "assetsTrend": "本月新增 667",
+      "volume": "归集数据量",
+      "volumeTrend": "环比 +3.4%",
+      "calls": "今日服务调用",
+      "callsTrend": "环比 +7.6%",
+      "compliance": "分级分类合规率",
+      "complianceTrend": "环比 +0.4%"
     },
-    "tableTitle": "最近数据集",
-    "tableDescription": "最近接入与更新的数据集将显示在这里。",
-    "emptyTitle": "暂无数据集",
-    "emptyDescription": "接入第一个数据源后,数据集将在此处展示。"
+    "growthTitle": "数据资产增长趋势",
+    "growthSub": "近 6 个月已归集数据表数量",
+    "growthLegend": "数据表",
+    "teamsTitle": "各团队数据贡献",
+    "teamsSub": "按归集数据表数量排名 · TOP 6",
+    "domainTitle": "主题域分布",
+    "domainCaption": "数据表",
+    "qualityTitle": "数据质量总分",
+    "qualityRating": "优秀",
+    "dim": {
+      "completeness": "完整性",
+      "accuracy": "准确性",
+      "consistency": "一致性",
+      "timeliness": "及时性",
+      "uniqueness": "唯一性",
+      "validity": "有效性"
+    },
+    "topTitle": "热门数据资产",
+    "topSub": "按订阅与调用热度排序",
+    "topLink": "进入资产目录",
+    "col": {
+      "asset": "数据资产",
+      "domain": "主题域",
+      "level": "分级",
+      "quality": "质量",
+      "subs": "订阅"
+    },
+    "level": {
+      "public": "公开",
+      "internal": "内部",
+      "sensitive": "敏感",
+      "core": "核心"
+    },
+    "domain": {
+      "customer": "客户",
+      "product": "产品",
+      "marketing": "营销",
+      "finance": "财务",
+      "operations": "运营",
+      "web": "网络"
+    },
+    "alertsTitle": "治理告警",
+    "alertsCount": "4 待处理",
+    "alert": {
+      "a1Title": "JOB-1006 数据清洗失败",
+      "a1Meta": "数据开发 · 12 分钟前",
+      "a2Title": "刷卡流水及时性低于阈值",
+      "a2Meta": "数据质量 · Q-159 · 1 小时前",
+      "a3Title": "服务越权调用拦截 3 次",
+      "a3Meta": "数据安全 · 2 小时前",
+      "a4Title": "分类标准待评审",
+      "a4Meta": "数据标准 · STD-005 · 今日"
+    }
   },
   "placeholder": {
-    "title": "建设中",
-    "description": "该模块正在建设中,敬请期待。"
+    "title": "正在开发中",
+    "description": "该模块正在开发中，敬请期待。"
   },
   "entitlement": {
     "title": "需要有效订阅",
