@@ -23,7 +23,7 @@ log_banner "Arda - Start Services"
 
 cd "$REPO_DIR"
 
-CONTAINERS=("${PROJECT_NAME}-redis" "${PROJECT_NAME}-app")
+CONTAINERS=("${PROJECT_NAME}-redis" "${PROJECT_NAME}-db" "${PROJECT_NAME}-app")
 
 pull_images_for_current_registry() {
   local image attempt
@@ -130,6 +130,8 @@ for container in "${CONTAINERS[@]}"; do
     PROBLEMS="$PROBLEMS\n  $container: exited unexpectedly"
   elif [[ "$state" == "restarting" ]]; then
     PROBLEMS="$PROBLEMS\n  $container: crash-looping (currently restarting)"
+  elif [[ "$state" == "missing" ]]; then
+    PROBLEMS="$PROBLEMS\n  $container: not found (service did not start - check compose delivery)"
   fi
 done
 
