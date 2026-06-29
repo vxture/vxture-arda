@@ -1,0 +1,280 @@
+// Arda domain schema (v1, catalog-first).
+//
+// Source of truth for these entities: docs/design/domain-entities-and-feature-keys.md.
+// Scope: catalog + metadata + governance at the DATASET level. Integration data
+// movement (Pipeline/JobRun) and column-level Field are `future` and are NOT
+// modeled here. Platform/IdP-owned concepts (Org, workspace lifecycle,
+// Subscription, members, billing) are NOT modeled - arda only mirrors workspaces
+// and reads entitlement live from the platform.
+//
+// Isolation: every business entity carries `workspaceId` (the platform/IdP
+// `active_workspace`) and is force-filtered by it. It is a plain indexed column,
+// not a FK - workspace lifecycle is platform-owned, so rows must not depend on a
+// local WorkspaceRef existing first.
+
+// Prisma 7 Rust-free client (queryCompiler + driver adapter). Generated ESM
+// client lives under app/generated/prisma (gitignored, emitted at build).
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Security classification of an asset (dataset-level in v1).
+enum AssetLevel {
+  public
+  internal
+  sensitive
+  core
+}
+
+/// Outcome of a single quality check run.
+enum QualityStatus {
+  pass
+  warn
+  fail
+}
+
+// --------------------------------------------------------------- assets ------
+
+model Dataset {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  dataSourceId  String?
+  name          String
+  type          String // table | view | file | stream
+  location      String?
+  rowCountEst   BigInt?
+  sizeBytes     BigInt?
+  ownerUserId   String?
+  classification AssetLevel @default(internal)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  source         DataSource?     @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+  tags           DatasetTag[]
+  qualityRules   QualityRule[]
+  qualityResults QualityResult[]
+  lineageOut     LineageEdge[]   @relation("LineageUpstream")
+  lineageIn      LineageEdge[]   @relation("LineageDownstream")
+  services       DataServiceDataset[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, dataSourceId])
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String?
+  datasets    DatasetTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model DatasetTag {
+  datasetId   String
+  tagId       String
+  workspaceId String
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([datasetId, tagId])
+  @@index([workspaceId])
+}
+
+model GlossaryTerm {
+  id            String  @id @default(cuid())
+  workspaceId   String
+  term          String
+  definition    String
+  stewardUserId String?
+
+  @@unique([workspaceId, term])
+  @@index([workspaceId])
+}
+
+// ----------------------------------------------------------- integration -----
+
+/// v1: registration + schema/metadata pull only - no actual data movement.
+model DataSource {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  name            String
+  type            String // postgres | s3 | bigquery | rest | file | ...
+  connectionConfig Json?   // encrypted at the app layer before persistence
+  status          String    @default("connected")
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+
+  datasets Dataset[]
+
+  @@index([workspaceId])
+}
+
+// ------------------------------------------------------------- governance ----
+
+model Policy {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  type        String // access | masking | retention | classification
+  scope       String // dataset | tag | source
+  config      Json?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+}
+
+model QualityRule {
+  id          String   @id @default(cuid())
+  workspaceId String
+  datasetId   String
+  type        String // not_null | unique | range | freshness | ...
+  config      Json?
+  severity    String   @default("warning")
+  enabled     Boolean  @default(true)
+
+  dataset Dataset         @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  results QualityResult[]
+
+  @@index([workspaceId])
+  @@index([datasetId])
+}
+
+model QualityResult {
+  id          String        @id @default(cuid())
+  workspaceId String
+  ruleId      String
+  datasetId   String
+  runAt       DateTime      @default(now())
+  status      QualityStatus
+  score       Float?
+  details     Json?
+
+  rule    QualityRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  dataset Dataset     @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([ruleId])
+  @@index([datasetId])
+}
+
+model LineageEdge {
+  id                 String  @id @default(cuid())
+  workspaceId        String
+  upstreamDatasetId  String
+  downstreamDatasetId String
+  transform          String?
+  jobId              String?
+
+  upstream   Dataset @relation("LineageUpstream", fields: [upstreamDatasetId], references: [id], onDelete: Cascade)
+  downstream Dataset @relation("LineageDownstream", fields: [downstreamDatasetId], references: [id], onDelete: Cascade)
+
+  @@unique([upstreamDatasetId, downstreamDatasetId])
+  @@index([workspaceId])
+}
+
+// --------------------------------------------------------------- services ----
+
+model DataService {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  type        String // rest_api | query | export | share
+  config      Json?
+  status      String    @default("draft")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  datasets DataServiceDataset[]
+  apiKeys  ApiKey[]
+
+  @@index([workspaceId])
+}
+
+model DataServiceDataset {
+  dataServiceId String
+  datasetId     String
+  workspaceId   String
+
+  service DataService @relation(fields: [dataServiceId], references: [id], onDelete: Cascade)
+  dataset Dataset     @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@id([dataServiceId, datasetId])
+  @@index([workspaceId])
+}
+
+// ------------------------------------------------------------------ admin ----
+
+model ApiKey {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  dataServiceId String?
+  name          String
+  hashedKey     String    @unique
+  scopes        String[]
+  lastUsedAt    DateTime?
+  revoked       Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  service DataService? @relation(fields: [dataServiceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+}
+
+/// Activity + platform-command audit (seed/wipe/invalidate, ADR section 5.1).
+model AuditLog {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  actor          String // a user id or "platform"
+  action         String
+  target         String?
+  idempotencyKey String?  @unique
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([workspaceId, createdAt])
+}
+
+// ------------------------------------------------------- infrastructure ------
+
+/// Local mirror of a platform workspace, used purely as the isolation anchor.
+/// arda does NOT own workspace lifecycle (create/clone/delete = platform).
+model WorkspaceRef {
+  id         String   @id // = platform/IdP active_workspace
+  orgId      String
+  seedStatus String? // platform marker: needs sample-data fill (ADR section 4)
+  createdAt  DateTime @default(now())
+
+  @@index([orgId])
+}
+
+/// Read-only, versioned sample-data templates (global, platform/ops-curated).
+/// NOT workspace-scoped.
+model SeedTemplate {
+  id        String            @id @default(cuid())
+  name      String
+  createdAt DateTime          @default(now())
+  versions  TemplateVersion[]
+}
+
+model TemplateVersion {
+  id         String       @id @default(cuid())
+  templateId String
+  version    String
+  manifest   Json
+  createdAt  DateTime     @default(now())
+
+  template SeedTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+}

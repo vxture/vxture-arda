@@ -33,7 +33,12 @@ services:
     container_name: ${PROJECT_NAME:-arda}-app
     restart: always
     depends_on:
-      - arda-redis
+      arda-redis:
+        condition: service_started
+      # App start runs `prisma migrate deploy` (entrypoint), so the DB must be
+      # accepting connections first.
+      arda-db:
+        condition: service_healthy
     # Publish the app port so the public edge can reach it over tailscale.
     # the deploy host has no public IP, so this bind is reachable only via the
     # tailscale/LAN interface; the host firewall must allow ingress on the
@@ -52,6 +57,10 @@ services:
       OIDC_POST_LOGOUT_REDIRECT_URI: "${OIDC_POST_LOGOUT_REDIRECT_URI:-}"
       # -- Server-side RP session store (this stack's redis container) --------
       REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"
+      # -- Domain data store (this stack's postgres container) ----------------
+      # Used by the Prisma client (pg driver adapter) and by `migrate deploy` at
+      # container start. Host is ${PROJECT_NAME}-db so prod/beta never collide.
+      DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@arda-db:5432/arda?schema=public}"
       RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
       # Host-only cookie (no leading dot): scoped to this exact domain.
@@ -94,6 +103,36 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # -- Postgres: domain/business data store (catalog + governance, v1) ---------
+  # Holds arda-owned business data (datasets, sources, policies, quality, etc.),
+  # workspace-isolated by workspaceId. NOT the OIDC session store (that is redis)
+  # and NOT subscription/billing (that is the vxture platform). Internal-only (no
+  # published ports). Data under DATA_DIR survives restarts and redeploys; prod
+  # and beta use separate stacks/dirs so their data never mixes.
+  arda-db:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_NAME:-arda}-db
+    restart: always
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-arda}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-arda}"
+      POSTGRES_DB: "${POSTGRES_DB:-arda}"
+    volumes:
+      - ${DATA_DIR}/postgres:/var/lib/postgresql/data
+    networks:
+      - arda-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-arda}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     logging:
       driver: json-file
       options:
