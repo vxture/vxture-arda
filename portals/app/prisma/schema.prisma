@@ -148,6 +148,9 @@ model QualityRule {
   id          String   @id @default(cuid())
   workspaceId String
   datasetId   String
+  code        String // display id, e.g. Q-201
+  name        String
+  dimension   String // quality dimension key: completeness | accuracy | ...
   type        String // not_null | unique | range | freshness | ...
   config      Json?
   severity    String   @default("warning")
@@ -156,6 +159,7 @@ model QualityRule {
   dataset Dataset         @relation(fields: [datasetId], references: [id], onDelete: Cascade)
   results QualityResult[]
 
+  @@unique([workspaceId, code])
   @@index([workspaceId])
   @@index([datasetId])
 }
@@ -167,7 +171,8 @@ model QualityResult {
   datasetId   String
   runAt       DateTime      @default(now())
   status      QualityStatus
-  score       Float?
+  score       Float? // pass rate %
+  issues      Int           @default(0)
   details     Json?
 
   rule    QualityRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)

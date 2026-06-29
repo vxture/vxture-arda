@@ -61,6 +61,26 @@ const STANDARDS: SeedStandard[] = [
   { code: "STD-008", name: "Language Codes", type: "code-set", ref: "ISO 639-1", items: 184, usage: 312, status: "published" },
 ];
 
+interface SeedRule {
+  code: string;
+  name: string;
+  datasetCode: string;
+  type: string;
+  dimension: string;
+  prevScore: number;
+  score: number;
+  issues: number;
+}
+
+const QUALITY_RULES: SeedRule[] = [
+  { code: "Q-201", name: "Identifier checksum", datasetCode: "dw_customer_master", type: "not_null", dimension: "validity", prevScore: 99.4, score: 99.2, issues: 9842 },
+  { code: "Q-188", name: "Order id uniqueness", datasetCode: "dw_order_txn", type: "unique", dimension: "uniqueness", prevScore: 97.2, score: 97.6, issues: 12480 },
+  { code: "Q-174", name: "Geo bounds check", datasetCode: "dw_web_clickstream", type: "range", dimension: "accuracy", prevScore: 99.8, score: 99.8, issues: 1204 },
+  { code: "Q-159", name: "Timestamp null rate", datasetCode: "dw_support_tickets", type: "not_null", dimension: "completeness", prevScore: 92.0, score: 91.4, issues: 184200 },
+  { code: "Q-143", name: "Amount range threshold", datasetCode: "dw_revenue_ledger", type: "range", dimension: "validity", prevScore: 85.0, score: 86.2, issues: 42600 },
+  { code: "Q-126", name: "Freshness SLA", datasetCode: "dw_churn_scores", type: "freshness", dimension: "timeliness", prevScore: 89.5, score: 88.7, issues: 23400 },
+];
+
 async function main(): Promise<void> {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
@@ -71,8 +91,9 @@ async function main(): Promise<void> {
     create: { id: WORKSPACE_ID, orgId: ORG_ID },
   });
 
+  const datasetIdByCode: Record<string, string> = {};
   for (const d of DATASETS) {
-    await prisma.dataset.upsert({
+    const rec = await prisma.dataset.upsert({
       where: { workspaceId_code: { workspaceId: WORKSPACE_ID, code: d.code } },
       update: {
         name: d.name,
@@ -99,6 +120,28 @@ async function main(): Promise<void> {
         classification: d.level,
       },
     });
+    datasetIdByCode[d.code] = rec.id;
+  }
+
+  const statusFor = (score: number): "pass" | "warn" | "fail" =>
+    score >= 95 ? "pass" : score >= 90 ? "warn" : "fail";
+  const now = Date.now();
+  const DAY = 86_400_000;
+  for (const r of QUALITY_RULES) {
+    const datasetId = datasetIdByCode[r.datasetCode];
+    if (!datasetId) continue;
+    const rule = await prisma.qualityRule.upsert({
+      where: { workspaceId_code: { workspaceId: WORKSPACE_ID, code: r.code } },
+      update: { datasetId, name: r.name, dimension: r.dimension, type: r.type, severity: "warning" },
+      create: { workspaceId: WORKSPACE_ID, datasetId, code: r.code, name: r.name, dimension: r.dimension, type: r.type, severity: "warning" },
+    });
+    await prisma.qualityResult.deleteMany({ where: { ruleId: rule.id } });
+    await prisma.qualityResult.createMany({
+      data: [
+        { workspaceId: WORKSPACE_ID, ruleId: rule.id, datasetId, runAt: new Date(now - 7 * DAY), status: statusFor(r.prevScore), score: r.prevScore, issues: r.issues },
+        { workspaceId: WORKSPACE_ID, ruleId: rule.id, datasetId, runAt: new Date(now), status: statusFor(r.score), score: r.score, issues: r.issues },
+      ],
+    });
   }
 
   for (const s of STANDARDS) {
@@ -111,8 +154,12 @@ async function main(): Promise<void> {
 
   const count = await prisma.dataset.count({ where: { workspaceId: WORKSPACE_ID } });
   const stdCount = await prisma.standard.count({ where: { workspaceId: WORKSPACE_ID } });
+  const ruleCount = await prisma.qualityRule.count({ where: { workspaceId: WORKSPACE_ID } });
   // eslint-disable-next-line no-console
-  console.log(`Seeded ${DATASETS.length} datasets, ${STANDARDS.length} standards; workspace ${WORKSPACE_ID} has ${count} datasets, ${stdCount} standards.`);
+  console.log(
+    `Seeded ${DATASETS.length} datasets, ${STANDARDS.length} standards, ${QUALITY_RULES.length} quality rules; ` +
+      `workspace ${WORKSPACE_ID} has ${count} datasets, ${stdCount} standards, ${ruleCount} rules.`,
+  );
   await prisma.$disconnect();
 }
 
