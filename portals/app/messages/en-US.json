@@ -206,6 +206,8 @@
     "notFoundTitle": "Asset not found",
     "notFoundDesc": "This asset does not exist or is no longer catalogued.",
     "backToCatalog": "Back to catalog",
+    "emptyTitle": "No datasets yet",
+    "emptyDesc": "Once data sources are connected and datasets registered for this workspace, they appear here.",
     "viewLineage": "View lineage",
     "requestAccess": "Request access",
     "stat": {

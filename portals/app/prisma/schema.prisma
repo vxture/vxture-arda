@@ -45,6 +45,15 @@ model Dataset {
   workspaceId   String
   dataSourceId  String?
   name          String
+  // Technical slug shown in the catalog (e.g. dw_customer_master).
+  code          String
+  description   String?
+  // Catalog facets: subject domain + owning team (free-form keys). Quality score
+  // and subscriber count are deliberately NOT stored - they are derived later
+  // (QualityResult aggregate / subscription join) and shown as "-" until then.
+  domain        String?
+  team          String?
+  refreshFreq   String? // realtime | daily | weekly | monthly
   type          String // table | view | file | stream
   location      String?
   rowCountEst   BigInt?
@@ -62,8 +71,10 @@ model Dataset {
   lineageIn      LineageEdge[]   @relation("LineageDownstream")
   services       DataServiceDataset[]
 
+  @@unique([workspaceId, code])
   @@index([workspaceId])
   @@index([workspaceId, dataSourceId])
+  @@index([workspaceId, domain])
 }
 
 model Tag {

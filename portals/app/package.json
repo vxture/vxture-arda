@@ -8,7 +8,8 @@
     "build": "prisma generate && next build",
     "start": "next start -p 3230",
     "type-check": "prisma generate && tsc --noEmit",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "db:seed": "prisma generate && tsx prisma/seed.ts"
   },
   "dependencies": {
     "@arda/shared": "*",
@@ -32,6 +33,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.3.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.9.3"
   },
   "engines": {

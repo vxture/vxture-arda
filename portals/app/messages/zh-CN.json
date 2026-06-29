@@ -206,6 +206,8 @@
     "notFoundTitle": "未找到资产",
     "notFoundDesc": "该资产不存在或已不在目录中。",
     "backToCatalog": "返回资产目录",
+    "emptyTitle": "暂无数据集",
+    "emptyDesc": "为该工作区接入数据源并登记数据集后，将在此处展示。",
     "viewLineage": "查看血缘",
     "requestAccess": "申请使用",
     "stat": {
