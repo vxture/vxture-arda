@@ -270,6 +270,39 @@
     "tagGoverned": "Governed",
     "tagHighUse": "High usage"
   },
+  "standards": {
+    "eyebrow": "Asset Governance",
+    "title": "Data Standards",
+    "description": "Manage data elements, code sets, and naming conventions - the shared vocabulary of the platform.",
+    "docs": "Spec docs",
+    "newStandard": "New standard",
+    "libraryTitle": "Standard library",
+    "search": "Search standards...",
+    "metrics": {
+      "elements": "Data Elements",
+      "codesets": "Code Sets",
+      "references": "Standard References",
+      "refTrend": "88% standardized",
+      "pending": "Pending Review"
+    },
+    "col": {
+      "name": "Standard",
+      "type": "Type",
+      "ref": "Reference",
+      "items": "Items",
+      "usage": "Usage",
+      "status": "Status"
+    },
+    "type": {
+      "code-set": "Code set",
+      "data-element": "Data element"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft",
+      "review": "In review"
+    }
+  },
   "placeholder": {
     "title": "Under construction",
     "description": "This module is under construction. Stay tuned."
