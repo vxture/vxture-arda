@@ -37,6 +37,13 @@ if [[ "$_ENV_LOADED" == "0" ]]; then
     done
     unset _pre_env _v
 
+    # The deploy tree always lives where these freshly-rsynced scripts are
+    # ($DEPLOY_DIR). Pin REPO_DIR to it AFTER sourcing etc/.env: a stale REPO_DIR
+    # persisted in the operator .env (e.g. from an older template) must not point
+    # the deploy at a different directory, or `cd "$REPO_DIR"` would run a
+    # previous release's compose/scripts even though CI delivered new ones here.
+    export REPO_DIR="$DEPLOY_DIR"
+
     export _ARDA_ENV_LOADED=1
   else
     echo "[ERROR] .env not found at $PROJECT_ROOT/etc/.env" >&2
