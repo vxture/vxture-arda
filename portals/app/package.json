@@ -7,7 +7,7 @@
     "dev": "prisma generate && next dev -p 3230",
     "build": "prisma generate && next build",
     "start": "next start -p 3230",
-    "type-check": "tsc --noEmit",
+    "type-check": "prisma generate && tsc --noEmit",
     "prisma:generate": "prisma generate"
   },
   "dependencies": {
