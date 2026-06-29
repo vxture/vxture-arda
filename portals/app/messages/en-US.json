@@ -153,6 +153,123 @@
       "a4Meta": "Data standards - STD-005 - today"
     }
   },
+  "catalog": {
+    "eyebrow": "Asset Governance",
+    "title": "Asset Catalog",
+    "description": "Search, browse, and request access to catalogued data assets across every domain.",
+    "register": "Register source",
+    "newDataset": "New dataset",
+    "all": "All",
+    "searchPlaceholder": "Search {count} assets...",
+    "count": "{count} assets",
+    "view": "View mode",
+    "viewTable": "Table",
+    "viewCards": "Cards",
+    "col": {
+      "asset": "Data Asset",
+      "domain": "Domain",
+      "dept": "Team",
+      "level": "Level",
+      "rows": "Rows",
+      "freq": "Refresh",
+      "quality": "Quality",
+      "subs": "Subs"
+    },
+    "domain": {
+      "customer": "Customer",
+      "product": "Product",
+      "marketing": "Marketing",
+      "finance": "Finance",
+      "operations": "Operations",
+      "web": "Web"
+    },
+    "level": {
+      "public": "Public",
+      "internal": "Internal",
+      "sensitive": "Sensitive",
+      "core": "Core"
+    },
+    "freq": {
+      "realtime": "Real-time",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "dept": {
+      "platform": "Data Platform",
+      "analytics": "Analytics",
+      "engineering": "Engineering",
+      "growth": "Growth",
+      "finance": "Finance",
+      "ops": "Operations"
+    },
+    "notFoundTitle": "Asset not found",
+    "notFoundDesc": "This asset does not exist or is no longer catalogued.",
+    "backToCatalog": "Back to catalog",
+    "viewLineage": "View lineage",
+    "requestAccess": "Request access",
+    "stat": {
+      "rows": "Rows",
+      "fields": "Fields",
+      "freq": "Refresh",
+      "updated": "Updated",
+      "subs": "Subscribers",
+      "quality": "Quality"
+    },
+    "tab": {
+      "schema": "Schema",
+      "sample": "Preview",
+      "quality": "Quality",
+      "lineage": "Lineage",
+      "access": "Access"
+    },
+    "field": {
+      "name": "Field",
+      "type": "Type",
+      "level": "Level",
+      "std": "Standard"
+    },
+    "samplePreview": "Data preview - masked",
+    "masked": "Dynamic masking",
+    "qualityDims": "Quality dimensions",
+    "dim": {
+      "completeness": "Completeness",
+      "accuracy": "Accuracy",
+      "consistency": "Consistency",
+      "timeliness": "Timeliness",
+      "uniqueness": "Uniqueness",
+      "validity": "Validity"
+    },
+    "lineageHint": "Full upstream and downstream lineage is available in the lineage explorer.",
+    "openLineage": "Open lineage",
+    "accessTitle": "Request access - {name}",
+    "accessHint": "This is a {level} asset. The request enters dual approval by the data owner ({owner}) and a security admin.",
+    "access": {
+      "useCase": "Use case",
+      "useCasePh": "e.g. churn analysis for the growth team",
+      "scope": "Field scope",
+      "scopeDefault": "All fields (masked)",
+      "justification": "Justification",
+      "justificationPh": "Describe purpose, sharing, and retention...",
+      "duration": "Duration",
+      "durationDefault": "12 months",
+      "method": "Access method",
+      "draft": "Save draft",
+      "submit": "Submit for approval"
+    },
+    "assetInfo": "Asset info",
+    "info": {
+      "dept": "Team",
+      "owner": "Owner",
+      "domain": "Domain",
+      "freq": "Refresh",
+      "storage": "Storage",
+      "level": "Classification"
+    },
+    "tags": "Tags",
+    "tagGoverned": "Governed",
+    "tagHighUse": "High usage"
+  },
   "placeholder": {
     "title": "Under construction",
     "description": "This module is under construction. Stay tuned."

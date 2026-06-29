@@ -153,6 +153,123 @@
       "a4Meta": "数据标准 · STD-005 · 今日"
     }
   },
+  "catalog": {
+    "eyebrow": "资产治理",
+    "title": "资产目录",
+    "description": "检索、浏览并申请使用全域已编目的数据资产。",
+    "register": "登记数据源",
+    "newDataset": "新建数据集",
+    "all": "全部",
+    "searchPlaceholder": "搜索 {count} 项资产…",
+    "count": "{count} 项资产",
+    "view": "视图模式",
+    "viewTable": "表格",
+    "viewCards": "卡片",
+    "col": {
+      "asset": "数据资产",
+      "domain": "主题域",
+      "dept": "团队",
+      "level": "分级",
+      "rows": "数据量",
+      "freq": "更新频率",
+      "quality": "质量",
+      "subs": "订阅"
+    },
+    "domain": {
+      "customer": "客户",
+      "product": "产品",
+      "marketing": "营销",
+      "finance": "财务",
+      "operations": "运营",
+      "web": "网络"
+    },
+    "level": {
+      "public": "公开",
+      "internal": "内部",
+      "sensitive": "敏感",
+      "core": "核心"
+    },
+    "freq": {
+      "realtime": "实时",
+      "daily": "日批",
+      "weekly": "周批",
+      "monthly": "月批"
+    },
+    "dept": {
+      "platform": "数据平台",
+      "analytics": "分析",
+      "engineering": "工程",
+      "growth": "增长",
+      "finance": "财务",
+      "ops": "运营"
+    },
+    "notFoundTitle": "未找到资产",
+    "notFoundDesc": "该资产不存在或已不在目录中。",
+    "backToCatalog": "返回资产目录",
+    "viewLineage": "查看血缘",
+    "requestAccess": "申请使用",
+    "stat": {
+      "rows": "数据量",
+      "fields": "字段数",
+      "freq": "更新频率",
+      "updated": "最近更新",
+      "subs": "订阅方",
+      "quality": "质量得分"
+    },
+    "tab": {
+      "schema": "字段结构",
+      "sample": "数据预览",
+      "quality": "质量",
+      "lineage": "血缘",
+      "access": "权限申请"
+    },
+    "field": {
+      "name": "字段名",
+      "type": "类型",
+      "level": "分级",
+      "std": "关联标准"
+    },
+    "samplePreview": "数据预览 · 已脱敏",
+    "masked": "动态脱敏",
+    "qualityDims": "质量维度评估",
+    "dim": {
+      "completeness": "完整性",
+      "accuracy": "准确性",
+      "consistency": "一致性",
+      "timeliness": "及时性",
+      "uniqueness": "唯一性",
+      "validity": "有效性"
+    },
+    "lineageHint": "完整的上下游血缘可在血缘分析中查看。",
+    "openLineage": "打开血缘分析",
+    "accessTitle": "申请使用 · {name}",
+    "accessHint": "该资产为「{level}」级，申请将进入数据 Owner（{owner}）与安全管理员的双重审批流程。",
+    "access": {
+      "useCase": "使用场景",
+      "useCasePh": "如：增长团队的流失分析",
+      "scope": "申请字段范围",
+      "scopeDefault": "全部字段（脱敏）",
+      "justification": "使用说明",
+      "justificationPh": "说明数据用途、共享方式与留存期限…",
+      "duration": "授权期限",
+      "durationDefault": "12 个月",
+      "method": "调用方式",
+      "draft": "存为草稿",
+      "submit": "提交审批"
+    },
+    "assetInfo": "资产信息",
+    "info": {
+      "dept": "归属团队",
+      "owner": "数据 Owner",
+      "domain": "主题域",
+      "freq": "更新方式",
+      "storage": "存储位置",
+      "level": "安全分级"
+    },
+    "tags": "标签",
+    "tagGoverned": "已治理",
+    "tagHighUse": "高频调用"
+  },
   "placeholder": {
     "title": "正在开发中",
     "description": "该模块正在开发中，敬请期待。"

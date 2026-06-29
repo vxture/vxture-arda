@@ -171,7 +171,7 @@ export default function DashboardPage() {
             columns={columns}
             rows={TOP_ASSETS}
             rowKey={(row) => row.id}
-            onRowClick={() => router.push("/catalog")}
+            onRowClick={(row) => router.push("/catalog/" + row.id)}
           />
         </div>
 
