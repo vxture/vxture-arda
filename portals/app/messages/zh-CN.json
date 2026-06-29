@@ -270,6 +270,39 @@
     "tagGoverned": "已治理",
     "tagHighUse": "高频调用"
   },
+  "standards": {
+    "eyebrow": "资产治理",
+    "title": "数据标准",
+    "description": "统一管理数据元、代码集与命名规范，沉淀全域数据语言。",
+    "docs": "规范文档",
+    "newStandard": "新建标准",
+    "libraryTitle": "标准库",
+    "search": "搜索标准…",
+    "metrics": {
+      "elements": "数据元",
+      "codesets": "代码集",
+      "references": "标准引用",
+      "refTrend": "标准化率 88%",
+      "pending": "待评审"
+    },
+    "col": {
+      "name": "标准名称",
+      "type": "类型",
+      "ref": "参照规范",
+      "items": "条目",
+      "usage": "引用",
+      "status": "状态"
+    },
+    "type": {
+      "code-set": "代码集",
+      "data-element": "数据元"
+    },
+    "status": {
+      "published": "已发布",
+      "draft": "草稿",
+      "review": "评审中"
+    }
+  },
   "placeholder": {
     "title": "正在开发中",
     "description": "该模块正在开发中，敬请期待。"
