@@ -40,6 +40,27 @@ const DATASETS: SeedDataset[] = [
   { code: "dw_web_sessions", name: "Clickstream Sessions", domain: "web", team: "growth", level: "public", refreshFreq: "weekly", rows: 340_000_000, type: "view", owner: "M. Okafor", description: "Sessionised clickstream rollups with device, geo, and acquisition attributes." },
 ];
 
+interface SeedStandard {
+  code: string;
+  name: string;
+  type: string;
+  ref: string;
+  items: number;
+  usage: number;
+  status: string;
+}
+
+const STANDARDS: SeedStandard[] = [
+  { code: "STD-001", name: "Country Codes", type: "code-set", ref: "ISO 3166-1", items: 249, usage: 1204, status: "published" },
+  { code: "STD-002", name: "Currency Codes", type: "code-set", ref: "ISO 4217", items: 180, usage: 968, status: "published" },
+  { code: "STD-003", name: "Unified Org Identifier", type: "data-element", ref: "Internal STD-ORG", items: 1, usage: 842, status: "published" },
+  { code: "STD-004", name: "Postal Address Structure", type: "data-element", ref: "Internal STD-ADDR", items: 9, usage: 624, status: "published" },
+  { code: "STD-005", name: "Product Category Taxonomy", type: "code-set", ref: "Internal 2026", items: 142, usage: 88, status: "draft" },
+  { code: "STD-006", name: "Data Classification Levels", type: "code-set", ref: "Internal SEC", items: 64, usage: 53, status: "review" },
+  { code: "STD-007", name: "Date / Time Format", type: "data-element", ref: "ISO 8601", items: 1, usage: 1486, status: "published" },
+  { code: "STD-008", name: "Language Codes", type: "code-set", ref: "ISO 639-1", items: 184, usage: 312, status: "published" },
+];
+
 async function main(): Promise<void> {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
@@ -80,9 +101,18 @@ async function main(): Promise<void> {
     });
   }
 
+  for (const s of STANDARDS) {
+    await prisma.standard.upsert({
+      where: { workspaceId_code: { workspaceId: WORKSPACE_ID, code: s.code } },
+      update: { name: s.name, type: s.type, ref: s.ref, items: s.items, usage: s.usage, status: s.status },
+      create: { workspaceId: WORKSPACE_ID, ...s },
+    });
+  }
+
   const count = await prisma.dataset.count({ where: { workspaceId: WORKSPACE_ID } });
+  const stdCount = await prisma.standard.count({ where: { workspaceId: WORKSPACE_ID } });
   // eslint-disable-next-line no-console
-  console.log(`Seeded ${DATASETS.length} datasets; workspace ${WORKSPACE_ID} now has ${count}.`);
+  console.log(`Seeded ${DATASETS.length} datasets, ${STANDARDS.length} standards; workspace ${WORKSPACE_ID} has ${count} datasets, ${stdCount} standards.`);
   await prisma.$disconnect();
 }
 

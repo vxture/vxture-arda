@@ -280,6 +280,8 @@
     "newStandard": "New standard",
     "libraryTitle": "Standard library",
     "search": "Search standards...",
+    "emptyTitle": "No standards yet",
+    "emptyDesc": "Code sets and data elements registered for this workspace will appear here.",
     "metrics": {
       "elements": "Data Elements",
       "codesets": "Code Sets",

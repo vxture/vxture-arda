@@ -280,6 +280,8 @@
     "newStandard": "新建标准",
     "libraryTitle": "标准库",
     "search": "搜索标准…",
+    "emptyTitle": "暂无数据标准",
+    "emptyDesc": "为该工作区登记的代码集与数据元将在此处展示。",
     "metrics": {
       "elements": "数据元",
       "codesets": "代码集",

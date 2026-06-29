@@ -178,6 +178,24 @@ model QualityResult {
   @@index([datasetId])
 }
 
+/// Data standard: a code set or data element reference (metadata governance).
+model Standard {
+  id          String   @id @default(cuid())
+  workspaceId String
+  code        String // e.g. STD-001
+  name        String
+  type        String // code-set | data-element
+  ref         String // reference spec (e.g. ISO 3166-1)
+  items       Int      @default(0)
+  usage       Int      @default(0)
+  status      String   @default("draft") // published | draft | review
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId])
+}
+
 model LineageEdge {
   id                 String  @id @default(cuid())
   workspaceId        String

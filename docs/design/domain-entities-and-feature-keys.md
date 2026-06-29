@@ -54,6 +54,7 @@
 | **QualityRule** | v1 | 数据质量检查定义（数据集级） | `datasetId, type(not_null\|unique\|range\|freshness\|...), config, severity, enabled` | → Dataset |
 | **QualityResult** | v1 | 一次检查结果 | `ruleId, datasetId, runAt, status(pass\|warn\|fail), score, details` | ← QualityRule |
 | **LineageEdge** | v1 | 上游→下游链接（数据集级） | `upstreamDatasetId, downstreamDatasetId, transform, jobId?` | Dataset↔Dataset |
+| **Standard** | v1 | 数据标准：代码集 / 数据元参照（元数据治理） | `code, name, type(code-set\|data-element), ref, items, usage, status(published\|draft\|review)` | - |
 
 > 质量总分 = QualityResult 聚合；治理覆盖率 = 被 Policy 覆盖的 Dataset 占比。
 
