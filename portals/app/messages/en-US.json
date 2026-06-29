@@ -372,6 +372,43 @@
       "impactVal": "A change affects 64 subscribers"
     }
   },
+  "security": {
+    "eyebrow": "Asset Governance",
+    "title": "Data Security",
+    "description": "Unified control of classification, masking policies, and sharing authorization.",
+    "template": "Classification template",
+    "classify": "Run classification",
+    "distTitle": "Classification distribution",
+    "distCaption": "datasets",
+    "reqTitle": "Sharing authorization",
+    "reqSub": "Sensitive and core data need dual approval",
+    "reqPending": "{count} pending",
+    "assetsUnit": "datasets",
+    "metrics": {
+      "coverage": "Classification Coverage",
+      "coverageTrend": "+0.4% MoM",
+      "masking": "Masking Rules",
+      "core": "Core Assets",
+      "blocked": "Blocked Today"
+    },
+    "col": {
+      "who": "Requester",
+      "asset": "Data Asset",
+      "level": "Level",
+      "time": "Time",
+      "status": "Status"
+    },
+    "level": {
+      "public": "Public",
+      "internal": "Internal",
+      "sensitive": "Sensitive",
+      "core": "Core"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved"
+    }
+  },
   "placeholder": {
     "title": "Under construction",
     "description": "This module is under construction. Stay tuned."

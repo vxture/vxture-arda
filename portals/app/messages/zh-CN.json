@@ -372,6 +372,43 @@
       "impactVal": "变更将影响 64 个订阅方"
     }
   },
+  "security": {
+    "eyebrow": "资产治理",
+    "title": "数据安全",
+    "description": "数据分级分类、脱敏策略与共享授权的统一管控。",
+    "template": "分级模板",
+    "classify": "发起分类",
+    "distTitle": "分级分类分布",
+    "distCaption": "数据表",
+    "reqTitle": "共享授权申请",
+    "reqSub": "敏感与核心数据需双重审批",
+    "reqPending": "{count} 待审批",
+    "assetsUnit": "张数据表",
+    "metrics": {
+      "coverage": "分级覆盖率",
+      "coverageTrend": "环比 +0.4%",
+      "masking": "脱敏规则",
+      "core": "核心资产",
+      "blocked": "越权拦截 · 今日"
+    },
+    "col": {
+      "who": "申请方",
+      "asset": "数据资产",
+      "level": "分级",
+      "time": "时间",
+      "status": "状态"
+    },
+    "level": {
+      "public": "公开",
+      "internal": "内部",
+      "sensitive": "敏感",
+      "core": "核心"
+    },
+    "status": {
+      "pending": "待审批",
+      "approved": "已通过"
+    }
+  },
   "placeholder": {
     "title": "正在开发中",
     "description": "该模块正在开发中，敬请期待。"

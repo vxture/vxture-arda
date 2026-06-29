@@ -1184,6 +1184,48 @@
   justify-content: center;
 }
 
+/* -------------------------------------------------------------- security --- */
+.level-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--vx-space-sm);
+}
+.level-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--vx-space-md);
+  border: 1px solid var(--vx-color-border);
+  border-top: 3px solid var(--vx-color-border);
+  border-radius: var(--vx-radius-lg);
+  background: var(--vx-color-surface);
+}
+.lc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+.lc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vx-color-text-strong);
+}
+.lc-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--vx-color-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.lc-sub {
+  font-size: 12px;
+  color: var(--vx-color-text-muted);
+}
+
 /* --------------------------------------------------------------- lineage --- */
 .lineage-toolbar {
   display: flex;
