@@ -1,13 +1,13 @@
-# 数据生命周期 功能设计（ad-ba-49-lifecycle）
+# 数据生命周期 功能设计（ad-ba-451-lifecycle）
 
 > 状态：功能层 · 功能设计（待评审）
-> 模板/看板：[`ba-40`](ad-ba-40-functions.md)；数据模型：`Policy(type=retention)` + `AuditLog`（da §4.3/§4.5）；wipe：[`ADR §5.1`](../ADR-entitlement-and-workspace.md)、[`arda-data-arch-workplan.md`](arda-data-arch-workplan.md) §2
+> 模板/看板：[`ba-400`](ad-ba-400-functions.md)；数据模型：`Policy(type=retention)` + `AuditLog`（da §4.3/§4.5）；wipe：[`ADR §5.1`](../ADR-entitlement-and-workspace.md)、[`arda-data-arch-workplan.md`](arda-data-arch-workplan.md) §2
 
 ---
 
 ## 1. 功能定义
 
-管数据的**留存、归档、销毁**（含平台 `wipe`）；到期处置 + 可审。**规则在治理域、执行/审计在管理域**（`ba-10` §1 跨域维度）。
+管数据的**留存、归档、销毁**（含平台 `wipe`）；到期处置 + 可审。**规则在治理域、执行/审计在管理域**（`ba-100` §1 跨域维度）。
 
 ## 2. 贯通链（目标 → 过程 → 结果 → 服务 → 监管）
 
@@ -40,7 +40,7 @@
 
 | 依赖 | 用途 | 断链 |
 |---|---|---|
-| 治理（`ba-47` 策略） | retention 规则 | — |
+| 治理（`ba-435` 策略） | retention 规则 | — |
 | 管理/admin | 执行 + 审计 | Lc-BL4 |
 | 平台指令通道（`if`） | wipe 下发 | Lc-BL2 |
 | da（软删迁移） | deletedAt | Lc-BL3 |

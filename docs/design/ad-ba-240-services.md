@@ -1,14 +1,14 @@
-# 数据服务 板块详细设计（ad-ba-24-services）
+# 数据服务 板块详细设计（ad-ba-240-services）
 
 > 状态：第 2 层 · 详细设计（待评审）· 板块 `services`
-> 上游：[`ba-10`](ad-ba-10-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.4/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.4、[`arda-data-platform-agent-support.md`](arda-data-platform-agent-support.md)（对外契约）
-> 跨切面见 `ba-10` §3
+> 上游：[`ba-100`](ad-ba-100-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.4/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.4、[`arda-data-platform-agent-support.md`](arda-data-platform-agent-support.md)（对外契约）
+> 跨切面见 `ba-100` §3
 
 ---
 
 ## 1. 板块定位
 
-把可信资产**封装为 API/查询/导出/共享**，让数据"可用"——价值链最右端，也是 arda **对外（含被智能体消费）的主契约**（`ba-10` §3.4）。
+把可信资产**封装为 API/查询/导出/共享**，让数据"可用"——价值链最右端，也是 arda **对外（含被智能体消费）的主契约**（`ba-100` §3.4）。
 
 ## 2. 现状
 
@@ -33,14 +33,14 @@
 |---|---|---|
 | `DataService` | v1 | `code`(ws 内唯一)、`path`、`method`、`type`(rest_api/query/export/share)、`level`(AssetLevel)、`status`(draft/running/review/paused)、`publishedAt` |
 | `DataServiceDataset` | v1 | 与 `Dataset` 的 M:N（服务暴露哪些资产） |
-| `ApiKey` | v1（见 `ba-25`） | 调用服务的凭证（存哈希、scoped、可吊销） |
+| `ApiKey` | v1（见 `ba-250`） | 调用服务的凭证（存哈希、scoped、可吊销） |
 
-> 无 schema 新增。服务与 `ApiKey`/`AuditLog`（`ba-25`）协同构成对外契约。
+> 无 schema 新增。服务与 `ApiKey`/`AuditLog`（`ba-250`）协同构成对外契约。
 
 ## 5. 屏幕/交互 + 对外契约（重点板块）
 
 - **屏幕**：service 目录（发布状态、类型、调用统计）+ 发布/编辑。
-- **对外契约不变量**（`ba-10` §3.4、agent-support §3.2）——发布/被调用时必须成立：
+- **对外契约不变量**（`ba-100` §3.4、agent-support §3.2）——发布/被调用时必须成立：
   1. **workspace 隔离**：服务只返回本 `workspaceId` 数据。
   2. **权益门控**：发布受 `arda.services.publish_api`；服务数受 `arda.quota.service_endpoints`。
   3. **分级/策略过滤**：响应按 `DataService.level` + 关联 `Dataset.classification` + `Policy` 脱敏。

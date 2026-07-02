@@ -1,8 +1,8 @@
-# 数据质量 功能设计（ad-ba-45-quality）
+# 数据质量 功能设计（ad-ba-433-quality）
 
 > 状态：功能层 · 功能设计（样板 · 待评审）
 > 范围：**数据质量功能的端到端贯通 + 实现**（不涉及导航 / 页面归组，那是看和组织层）
-> 模板/看板：[`ba-40`](ad-ba-40-functions.md)；数据模型：[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.3；门控：[`arda-functional-domains-and-entitlement.md`](arda-functional-domains-and-entitlement.md)
+> 模板/看板：[`ba-400`](ad-ba-400-functions.md)；数据模型：[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.3；门控：[`arda-functional-domains-and-entitlement.md`](arda-functional-domains-and-entitlement.md)
 
 ---
 
@@ -22,13 +22,13 @@
 
 **贯通判据核对**：目标产 `QualityRule` → 过程消费它产 `QualityResult` → 结果聚合成质量分 → 服务读质量分卡准入 → 监管留痕。链路概念完整。**但下面 §3 有三处实现断链。**
 
-## 3. 断链清单（喂 `ba-40` §3 与 `ba-30`）
+## 3. 断链清单（喂 `ba-400` §3 与 `ba-300`）
 
 | 编号 | 断链（哪一环） | 现状 | 接通方案 | 依赖 |
 |---|---|---|---|---|
-| `Q-BL1` | 过程：无真实调度 | `QualityResult` 靠 `seed`，质检不真跑 | 先加**手动触发质检 API**（轻量即可贯通）；周期化接 scheduling | `ba-41`/future |
-| `Q-BL2` | 服务：准入未接 | `DataService` 发布/调用不读质量分 | 补 **quality-gate**：发布校验 + 调用期可选拦截/降权 | `ba-48` |
-| `Q-BL3` | 监管：审计未接 | 规则变更/告警不落 `AuditLog` | 在建改规则、质检告警处补 `AuditLog` 写入 | `ba-49`/admin |
+| `Q-BL1` | 过程：无真实调度 | `QualityResult` 靠 `seed`，质检不真跑 | 先加**手动触发质检 API**（轻量即可贯通）；周期化接 scheduling | `ba-410`/future |
+| `Q-BL2` | 服务：准入未接 | `DataService` 发布/调用不读质量分 | 补 **quality-gate**：发布校验 + 调用期可选拦截/降权 | `ba-441` |
+| `Q-BL3` | 监管：审计未接 | 规则变更/告警不落 `AuditLog` | 在建改规则、质检告警处补 `AuditLog` 写入 | `ba-451`/admin |
 | `Q-BL4` | 目标：阈值/SLA 未显式建模 | `QualityRule` 有 `severity` 无 `threshold` | 先用 `config`（Json）承载阈值/SLA，避免迁移；确有需要再加字段 | da（可选） |
 
 > **本功能"贯通"的真正工作 = 接通 Q-BL1~3**（Q-BL4 是建模优化）。Q-BL1（能真跑）与 Q-BL2（能卡服务）是让质量"活起来"的关键两环。
@@ -37,17 +37,17 @@
 
 - **已建**（da §4.3，无结构大改）：`QualityRule`、`QualityResult`，均带 `workspaceId`、`@@unique([workspaceId, code])`（Rule）。
 - **delta（可选，Q-BL4）**：阈值/SLA 先放 `QualityRule.config`（Json）；若要强类型再评估加 `threshold Float?` / `slaConfig Json?`（单列迁移）。
-- **派生（不落库）**：数据集质量分 = `QualityResult` 聚合（`ba-10` §3.5 可推导优于可存储）。
+- **派生（不落库）**：数据集质量分 = `QualityResult` 聚合（`ba-100` §3.5 可推导优于可存储）。
 - **关键操作**：`createRule / updateRule`、`runChecks(datasetId|ruleId)`（Q-BL1 新增）、`aggregateScore(datasetId)`（结果环）、`qualityGate(dataServiceId)`（Q-BL2 新增）。
 
 ## 5. 依赖
 
 | 依赖 | 用途 | 断链 |
 |---|---|---|
-| 调度（`ba-41` 集成 / scheduling future） | 周期化跑质检 | Q-BL1（先手动触发解耦此依赖） |
-| 数据服务（`ba-48`） | 质量准入 quality-gate | Q-BL2 |
-| 审计（`ba-49` / admin `AuditLog`） | 变更/告警留痕 | Q-BL3 |
-| 资产画像（`ba-42` 结果面展示） | 展示质量分（看和组织层摆位） | 无（展示层） |
+| 调度（`ba-410` 集成 / scheduling future） | 周期化跑质检 | Q-BL1（先手动触发解耦此依赖） |
+| 数据服务（`ba-441`） | 质量准入 quality-gate | Q-BL2 |
+| 审计（`ba-451` / admin `AuditLog`） | 变更/告警留痕 | Q-BL3 |
+| 资产画像（`ba-421` 结果面展示） | 展示质量分（看和组织层摆位） | 无（展示层） |
 
 ## 6. 门控（能力键，不涉及导航）
 

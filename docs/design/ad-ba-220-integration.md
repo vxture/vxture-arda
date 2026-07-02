@@ -1,16 +1,16 @@
-# 数据集成 板块详细设计（ad-ba-22-integration）
+# 数据集成 板块详细设计（ad-ba-220-integration）
 
 > 状态：第 2 层 · 详细设计（待评审）· 板块 `integration`
-> 上游：[`ba-10`](ad-ba-10-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.2/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.2
-> 跨切面见 `ba-10` §3
+> 上游：[`ba-100`](ad-ba-100-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.2/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.2
+> 跨切面见 `ba-100` §3
 
 ---
 
 ## 1. 板块定位
 
-把外部系统接入 arda：**登记数据源 + 拉取 schema/元数据 + 保持数据更新（保鲜）**（v1）；**数据搬运/管道/调度**为 `future`。是价值链最左端（`ba-10` §2），也承载 arda 六件事里的**「更新」**（`DataSource.lastSyncedAt` + `Dataset.refreshFreq`，未来 `scheduling`）。
+把外部系统接入 arda：**登记数据源 + 拉取 schema/元数据 + 保持数据更新（保鲜）**（v1）；**数据搬运/管道/调度**为 `future`。是价值链最左端（`ba-100` §2），也承载 arda 六件事里的**「更新」**（`DataSource.lastSyncedAt` + `Dataset.refreshFreq`，未来 `scheduling`）。
 
-**数据源类型范围**（`ba-10` §0）：结构化源（`postgres`/`bigquery`/`s3`/`rest`/`file` 等）与常规非结构化文件源（文档/图片/表格）。**不含** GIS/三维/IoT 孪生数据的专用接入（空间/时序孪生连接器属另一产品）。
+**数据源类型范围**（`ba-100` §0）：结构化源（`postgres`/`bigquery`/`s3`/`rest`/`file` 等）与常规非结构化文件源（文档/图片/表格）。**不含** GIS/三维/IoT 孪生数据的专用接入（空间/时序孪生连接器属另一产品）。
 
 ## 2. 现状
 

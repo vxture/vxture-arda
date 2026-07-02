@@ -1,14 +1,14 @@
-# 管理 板块详细设计（ad-ba-25-admin）
+# 管理 板块详细设计（ad-ba-250-admin）
 
 > 状态：第 2 层 · 详细设计（待评审）· 板块 `admin`
-> 上游：[`ba-10`](ad-ba-10-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.5/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.5
-> 跨切面见 `ba-10` §3；本板块**权限维度为主**（functional-domains §4.3）
+> 上游：[`ba-100`](ad-ba-100-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.5/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.5
+> 跨切面见 `ba-100` §3；本板块**权限维度为主**（functional-domains §4.3）
 
 ---
 
 ## 1. 板块定位
 
-数据域内的管理/运营面：**API Key 管理 + 审计日志 + 数据生命周期执行（归档/销毁 wipe）**。不含身份/成员/席位（那些归平台/IdP，ADR §1.7）。承载 `ba-10` §1 能力维度里运营层的**审计**，与治理侧共担**生命周期**（留存规则在 `ba-23`，销毁执行+留痕在此）。
+数据域内的管理/运营面：**API Key 管理 + 审计日志 + 数据生命周期执行（归档/销毁 wipe）**。不含身份/成员/席位（那些归平台/IdP，ADR §1.7）。承载 `ba-100` §1 能力维度里运营层的**审计**，与治理侧共担**生命周期**（留存规则在 `ba-230`，销毁执行+留痕在此）。
 
 ## 2. 现状
 
@@ -34,10 +34,10 @@
 
 | 实体 | 状态 | 关键点 |
 |---|---|---|
-| `ApiKey` | v1 | `hashedKey`(**仅存哈希**，全局唯一)、`scopes[]`、`revoked`、`dataServiceId?`（关联服务，`ba-24`） |
+| `ApiKey` | v1 | `hashedKey`(**仅存哈希**，全局唯一)、`scopes[]`、`revoked`、`dataServiceId?`（关联服务，`ba-240`） |
 | `AuditLog` | v1 | `actor`(用户 id 或 "platform")、`action`、`target`、`idempotencyKey`(全局唯一，幂等防重放)、`metadata` |
 
-> `AuditLog.idempotencyKey` 也承载 ADR §5.1 平台指令（seed/wipe/invalidate）审计，且是 `ba-24` 对外取数审计的落点。
+> `AuditLog.idempotencyKey` 也承载 ADR §5.1 平台指令（seed/wipe/invalidate）审计，且是 `ba-240` 对外取数审计的落点。
 
 ## 5. 屏幕/交互（全新，从零建）
 
@@ -53,5 +53,5 @@
 
 1. **建 API Key 管理界面**（含创建时一次性明文、此后仅哈希）。
 2. **建审计日志查看/导出界面**（复用 `[workspaceId, createdAt]` 索引）。
-3. `AuditLog` 写入调用点补齐：对外取数（`ba-24`）、平台指令（ADR §5.1）、敏感写操作都应落审计——目前表建好但**写入点稀疏**。
-4. **数据生命周期执行**（`ba-10` §1 新增维度）：按 `ba-23` 的留存规则做到期归档/销毁；平台 `wipe` 指令的软删 + 延迟硬删（ADR §5.1）**未实现**——需软删 schema 决策（见 `arda-data-arch-workplan.md` §2.4）。
+3. `AuditLog` 写入调用点补齐：对外取数（`ba-240`）、平台指令（ADR §5.1）、敏感写操作都应落审计——目前表建好但**写入点稀疏**。
+4. **数据生命周期执行**（`ba-100` §1 新增维度）：按 `ba-230` 的留存规则做到期归档/销毁；平台 `wipe` 指令的软删 + 延迟硬删（ADR §5.1）**未实现**——需软删 schema 决策（见 `arda-data-arch-workplan.md` §2.4）。

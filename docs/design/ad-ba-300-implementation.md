@@ -1,8 +1,8 @@
-# 实施计划（ad-ba-30-implementation）
+# 实施计划（ad-ba-300-implementation）
 
 > 状态：第 3 层 · 实施计划（待评审）
-> 范围：把 `ba-10`/`ba-2x` 的目标态**从现状落地**的分阶段路线、依赖、迁移与风险
-> 上游：本系列 `ba-10..25`；现状证据 [`arda-functional-domains-and-entitlement.md`](arda-functional-domains-and-entitlement.md) §0、[`arda-data-architecture-migration.md`](arda-data-architecture-migration.md)
+> 范围：把 `ba-100`/`ba-2xx` 的目标态**从现状落地**的分阶段路线、依赖、迁移与风险
+> 上游：本系列 `ba-100`/`ba-2xx`/`ba-4xx`；现状证据 [`arda-functional-domains-and-entitlement.md`](arda-functional-domains-and-entitlement.md) §0、[`arda-data-architecture-migration.md`](arda-data-architecture-migration.md)
 
 ---
 
@@ -30,11 +30,11 @@
 
 | 类别 | 差距 | 涉及 |
 |---|---|---|
-| **A. 门控地基** | 无两轴门控；`Subscription` 缺 `features/quota`；`roles` 未消费 | 跨全板块（`ba-10` §3.2、functional-domains §5） |
-| **B. 界面缺口** | 数据源登记、术语表/标签、admin(keys/audit) 无界面 | `ba-22/21/25` |
-| **C. 接库缺口** | 血缘 UI 走静态 seed | `ba-23` |
-| **D. 对外契约** | services 对外不变量（分级过滤/审计/配额）未收口 | `ba-24`、agent-support |
-| **E. future** | pipelines/scheduling/realtime、`Field` 列级、telemetry | `ba-22/23/24` |
+| **A. 门控地基** | 无两轴门控；`Subscription` 缺 `features/quota`；`roles` 未消费 | 跨全板块（`ba-100` §3.2、functional-domains §5） |
+| **B. 界面缺口** | 数据源登记、术语表/标签、admin(keys/audit) 无界面 | `ba-220/21/25` |
+| **C. 接库缺口** | 血缘 UI 走静态 seed | `ba-230` |
+| **D. 对外契约** | services 对外不变量（分级过滤/审计/配额）未收口 | `ba-240`、agent-support |
+| **E. future** | pipelines/scheduling/realtime、`Field` 列级、telemetry | `ba-220/23/24` |
 
 ---
 
@@ -50,15 +50,15 @@
 - **验收**：平台配一条订阅 → 某板块即时可见/隐藏；`viewer` 看不到 admin。
 
 ### 阶段 1 · 补界面缺口（B）
-- 建**数据源登记界面**（`ba-22`）+ `connectionConfig` 加密封装。
-- 建 **admin：API Key 管理 + 审计日志查看**（`ba-25`）。
-- 建**术语表/标签管理**（`ba-21`）。
+- 建**数据源登记界面**（`ba-220`）+ `connectionConfig` 加密封装。
+- 建 **admin：API Key 管理 + 审计日志查看**（`ba-250`）。
+- 建**术语表/标签管理**（`ba-210`）。
 
 ### 阶段 2 · 血缘接库（C）
-- lineage 屏从静态 seed 改读 `LineageEdge`（数据集级图，`ba-23`）。
+- lineage 屏从静态 seed 改读 `LineageEdge`（数据集级图，`ba-230`）。
 
 ### 阶段 3 · 对外契约收口（D）
-- services 发布/调用路径补齐对外不变量：分级过滤、`ApiKey` 校验、`AuditLog` 写入、`api_requests_monthly` 配额（`ba-24` §5、agent-support §3.2）。
+- services 发布/调用路径补齐对外不变量：分级过滤、`ApiKey` 校验、`AuditLog` 写入、`api_requests_monthly` 配额（`ba-240` §5、agent-support §3.2）。
 - 补齐 `AuditLog` 写入点（对外取数/敏感写/平台指令）。
 
 ### 阶段 4 · future（E，按真实需求驱动）

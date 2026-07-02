@@ -1,19 +1,19 @@
-# 数据治理 板块详细设计（ad-ba-23-governance）
+# 数据治理 板块详细设计（ad-ba-230-governance）
 
 > 状态：第 2 层 · 详细设计（待评审）· 板块 `governance`
-> 上游：[`ba-10`](ad-ba-10-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.3/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.3
-> 跨切面见 `ba-10` §3；本板块是"治理即信任"（`ba-10` §3.3）的落点
+> 上游：[`ba-100`](ad-ba-100-architecture.md)、[`domain-entities-and-feature-keys.md`](domain-entities-and-feature-keys.md) §2.3/§3、[`arda-data-architecture-schema.md`](arda-data-architecture-schema.md) §4.3
+> 跨切面见 `ba-100` §3；本板块是"治理即信任"（`ba-100` §3.3）的落点
 
 ---
 
 ## 1. 板块定位
 
-给资产加**标准 / 质量 / 血缘 / 安全（分级/脱敏/访问）/ 治理策略 / 生命周期（留存）**，把"堆着的数据"变成"可信的数据"——价值链枢纽（`ba-10` §2）。承载 `ba-10` §1 能力维度里治理层的多数维度。合并原 `govern` + `analyze`（血缘归治理，见 functional-domains §2.2）。
+给资产加**标准 / 质量 / 血缘 / 安全（分级/脱敏/访问）/ 治理策略 / 生命周期（留存）**，把"堆着的数据"变成"可信的数据"——价值链枢纽（`ba-100` §2）。承载 `ba-100` §1 能力维度里治理层的多数维度。合并原 `govern` + `analyze`（血缘归治理，见 functional-domains §2.2）。
 
-> **数据生命周期**：留存规则用 `Policy(type=retention)` + `arda.quota.history_retention_days` 表达（治理侧）；归档/销毁（wipe）的**执行与审计**在 `admin`（`ba-25`）——生命周期是横跨 governance（定规则）与 admin（执行留痕）的维度。
+> **数据生命周期**：留存规则用 `Policy(type=retention)` + `arda.quota.history_retention_days` 表达（治理侧）；归档/销毁（wipe）的**执行与审计**在 `admin`（`ba-250`）——生命周期是横跨 governance（定规则）与 admin（执行留痕）的维度。
 > **主数据归属：治理域，不是资产域。** 理由：(1) 让一份数据成为"主数据"的是**治理动作**（指定权威源 / steward / 匹配去重合并 / 存活规则 / 标准对齐 / 质量），不是编目本身；(2) 与已在治理域的**参考数据（`Standard`）**成对（DAMA"参考与主数据管理"同属一域）；(3) 与质量 / 血缘同构。
 > **二元区分**：主数据的**金记录本身是资产**（在 catalog 里是 `Dataset`，资产域可见）；但**"把它治理成权威"是治理域**。资产域管"有哪些数据"，治理域管"哪份是权威、可不可信"——正如数据集是资产、质量规则是治理。
-> 落地：轻量=金记录标注 + steward + 质量 + 主数据服务（复用现有模型）；重型 MDM 引擎（匹配 / 合并 / survivorship）深度待定（§7 待办、`ba-10` §1）。域内用能力键 `arda.governance.master_data` 单独开通 / 定价，无需拆独立域。
+> 落地：轻量=金记录标注 + steward + 质量 + 主数据服务（复用现有模型）；重型 MDM 引擎（匹配 / 合并 / survivorship）深度待定（§7 待办、`ba-100` §1）。域内用能力键 `arda.governance.master_data` 单独开通 / 定价，无需拆独立域。
 
 ## 2. 现状
 
@@ -52,7 +52,7 @@
 ## 5. 屏幕/交互 + 对外契约
 
 - **屏幕**：standards、quality（含六维评估）、security（分级分布/脱敏策略/共享审批）、lineage（图谱）。
-- **对外契约**：本板块产物（分级/质量/血缘）是数据对外可信度的核心信号，被 `ba-10` §3.3/§3.4 用作对外脱敏与溯源依据。
+- **对外契约**：本板块产物（分级/质量/血缘）是数据对外可信度的核心信号，被 `ba-100` §3.3/§3.4 用作对外脱敏与溯源依据。
 
 ## 6. 门控（两轴）
 
@@ -63,5 +63,5 @@
 
 1. **血缘 UI 接库**：把 lineage 屏从静态 seed 改为读 `LineageEdge`；先做数据集级图，与 v1 schema 对齐（多类型节点留待列级 `Field`）。
 2. 质量六维评估的聚合口径固化（派生值，不落库）。
-3. `security` 的"共享审批"接审批流（与 `ba-21` 资产权限申请、`ba-24` 对外共享一致的审批设计）。
-4. **主数据（MDM）深度决策 + 轻量落地**（`ba-10` §1）：先做轻量（金记录标注/steward/质量/服务）；重型匹配-合并-survivorship 是否 arda 内建，待产品决策——决策前不建 MDM 专用实体。
+3. `security` 的"共享审批"接审批流（与 `ba-210` 资产权限申请、`ba-240` 对外共享一致的审批设计）。
+4. **主数据（MDM）深度决策 + 轻量落地**（`ba-100` §1）：先做轻量（金记录标注/steward/质量/服务）；重型匹配-合并-survivorship 是否 arda 内建，待产品决策——决策前不建 MDM 专用实体。
