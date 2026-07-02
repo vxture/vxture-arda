@@ -8,7 +8,9 @@
 
 ## 1. 板块定位
 
-给资产加**标准 / 质量 / 血缘 / 安全策略 / 分级**，把"堆着的数据"变成"可信的数据"——价值链枢纽（`ba-10` §2）。合并原 `govern` + `analyze`（血缘归治理，见 functional-domains §2.2）。
+给资产加**标准 / 质量 / 血缘 / 安全（分级/脱敏/访问）/ 治理策略 / 生命周期（留存）**，把"堆着的数据"变成"可信的数据"——价值链枢纽（`ba-10` §2）。承载 `ba-10` §1 能力维度里治理层的多数维度。合并原 `govern` + `analyze`（血缘归治理，见 functional-domains §2.2）。
+
+> **数据生命周期**：留存规则用 `Policy(type=retention)` + `arda.quota.history_retention_days` 表达（治理侧）；归档/销毁（wipe）的**执行与审计**在 `admin`（`ba-25`）——生命周期是横跨 governance（定规则）与 admin（执行留痕）的维度。
 
 ## 2. 现状
 
