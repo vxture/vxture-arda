@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
   const rpsid = await createSession(cfg, identity, tokens);
 
-  const returnTo = p.get("returnTo") ?? process.env.DEFAULT_LANDING ?? "/data-assets/overview";
+  const returnTo = p.get("returnTo") ?? process.env.DEFAULT_LANDING ?? "/dashboard";
   const response = NextResponse.redirect(new URL(returnTo, request.url));
   setSessionCookie(response, cfg, rpsid);
   return response;
