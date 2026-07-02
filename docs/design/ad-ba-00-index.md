@@ -3,6 +3,7 @@
 > 状态：系列索引（随系列更新）
 > 用途：`ad-ba-*`（业务架构）系列总目录 + arda 全局设计文档编号法
 > 范围：**仅 arda 数据域**（数据资产/集成/治理/服务/管理）。kb、业务智能体、RAG/向量、LLM 编排属其他产品，不在本系列（见 [`arda-data-platform-agent-support.md`](arda-data-platform-agent-support.md) §0/§8 与记忆 arda-scope-boundary）
+> 数据类型：结构化 + 常规非结构化（文档/图片/表格）；**不含** GIS/三维/IoT 复杂孪生数据（另一产品负责）。详见 [`ba-10`](ad-ba-10-architecture.md) §0
 
 ---
 
