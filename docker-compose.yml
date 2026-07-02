@@ -74,6 +74,10 @@ services:
       DEFAULT_LANDING: "${DEFAULT_LANDING:-/data-assets/overview}"
       MOCK_STATE: "${MOCK_STATE:-subscribed}"
       MOCK_TIER: "${MOCK_TIER:-pro}"
+      # First-entry seed: when "true", a workspace arda has never recorded is
+      # seeded with the default template on entry (beta/demo convenience). Leave
+      # unset/false in prod - there the platform drives seeding via seedStatus.
+      ARDA_SEED_AUTOFILL: "${ARDA_SEED_AUTOFILL:-false}"
     networks:
       - arda-net
     healthcheck:
