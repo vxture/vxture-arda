@@ -38,6 +38,19 @@ enum QualityStatus {
   fail
 }
 
+/// Data ownership scope. `workspace` = tenant-owned, isolated to and shared only
+/// within its workspace (across the agents present in that workspace). `platform`
+/// = arda-ops-curated global reference data (approved standards, admin-division
+/// code tables, currency codes), read-only to ALL workspaces. Platform rows carry
+/// the reserved sentinel workspaceId "__platform__" (workspaceId is a plain column,
+/// not a FK, so no WorkspaceRef row is required); a tenant read overlays them via
+/// workspaceId IN (self, "__platform__"). Writing a `platform` row requires the
+/// ops/platform role, never a tenant user. See docs/20-design/arda-data-150-multiagent-sharing.md.
+enum AssetScope {
+  workspace
+  platform
+}
+
 // --------------------------------------------------------------- assets ------
 
 model Dataset {
@@ -59,6 +72,10 @@ model Dataset {
   rowCountEst   BigInt?
   sizeBytes     BigInt?
   ownerUserId   String?
+  // Producing agent/app within the workspace (attribution + provenance; NOT an
+  // isolation axis - workspaceId is). Lets multiple agents in one workspace share
+  // via arda while keeping "who produced this" first-class.
+  ownerApp      String?
   classification AssetLevel @default(internal)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -75,6 +92,7 @@ model Dataset {
   @@index([workspaceId])
   @@index([workspaceId, dataSourceId])
   @@index([workspaceId, domain])
+  @@index([workspaceId, ownerApp])
 }
 
 model Tag {
@@ -106,6 +124,9 @@ model GlossaryTerm {
   term          String
   definition    String
   stewardUserId String?
+  // platform = ops-approved global glossary shared to all workspaces (sentinel
+  // workspaceId "__platform__"); workspace = tenant-local term.
+  scope         AssetScope @default(workspace)
 
   @@unique([workspaceId, term])
   @@index([workspaceId])
@@ -194,6 +215,10 @@ model Standard {
   items       Int      @default(0)
   usage       Int      @default(0)
   status      String   @default("draft") // published | draft | review
+  // platform = ops-approved global reference (e.g. code sets like admin-division
+  // codes), read-only to all workspaces via the "__platform__" sentinel; workspace
+  // = tenant-local draft. Promotion workspace->platform is an ops action.
+  scope       AssetScope @default(workspace)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -230,7 +255,9 @@ model DataService {
   level       AssetLevel @default(internal)
   type        String // rest_api | query | export | share
   config      Json?
-  status      String     @default("draft") // running | review | paused
+  status      String     @default("draft") // draft | running | review | paused
+  ownerApp    String?    // publishing agent/app within the workspace
+  visibility  String     @default("workspace") // workspace = shared to all agents in the workspace; owner = private to the owner app
   publishedAt DateTime?
   createdAt   DateTime   @default(now())
 
@@ -260,6 +287,7 @@ model ApiKey {
   workspaceId   String
   dataServiceId String?
   name          String
+  consumerApp   String?   // the agent/app this key authenticates as (consumer identity for audit + policy)
   hashedKey     String    @unique
   scopes        String[]
   lastUsedAt    DateTime?
