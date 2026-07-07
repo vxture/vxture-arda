@@ -18,14 +18,20 @@ export const METRICS = {
    * reported via the future PUT /usage/gauge, NOT POST /usage/consume
    * (reply-01 R4: delta rejected). Until the gauge endpoint ships, storage is
    * C2-display + local admission only and is NOT wired into recordUsage.
+   * L0 platform_metric (product_220 §4): shared physical pool, summed across products.
    */
   STORAGE_BYTES: "storage.bytes",
   /** External DataService call. counter, divisible 后报 (reply-01 R5). amount=1. */
   SERVICE_API_CALL: "service.api.call",
   /** QualityRule batch execution. counter, divisible 后报 (reply-01 R5). amount=rules_run. */
   QUALITY_CHECK_RUN: "quality.check.run",
-  /** varda AI credit. counter, ATOMIC pre-deduct (reply-01 R5). amount=credits_spent. */
-  VARDA_CREDIT: "varda.credit",
+  /**
+   * AI credit. counter, ATOMIC pre-deduct (reply-01 R5). amount=credits_spent.
+   * L0 platform_metric, renamed from varda.credit (product_220 §4/§9). Pools are
+   * earmarked per contributing product by default; tenant admin may opt into a
+   * shared overflow pool (reply-02 §2). 1 credit ~= 2K tokens.
+   */
+  AI_CREDIT: "ai.credit",
 } as const;
 
 export type MetricName = (typeof METRICS)[keyof typeof METRICS];
@@ -67,11 +73,16 @@ export interface QuotaPool {
 
 export interface WorkspaceQuota {
   capabilities: CapabilityLimits;
+  /** Orthogonal source flag (product_220 §3): an agent Plan bundles arda's data
+   *  base capability. Enables data access without a standalone subscription. */
+  bundled: boolean;
   pools: {
     storageBytes: QuotaPool | null;
     apiCall: QuotaPool | null;
     qualityCheckRun: QuotaPool | null;
-    vardaCredit: QuotaPool | null;
+    /** AI credit remaining = this product's ELIGIBLE pools (earmarked + shared
+     *  the product participates in), not a single global wallet (reply-02 §2). */
+    aiCredit: QuotaPool | null;
   };
 }
 
@@ -107,7 +118,7 @@ export const FREE_QUOTA_POOLS: WorkspaceQuota["pools"] = {
     remaining: 100,
     pct: 1,
   },
-  vardaCredit: null, // not available on free
+  aiCredit: null, // not available on free
 };
 
 // ---- Parser: map raw platform response to WorkspaceQuota --------------------
@@ -151,11 +162,12 @@ export function mapToWorkspaceQuota(
 
   return {
     capabilities: caps,
+    bundled: capabilities["bundled"] === true,
     pools: {
       storageBytes: parsePool(quota_pools, METRICS.STORAGE_BYTES),
       apiCall: parsePool(quota_pools, METRICS.SERVICE_API_CALL),
       qualityCheckRun: parsePool(quota_pools, METRICS.QUALITY_CHECK_RUN),
-      vardaCredit: parsePool(quota_pools, METRICS.VARDA_CREDIT),
+      aiCredit: parsePool(quota_pools, METRICS.AI_CREDIT),
     },
   };
 }

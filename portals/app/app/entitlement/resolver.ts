@@ -27,7 +27,7 @@ export class MockEntitlementResolver implements EntitlementResolver {
   }
 
   async resolveQuota(): Promise<WorkspaceQuota> {
-    return { capabilities: FREE_CAPABILITY_LIMITS, pools: FREE_QUOTA_POOLS };
+    return { capabilities: FREE_CAPABILITY_LIMITS, bundled: false, pools: FREE_QUOTA_POOLS };
   }
 
   invalidateCache(_workspaceId: string): void {

@@ -7,7 +7,7 @@
  * Cache: caller is responsible for short-TTL caching (see PlatformEntitlementResolver).
  */
 
-import type { Subscription } from "./types";
+import type { Subscription, SubscriptionStatus } from "./types";
 import type { Tier } from "./types";
 import { TIER_ORDER } from "./types";
 import type { WorkspaceQuota } from "./quota";
@@ -56,17 +56,27 @@ function mapToSubscription(body: EntitlementsResponse): Subscription {
   const caps = body.capabilities ?? {};
 
   // Platform emits tier as a flat key `tier` (NOT `data.tier`/`{product}.tier`) -
-  // the envelope already carries product (reply-01 §6; product_310 P2.1 note).
+  // the envelope already carries product (reply-01 §6). tier is one of five or
+  // null (product_220 §1: null = no direct purchase).
   const rawTier = caps["tier"];
-  const tier: Tier =
+  const tier: Tier | null =
     typeof rawTier === "string" && (TIER_ORDER as string[]).includes(rawTier)
       ? (rawTier as Tier)
-      : "free";
+      : null;
 
-  // No subscription: platform returns { tier: null, features: [], quota_pools: [] }
-  if (caps["tier"] === null || caps["tier"] === undefined) {
-    return { tier: "free", status: "none" };
-  }
+  // bundled: an agent Plan bundles arda's data base capability (product_220 §3).
+  const bundled = caps["bundled"] === true;
 
-  return { tier, status: "active" };
+  // Lifecycle status (product_220 / reply-02 §1). If the platform has not yet
+  // added the field, default: tier present -> subscribed, else none.
+  const rawStatus = caps["status"];
+  const status: SubscriptionStatus =
+    rawStatus === "trial" || rawStatus === "subscribed" ||
+    rawStatus === "expired" || rawStatus === "none"
+      ? rawStatus
+      : tier != null
+        ? "subscribed"
+        : "none";
+
+  return { tier, status, bundled };
 }

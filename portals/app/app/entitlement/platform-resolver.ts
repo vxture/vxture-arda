@@ -20,6 +20,7 @@ const TTL_MS = 45_000;
 
 const FREE_FALLBACK_QUOTA: WorkspaceQuota = {
   capabilities: FREE_CAPABILITY_LIMITS,
+  bundled: false,
   pools: FREE_QUOTA_POOLS,
 };
 
@@ -52,7 +53,7 @@ export class PlatformEntitlementResolver implements EntitlementResolver {
   private async _fetch(workspaceId?: string): Promise<{ subscription: Subscription; quota: WorkspaceQuota }> {
     const wsId = workspaceId ?? "";
     if (!wsId) {
-      return { subscription: { tier: "free", status: "none" }, quota: FREE_FALLBACK_QUOTA };
+      return { subscription: { tier: null, status: "none", bundled: false }, quota: FREE_FALLBACK_QUOTA };
     }
 
     const now = Date.now();
@@ -68,7 +69,7 @@ export class PlatformEntitlementResolver implements EntitlementResolver {
     } catch (err) {
       console.error(`[PlatformEntitlementResolver] fetch failed for ws=${wsId}:`, err);
       if (cached) return { subscription: cached.subscription, quota: cached.quota };
-      return { subscription: { tier: "free", status: "none" }, quota: FREE_FALLBACK_QUOTA };
+      return { subscription: { tier: null, status: "none", bundled: false }, quota: FREE_FALLBACK_QUOTA };
     }
   }
 }

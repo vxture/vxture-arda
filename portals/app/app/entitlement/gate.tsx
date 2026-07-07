@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Button, EmptyState, Icon, Skeleton } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
-import type { Subscription } from "./types";
+import { type Subscription, hasProductAccess } from "./types";
 
 type GateState =
   | { phase: "loading" }
@@ -48,8 +48,9 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
 
   // Treat an error the same as "not entitled": fail closed to the upgrade
   // screen rather than leaking the workspace on an inconclusive check.
+  // Product-UI access = a standalone active subscription (product_220 §3).
   const active =
-    state.phase === "ready" && state.subscription.status === "active";
+    state.phase === "ready" && hasProductAccess(state.subscription);
 
   if (!active) {
     return (

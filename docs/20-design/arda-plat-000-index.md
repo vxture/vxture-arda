@@ -61,6 +61,7 @@
 | `plat-100` | 总体：三通道全景 + 耦合契约 + SoR 边界 | 1 | `vxture-platform-integration-requirements.md` §0-1 | 完成 |
 | `plat-110` | OIDC RP 契约：client 注册/endpoints/PKCE/back-channel logout/session cookie/MOCK_AUTH | 1 | `identity-app-integration-standard.md` 全文（含 scope 名修正）| 完成 |
 | `plat-200` | **arda 实施回传**：C1/C2/C3/L0 落地方式 + 端点清单 + DB schema + 双方待办（面向 vxture 平台团队）| 2 | 本次实施 | 完成 |
+| `plat-210` | **arda 回函 02**：对平台 `product_220`（目录/权益/资源模型）的采纳 + 四项增补提案（status 4 态 / ai.credit 保留+共享 / 跨产品超冲 / 组合语义）| 2 | 对 product_220 回应 | 完成（待平台确认）|
 | `plat-300` | 迁移追踪：现状阻塞 + 平台待确认清单 + 验收判据 | 3 | `vxture-platform-integration-requirements.md` §0、§6、§7（含 §3.1 版本冲突标注）| 完成 |
 
 ---

@@ -16,16 +16,16 @@
   - **standalone** = the workspace subscribes to arda directly (any tier).
     Grants both the arda product UI and data access.
   - **bundled** (renamed from "standard") = the workspace has NO standalone arda
-    subscription, but an agent Plan it subscribes to bundles arda's data base
-    capability (`billing = bundled_free`). arda serves the agent's data access
-    from the BACKEND only - **no arda product UI**. Same entitlement management
-    as standalone (C2 capabilities/quota_pools, just-high merge, waterfall
-    deduction); bundled is a source label, NOT a sixth tier (its tier rank = free
-    for merge purposes).
-  - **bundled is an INDEPENDENTLY configurable entitlement profile**, not a hard
-    alias of the free tier. Currently its values are basically the same as free,
-    EXCEPT **`member.max = 0`** (the backend-agent access mode has no human seats;
-    free = 1). Platform may tune the bundled profile separately over time.
+    subscription, but an agent Plan it subscribes to includes an arda component
+    with **`component_role = bundled`** (product_220 §2). arda serves the agent's
+    data access from the BACKEND only - **no arda product UI**. C2 exposes this as
+    a **`bundled: true` boolean orthogonal to tier** (product_220 §3): tier stays
+    five-or-null and reflects only standalone purchases; it is NOT a sixth tier.
+  - The bundled component is **independently configured** (its own quota, locked
+    into the agent's plan version - see §6). Currently ~ free, EXCEPT
+    **`member.max = 0`** (backend-agent mode has no human seats; free = 1).
+  - Supersedes the earlier "billing=bundled_free / tier rank=free" framing
+    (reply-01 §6); authoritative model = product_220 + reply-02.
   - Enforcement split: product-UI gate requires standalone (active); data-access
     gate (agent DataService consumption) accepts bundled OR standalone. See
     `arda-data-platform-agent-support.md` §2②.
@@ -39,7 +39,7 @@
 - varda agent opens at starter (read-only, 50 credits) and pro
   (read-only, 500 credits). business gets read-write (5000 credits/seat).
 - api.call = external DataService callers only (ApiKey + consumerApp != varda).
-  varda is a first-party product and has its own varda.credit pool.
+  varda is a first-party product; its AI draws the L0 `ai.credit` pool.
 - Data egress: phase 1 = count-based (api.call). Phase 2 = export/share
   type calls weighted. Phase 3 = bytes. AuditLog.bytesOut field to be added
   when egress billing activates.
@@ -77,7 +77,7 @@ Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
 | `storage.bytes` | **gauge** | none (water level) | admission-only (no consume) | Workspace shared pool. Snapshot reporting via future `PUT /usage/gauge` (R4: delta rejected). Not wired to consume until gauge endpoint ships; C2 display + local admission only. |
 | `service.api.call` | counter | monthly | **divisible 后报** | External DataService calls (rest_api/query/export/share). amount=1 per call. Internal varda calls excluded. 409 = terminal, no retry. |
 | `quality.check.run` | counter | monthly | **divisible 后报** | QualityRule batch execution runs. amount=rules executed per batch. 409 = terminal, no retry. |
-| `varda.credit` | counter | monthly | **atomic 预扣** | varda AI credit. Consume BEFORE the AI op; 409 → reject op. See credit table in section 4. |
+| `ai.credit` | counter | monthly | **atomic 预扣** | AI credit (renamed from varda.credit, promoted to L0 platform_metric; product_220 §4). Consume BEFORE the AI op; 409 → reject. Pools earmarked per product by default; tenant admin may enable a shared overflow pool (reply-02 §2). See section 4. |
 
 ---
 
@@ -105,7 +105,7 @@ Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
 | storage.bytes (workspace pool) | 1 GB | 10 GB | 100 GB | 1 TB | negotiated |
 | service.api.call / month | 1,000 | 20,000 | 200,000 | 2,000,000 | negotiated |
 | quality.check.run / month | 100 | 1,000 | 10,000 | 100,000 | negotiated |
-| varda.credit / month | 0 | 50 | 500 | 5,000 per seat | negotiated |
+| ai.credit / month | 0 | 50 | 500 | 5,000 per seat | negotiated |
 
 > These are initial preset values. Tune after observing real usage patterns.
 
@@ -204,15 +204,16 @@ For vxture platform team to configure before arda e2e test:
 - [ ] Register product "arda" in platform entitlement system
 - [ ] Configure capabilities map for each of the 5 tiers (section 3a)
 - [ ] Configure quota_pools for each tier with the 4 metrics (section 3b)
-- [ ] **Bundled base component**: for agent Plans that need arda data support,
-      add a `data` component `{ tier: free, billing: bundled_free }` so C2 returns
-      `status=active, tier=free` for that workspace (enables agent data access
-      without a standalone arda subscription; ADR-11 §11.3). Label = "bundled".
-      Configure its capabilities as an INDEPENDENT profile - currently the same
-      as free EXCEPT **`member.max = 0`** (no human seats in backend-agent mode);
-      tunable separately later.
+- [ ] **Bundled component**: for agent Plans that need arda data support, add an
+      arda `data` component with `component_role = bundled` (tier NULL) in that
+      agent's plan version, so C2 returns `bundled: true` for the workspace
+      (enables agent data access without a standalone arda subscription;
+      product_220 §2/§3). Configure its quota as an INDEPENDENT profile - currently
+      ~ free EXCEPT **`member.max = 0`** (no human seats in backend-agent mode).
+- [ ] **C2 `status` field** (reply-02 §1): emit `status ∈ {none,trial,subscribed,expired}`
+      so arda can distinguish trial/expired/never; `suspended` via token `account_status`.
 - [x] storage.bytes reporting mode = gauge snapshot (RESOLVED, reply-01 R4); platform to ship `PUT /usage/gauge` (product_310 D5)
-- [ ] Confirm varda.credit -> token conversion rate
+- [ ] Confirm ai.credit -> token conversion rate (1 credit ~= 2K tokens)
 - [ ] Set ARDA_PROVISION_WEBHOOK_SECRET and share with arda operator
 - [ ] Test workspace: create a workspace with product=arda, tier=pro, verify
       GET /platform/entitlements returns expected capabilities + quota_pools

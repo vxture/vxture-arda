@@ -116,7 +116,7 @@ model ApiKey {
 - 取用前校验 `(workspace, product=arda)` 的订阅/权益。权益是**平台侧唯一 SoT**，arda **不建镜像表**，从 token claim 或平台只读端点 live 求值（见 [`data-100`](arda-data-100-architecture.md) §6 边界表）。
 - **有效 arda 权益的两种来源，取用路径一视同仁**（`ADR-11` §11.3 就高合并）：
   - **单独订阅（standalone）**：workspace 直接订阅 arda（任一档），既得产品 UI 又得数据取用。
-  - **附带（bundled，旧称 standard）**：workspace **未单独订阅 arda**，但其订阅的某 agent Plan 附带了 arda 数据底座（`billing=bundled_free`）——arda 从**后台**支撑该 agent 的数据取用，**不提供 arda 产品 UI**。这正是"agent 需要数据支持"的场景：C2 对该 workspace 返回 `status=active` + `tier=free` 的权益，取用闸门放行。bundled 是**独立可配的权益档**，当前 ≈ free，**但 `member.max = 0`**（后台模式无人类席位）。
+  - **附带（bundled，旧称 standard）**：workspace **未单独订阅 arda**，但其订阅的某 agent Plan 含一个 `component_role=bundled` 的 arda 组件（product_220 §2）——arda 从**后台**支撑该 agent 的数据取用，**不提供 arda 产品 UI**。这正是"agent 需要数据支持"的场景：C2 对该 workspace 返回 **`bundled: true`**（布尔，正交于 tier；tier 仍五档|null），取用闸门放行。bundled 组件**独立配额**、当前 ≈ free、**`member.max=0`**（后台无人类席位）。权威模型见 `product_220` + `plat-210`。
 - **无任何 arda 权益**（既无单独订阅、也无附带）的 workspace（C2 `status=none`），其服务不可被取用。
 - 换言之：**产品 UI 门控要求单独订阅（active）；数据取用门控接受 bundled 或单独订阅**——两条门的权益管理模式一致，只是 bundled 不解锁 UI。
 

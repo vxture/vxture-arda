@@ -7,6 +7,8 @@
 > v2 变更：① Membership 下沉为 Org/Workspace 两级；② 取消基座/核心区分，Product 统一可独立订阅可分档；
 >          ③ 附带基座 = free 档能力来源、对外称 **bundled**（旧称 standard），能力就高合并但不参与计费 → 无需差价抵扣。
 >
+> **[2026-07-08 取代]** 本节 bundled 的建模已被平台 `product_220`（目录/权益/资源模型）+ arda `plat-210` reply-02 收敛为权威：`billing_kind`→`component_role ∈ {primary,bundled}`，bundled 组件 `tier=NULL`，C2 以**布尔 `bundled`** 暴露（不再"tier rank=free"）；生命周期用 C2 `status ∈ {none,trial,subscribed,expired}`。下文保留原始推导，术语以 product_220/plat-210 为准。
+>
 > **术语（bundled，旧 standard）**：workspace **没有单独订阅 arda**，但其订阅的某个 agent Plan **附带**了 arda 的数据底座能力——
 > arda 从**后台**为该 agent 提供数据支撑（DataService 取用），**不提供 arda 产品 UI**。
 > billing = `bundled_free`（0 元、不计费），**权益管理模式与单独订阅完全一致**（同 C2 capabilities/quota_pools、就高合并、瀑布扣减）。

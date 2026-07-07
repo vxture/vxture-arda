@@ -15,8 +15,8 @@ const BETA_URL = process.env.NEXT_PUBLIC_BETA_URL ?? "https://beta-arda.vxture.c
  * Environment routing gate. Runs INSIDE AccountGate (session is present).
  *
  * Rules (single-source of truth is ardaClaim.state):
- *   state = "trial"                -> must be on the beta stack
- *   state = "subscribed|expired|free" -> must be on the prod stack
+ *   state = "trial"                   -> must be on the beta stack
+ *   state = "subscribed|expired|none" -> must be on the prod stack
  *
  * If the user is on the wrong stack, replace the current location with the
  * correct one. The redirect preserves the path so deep links survive.

@@ -8,7 +8,15 @@ import type { IdentityClaims, TokenBundle } from "./session-store";
 import type { TokenSet } from "./oidc";
 import { type ArdaClaim, type ArdaState, type Tier, TIER_ORDER } from "../../entitlement/types";
 
-const ARDA_STATES: readonly ArdaState[] = ["trial", "subscribed", "expired", "free"];
+const ARDA_STATES: readonly ArdaState[] = ["trial", "subscribed", "expired", "none"];
+
+/** Normalize a wire state string to an ArdaState. The token claim historically
+ *  used "free" for the no-subscription case; map it to "none" (product_220 /
+ *  reply-02). Unknown values return null. */
+function normalizeState(s: string): ArdaState | null {
+  if (s === "free") return "none";
+  return (ARDA_STATES as string[]).includes(s) ? (s as ArdaState) : null;
+}
 
 /**
  * Parse the `arda` nested claim from the access token.
@@ -44,20 +52,21 @@ function toArdaClaim(v: unknown): ArdaClaim | null {
     } else if (status === "expired") {
       state = "expired";
     } else {
-      // subscribed=false + status="active"|"none": cannot distinguish trial vs free.
-      // Default to "free" until platform adds a `trial` boolean field.
-      state = o.trial === true ? "trial" : "free";
+      // subscribed=false + status="active"|"none": cannot distinguish trial vs none.
+      // Default to "none" until platform adds a `trial` boolean field.
+      state = o.trial === true ? "trial" : "none";
     }
 
     return { state, tier, had_trial: o.had_trial === true };
   }
 
   // Format B: arda-native { state, tier, had_trial }
-  const state = typeof o.state === "string" ? o.state : "";
-  if (!(ARDA_STATES as string[]).includes(state)) return null;
+  const rawState = typeof o.state === "string" ? o.state : "";
+  const state = normalizeState(rawState);
+  if (!state) return null;
   const tier = typeof o.tier === "string" ? o.tier : "";
   return {
-    state: state as ArdaState,
+    state,
     tier: (TIER_ORDER as string[]).includes(tier) ? (tier as Tier) : "free",
     had_trial: o.had_trial === true,
   };
