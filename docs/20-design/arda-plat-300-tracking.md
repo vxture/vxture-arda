@@ -1,6 +1,6 @@
 # arda 平台对接 · 迁移追踪（arda-plat-300-tracking）
 
-> 状态：实时跟踪（2026-07-07 arda 侧 C2/C3/P4 代码全线实施完成；待 DB 迁移 + 容器重启 + e2e 验收）
+> 状态：实时跟踪（2026-07-07 arda 侧全线完成：代码 + DB 迁移（0001-0007）+ 容器重启；待平台配置 quota_pools + e2e 验收）
 > 层：第 3 层 · 迁移追踪（`plat` 系列，见 [`plat-000`](arda-plat-000-index.md) 索引）
 > 范围：现状阻塞 + 平台侧待确认清单 + 打通验收判据
 > 上游：[`plat-100`](arda-plat-100-architecture.md)（三通道全景）、[`plat-110`](arda-plat-110-oidc-contract.md)（OIDC 契约）
@@ -40,9 +40,9 @@
 
 | # | 项目 | 状态 |
 |---|---|---|
-| O1 | **Prisma migration 执行**：在 worker-02 两个 DB 里跑 `0007_provisioning_and_usage`（新增 `ProvisioningEvent` / `UsageRaw` 表，`WorkspaceRef` 加列） | **[owner 操作] 待执行** |
-| O2 | **容器重启**：`docker restart arda-app arda-beta-app`——让新 env var（`PLATFORM_*`、`PROVISION_WEBHOOK_SECRET`、`OIDC_SCOPES` phone scope）生效 | **[owner 操作] 待执行** |
-| O3 | **平台配置 arda 计费**：按 `biz-260-billing.md` §7 checklist，让平台在 `GET /platform/entitlements` 返回正确的 capabilities + quota_pools | **[owner 操作] 发给 vxture 平台团队** |
+| O1 | **Prisma migration 执行**：worker-02 两个 DB 全量执行 0001-0007（手动 psql，因容器内无 migrations 目录） | **已完成（2026-07-07）** |
+| O2 | **容器重启**：`docker restart arda-app arda-beta-app`，两容器均 healthy | **已完成（2026-07-07）** |
+| O3 | **平台配置 arda 权益**：按 `biz-260-billing.md` §7 + `plat-200-impl-handoff.md` §2 capability key 表，让平台在 `GET /platform/entitlements` 返回正确的 capabilities + quota_pools | **[owner 操作] 待发给 vxture 平台团队** |
 
 ### 已完成的 owner 操作
 
@@ -87,3 +87,4 @@
 | 2026-07-03 | 首版：并入 `plat` 编号系列，标注通道 B 契约版本冲突 |
 | 2026-07-07 | 平台侧 P1/P2/P4 全线交付 |
 | 2026-07-07 | arda 侧 C2/C3/P4 代码全线实施完成；owner 操作项已完成 5 项；剩余 O1-O3 待执行；更新验收 checklist；新增计费模型（biz-260）引用 |
+| 2026-07-07 | O1/O2 完成：worker-02 两库全量迁移（0001-0007 手动 psql）+ 容器重启（healthy）；新增 `plat-200-impl-handoff.md` 回传文档；O3 更新为含 `plat-200` 引用 |

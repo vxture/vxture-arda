@@ -20,7 +20,9 @@
 | `0005_service_fields` | `DataService` 加 `code/name/path/method/description/domain/level` + 唯一 |
 | `0006_multiagent_scope_ownerapp` | 新增枚举 `AssetScope{workspace,platform}`；`GlossaryTerm`/`Standard` 加 `scope`；`Dataset`/`DataService` 加 `ownerApp`；`DataService` 加 `visibility`；`ApiKey` 加 `consumerApp`；新增 `[workspaceId, ownerApp]` 索引（`Dataset`）。支撑多-agent 归属与共享，见 [`data-150`](arda-data-150-multiagent-sharing.md) |
 
-**当前 schema 版本：`0006_multiagent_scope_ownerapp`**（v1，catalog-first）。
+| `0007_provisioning_and_usage` | `WorkspaceRef` 加 `tenantId/plan/status/updatedAt`；新增 `ProvisioningEvent` 表（C3 provisioning 幂等存档）；新增 `UsageRaw` 表（C3 consume 本地缓冲） |
+
+**当前 schema 版本：`0007_provisioning_and_usage`**（v1，catalog + platform integration）。
 
 ---
 
@@ -29,6 +31,7 @@
 - **容器启动自动迁移**：`docker-entrypoint.sh` 执行 `cd app && prisma migrate deploy`；**失败仅告警、仍启动应用**（`WARN: prisma migrate deploy failed; starting app anyway`）。
   - 风险：迁移失败不会阻断部署，可能导致 schema 与代码不一致却仍对外服务。运维需盯 entrypoint 日志。
   - 待评估（见 §5）：是否收紧为迁移失败即阻断启动。
+- **例外：0001-0007 均通过手动 psql 执行**（2026-07-07）：容器内无 `prisma/migrations/` 目录（打包时被排除），自动迁移不可用。已通过 `docker exec -i arda-db psql` 逐库执行完整 SQL bundle。待解决 migrations 目录打包问题后可恢复自动迁移。
 - **健康门槛**：compose 中 `arda-app` `depends_on: arda-db { condition: service_healthy }`，DB 健康后才起应用（但这只保证 DB 可连接，不保证迁移成功）。
 - **每栈独立执行**：prod 用 `DATABASE_URL=...@arda-db:5432/arda`，beta 用 `...@arda-beta-db:5432/arda`，互不影响。
 
@@ -61,27 +64,26 @@
 
 **行动项**：要让线上"看得见数据"，需二选一：(a) 手动给真实 `active_workspace` 灌一次 dev-seed 风格的数据；(b) 落地 ADR §4 的模板填充流程。(b) 是正确的长期路径。
 
-### 4.2 权益（entitlement）：仍读 token claim，未接平台端点
+### 4.2 权益（entitlement）：已接平台端点（2026-07-07 完成）
 
-| 项 | 现状 | 目标态（ADR §3.5） |
-|---|---|---|
-| 数据来源 | OIDC token 的 `arda` claim（`MockEntitlementResolver` 直通） | 平台只读端点：按 `(workspaceId, product=arda)` 实时拉取 |
-| 缓存 | 无（每次直读 claim） | Redis 短 TTL 缓存 + 平台 `invalidate` 失效通知（秒级生效） |
-| arda 是否建镜像表 | 否 | 否（两种方案都不建表，仅信任源不同） |
-| 枚举 | `Tier` 已对齐 ADR 五档（`free\|starter\|pro\|business\|enterprise`）；`ArdaState` 仍是 `free`（ADR 目标 `none`） | 五档 tier 已达标；`state` 的 `free->none` 待随平台 claim 契约变更一并改 |
+| 项 | 现状 |
+|---|---|
+| 数据来源 | `PlatformEntitlementResolver`：`GET /platform/entitlements?workspace_id=&product=arda`（当 `PLATFORM_API_URL` + `PLATFORM_INTERNAL_AUTH_TOKEN` 均设置时自动启用；否则回落 `MockEntitlementResolver`）|
+| 缓存 | 进程内 `Map` 45s TTL（非 Redis；单机短时缓存足够，不需要跨实例一致性）|
+| 失效 | `subscription_changed` provisioning 事件 → `invalidateCache(workspaceId)` 立即清除 |
+| quota 端点 | `GET /api/entitlement/quota`：返回 `WorkspaceQuota`（capabilities + pools 余量聚合）|
+| arda 是否建镜像表 | 否（不建表，信任 C2 响应）|
+| 枚举 | `Tier` 五档已对齐；`ArdaState.free->none` 仍待平台 claim 契约先定 |
 
-**行动项**：`ArdaState` 重命名不是 arda 单方面能定的 —— 需平台侧 claim 契约先定，避免两边语义再次漂移。见[平台对接要求](../60-workplan/vxture-platform-integration-requirements.md)。
+### 4.3 平台指令通道：provisioning webhook 已实现；seed/wipe 未实现
 
-### 4.3 平台指令通道（seed / wipe / invalidate）：schema 已备，执行链路未接
-
-| 项 | 现状 | 目标态（ADR §5.1） |
-|---|---|---|
-| 幂等键 | `AuditLog.idempotencyKey`（全局唯一）已建 | 平台指令按此键防重放 |
-| 审计 | `AuditLog` 表已建，尚无写入调用点 | 每条平台指令必须落审计 |
-| 服务间鉴权 | 未实现 | 服务间签名（API key / 服务 JWT / mTLS，待与平台确定） |
-| wipe 执行 | 未实现 | 按 `workspaceId` 软删 + 延迟 N 天硬删 |
-
-**行动项**：这是当前 schema 与实际能力差距最大的一块 —— 表已建，内部端点与鉴权尚未实现。
+| 项 | 现状 |
+|---|---|
+| provisioning webhook | **已实现（2026-07-07）**：`POST /provisioning/webhook`，HMAC-SHA256，4 事件（`tenant.provisioned/deprovisioned/subscription_changed/grant.invalidated`）|
+| 幂等键 | `ProvisioningEvent.id`（平台投递 UUID，非 `AuditLog`）|
+| usage consume | **已实现（2026-07-07）**：`UsageRaw` 缓冲 + `flushUsage()` → `POST /usage/consume`；4 个 metric |
+| seed / wipe | **未实现**：`WorkspaceRef` 表已建，`SeedTemplate/TemplateVersion` 已建，执行链路待实现 |
+| AuditLog 写入 | 尚无调用点（表已建）|
 
 ### 4.4 领域扩展：v1 之外的 `future` 实体
 
@@ -98,10 +100,11 @@
 
 1. **确认 Postgres 备份覆盖**：`55-backup-runtime-state.sh` 是否已含 `${DATA_DIR}/postgres`；若无，先补运维缺口（数据丢失风险 > 功能缺口）。
 2. **决定迁移失败的启动策略**：继续「告警仍启动」还是收紧为「阻断启动」。
-3. **落地平台指令通道**：内部端点 + 服务间签名 + 幂等 + `AuditLog` 写入 + wipe 软删/延迟硬删。
-4. **落地权益实时拉取**：接平台只读端点后切换 `EntitlementResolver`，加 Redis 缓存 + invalidate 消费。
+3. ~~**落地平台指令通道**~~ **已完成（2026-07-07）**：provisioning webhook + usage consume buffer（见 §4.3）。seed/wipe 尚未实现（表已建，逻辑待实现）。
+4. ~~**落地权益实时拉取**~~ **已完成（2026-07-07）**：`PlatformEntitlementResolver` + 45s 进程内缓存 + `subscription_changed` 失效（见 §4.2）。
 5. **落地模板填充**：`SeedTemplate` 内容策展 + 首次进入检测 `seedStatus` + 克隆逻辑（先全量复制，重量模板可评估 copy-on-write）。
 6. **`ArdaState` 枚举对齐**：待平台 claim 契约确认 `free`/`none` 语义后统一修改。
+7. **解决 migrations 目录打包问题**：当前容器内无 `prisma/migrations/`，自动迁移不可用；未来迁移需手动执行。评估是否在 Dockerfile 中 COPY prisma/migrations/ 以恢复 `prisma migrate deploy` 自动化。
 
 ---
 
@@ -111,10 +114,12 @@
 
 | 文档 | 旧述 | 现状 | 处理 |
 |---|---|---|---|
-| `ADR-entitlement-and-workspace.md` §0 | "arda 目前没有数据层（Redis-only，无 Prisma/无 DB）" | 已有 Prisma 7 + Postgres（0001~0005） | **需更新** §0 前置说明 |
+| `ADR-entitlement-and-workspace.md` §0 | "arda 目前没有数据层（Redis-only，无 Prisma/无 DB）" | 已有 Prisma 7 + Postgres（0001~0007） | **需更新** §0 前置说明 |
 | `30-implementation/repository.md` | "docker-compose = 两服务（arda-app + arda-redis）"；无 `prisma/`；列旧 IA 路由 | 三服务（+arda-db）；有 `prisma/`；新 IA | **需更新** |
 | `20-design/architecture.md` | 容器拓扑仅 app+redis；env 表无 `DATABASE_URL` | +arda-db；每栈 `DATABASE_URL` | **需更新** |
-| `docker-compose.yml` 顶部注释 | "arda-app + arda-redis ONLY" | 含 arda-db | 注释需修 |
+| `docker-compose.yml` 顶部注释 | "arda-app + arda-redis ONLY" | 含 arda-db | **已更新（2026-07-07）** |
+| `README.md` | 拓扑/stack 缺 Postgres；`arda-app + arda-redis only` | 三服务 + C2/C3 通道 | **已更新（2026-07-07）** |
+| `CLAUDE.md` | `arda-app + arda-redis only` | 三服务 | **已更新（2026-07-07）** |
 
 ---
 
@@ -124,3 +129,4 @@
 |---|---|
 | 2026-06-30 | 首版：盘点 schema `0001`~`0005`，梳理三层文档结构，列出现状/目标差距与文档漂移 |
 | 2026-07-03 | 并入 `data` 编号系列，改名为 `data-300`（原 `arda-data-architecture-migration.md`） |
+| 2026-07-07 | 更新 schema 版本至 `0007_provisioning_and_usage`（手动 psql 执行，worker-02 两库完成）；§4.2/4.3 反映 C2/C3 已完成状态；§5 待办 3/4 划完成；新增待办 7（migrations 目录打包）；§6 漂移表更新 README/CLAUDE 已修正，补 `docker-compose.yml` 已修正 |

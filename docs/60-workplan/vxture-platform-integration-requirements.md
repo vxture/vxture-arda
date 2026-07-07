@@ -12,8 +12,8 @@
 arda 当前能力与缺口：
 
 - 身份层（OIDC RP）：基本就位。arda 已实现 Authorization Code + PKCE、JWKS 验签、back-channel logout、BFF（token 只存服务端 Redis）。
-- 权益层：**仍从 OIDC token 的 `arda` claim 读取 tier/state**（`MockEntitlementResolver` 直通），**尚未对接平台的权益数据源**。ADR §3.5 已定稿要改为「实时拉取 + 缓存 + 失效通知」，但平台侧的只读权益端点与失效通知通道**目前不存在**，arda 无法落地。
-- 指令层：平台 → arda 的 `seed / wipe / invalidate` 服务间通道**尚未约定**，workspace 镜像与示例数据填充无法驱动。
+- 权益层：**已完成（2026-07-07）**：`PlatformEntitlementResolver` 调 `GET /platform/entitlements`，45s 进程内缓存，`subscription_changed` → 即时失效。当 `PLATFORM_API_URL` + `PLATFORM_INTERNAL_AUTH_TOKEN` 未设置时回落 `MockEntitlementResolver`（本地开发/CI 用）。**待平台侧配置 capability keys + quota_pools（见 `biz-260` §7）后方可 e2e 验收。**
+- 指令层（provisioning webhook）：**已完成（2026-07-07）**：`POST /provisioning/webhook`，HMAC-SHA256 验签（`PROVISION_WEBHOOK_SECRET`），4 种事件（`tenant.provisioned/deprovisioned/subscription_changed/grant.invalidated`）。usage consume buffer 亦完成（`UsageRaw` → `POST /usage/consume`）。`seed/wipe` 尚未实现。
 
 因此「打通」需要平台侧提供三件东西：**(1) 身份 token 里的 workspace/org 上下文**、**(2) 只读权益端点**、**(3) 服务间指令/失效通道**。下面逐项给出契约。
 

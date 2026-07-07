@@ -6,7 +6,7 @@ surfaces. It is shell-only for now - the app authenticates users, gates them by
 subscription tier, and lands them on a configurable default page; the capability
 surfaces are built out behind that shell over time.
 
-**Stack:** Next.js (`arda-app`) / Redis, behind the shared public edge
+**Stack:** Next.js (`arda-app`) / Redis / Postgres, behind the shared public edge
 
 **Repo:** `github.com/vxture/vxture-Arda`
 
@@ -31,7 +31,7 @@ surfaces are built out behind that shell over time.
 Two-host topology. The shared public edge terminates TLS with
 the wildcard `*.vxture.com` cert and reverse-proxies over tailscale to ARDA_DEPLOY_HOST,
 which is private compute (tailnet-only, no public IP) running `arda-app` +
-`arda-redis` only. There is no on-host TLS or nginx in this repo.
+`arda-redis` + `arda-db` only. There is no on-host TLS or nginx in this repo.
 
 ```
 Browser
@@ -46,8 +46,12 @@ arda-app (Next.js, published on APP_PUBLISH_PORT)
    |- /            -> Next.js pages
    |- /api/*       -> Next.js route handlers
    |- OIDC RP      -> accounts.vxture.com (sign-in / token exchange)
-   |- tier gate    -> pluggable subscription resolver (free/starter/pro/business/enterprise)
+   |- tier gate    -> PlatformEntitlementResolver (C2: GET /platform/entitlements, 45s TTL)
+   |- provisioning -> /provisioning/webhook (C3: HMAC-SHA256, 4 event types)
+   |- usage buffer -> UsageRaw -> POST /usage/consume (C3)
+   |- /.well-known/vxture-tools -> L0 tool protocol (v1 empty)
    |- session / cache -> arda-redis
+   |- workspace data -> arda-db (Postgres, workspace-isolated)
    `- default landing -> /data-assets/overview (configurable)
 ```
 
@@ -107,7 +111,7 @@ Arda deploys to `ARDA_DEPLOY_HOST` (private compute, reached by its tailscale na
 same segment as the edge host). Two independent stacks live on that host: `/srv/md0/arda`
 (prod) and `/srv/md1/arda-beta` (beta). Each release builds the one owned image
 (`arda-app`) and deploys the stack matching the pushed branch (`develop` -> beta,
-`main` -> prod). The deploy starts `arda-app` + `arda-redis` and publishes the
+`main` -> prod). The deploy starts `arda-app` + `arda-redis` + `arda-db` and publishes the
 app on `APP_PUBLISH_PORT`; TLS and the public domain are handled by the public
 edge, which fronts the app with the wildcard `*.vxture.com` cert.
 
@@ -140,7 +144,8 @@ cp .env.example .env
 
 `.env.example` is the authoritative reference for every supported variable
 (OIDC client config for `accounts.vxture.com`, subscription-resolver settings,
-default landing page, redis connection, and per-environment domain values).
+default landing page, Redis connection, Postgres DB config, platform API auth,
+provisioning webhook secret, and per-environment domain values).
 `.env` is git-ignored and never committed.
 
 ---

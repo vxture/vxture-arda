@@ -20,10 +20,10 @@
 
 1. ~~更新/废弃 `entitlement.md`~~ **已完成（2026-07-03）**：该文档此前仍描述 4 档 tier（`free/pro/team/enterprise`），与代码现状（5 档 `free/starter/pro/business/enterprise`，见 [`ent-100`](arda-ent-100-architecture.md) §1.2）不一致，已更新为一致。同批一并修正了全库其余旧 4 档残留（`README.md`、`CLAUDE.md`、`decisions.md`"Subscription Tiers as a Closed Enum"决策、`vxture-platform-integration-requirements.md` §3.2 漂移表、`dev-login/route.ts` 的过期示例 URL）。
 2. **修正 `gate.tsx` 的过期注释**：顶部注释"tokens carry no entitlement claims"与实际实现矛盾（token 确实携带 `arda` claim），见 [`ent-110`](arda-ent-110-local-implementation.md) §2 的说明。低优先级、纯文档卫生，顺手改。
-3. **实现 `PlatformEntitlementResolver`**：新增一个实现 `EntitlementResolver` 接口的类（[`ent-110`](arda-ent-110-local-implementation.md) §1），内部调用 [`ent-120`](arda-ent-120-consumption-contract.md) §1 的 `GET /platform/entitlements`，替换 `getEntitlementResolver()` 的返回值。接口不变，调用方（`/api/entitlement` 路由）无需改动。
-4. **加短 TTL 缓存层**：`PlatformEntitlementResolver` 内部按 `(workspaceId, product=arda)` 缓存查询结果（Redis，复用现有基础设施），避免每次门禁检查都打平台端点。
-5. **接 `invalidate` 接收端点**：实现内部端点接收平台推送的 `PUSH invalidate`（[`ent-120`](arda-ent-120-consumption-contract.md) §3），失效对应缓存项。鉴权机制复用 [`data-140`](arda-data-140-audit.md) 的服务间指令通道，不重新设计。
-6. **接 `POST /usage/consume` 上报**：在实际产生消耗的动作点（如 AI 调用、导出等——具体消耗点由业务功能决定，不在本系列枚举）接入上报调用，处理 200/409 两种响应（[`ent-120`](arda-ent-120-consumption-contract.md) §2）。
+3. ~~**实现 `PlatformEntitlementResolver`**~~ **已完成（2026-07-07）**：`portals/app/app/entitlement/platform-resolver.ts`，`getEntitlementResolver()` 工厂函数当 `PLATFORM_API_URL` + `PLATFORM_INTERNAL_AUTH_TOKEN` 均设置时自动切换；接口不变，调用方无需改动。
+4. ~~**加短 TTL 缓存层**~~ **已完成（2026-07-07）**：进程内 `Map<workspaceId, CacheEntry>` 45s TTL（非 Redis；缓存 C2 响应是短时单机缓存，不需要跨实例一致性）。
+5. ~~**接 `invalidate` 接收端点**~~ **已完成（2026-07-07）**：`subscription_changed` provisioning 事件 → `invalidateCache(workspaceId)` 立即清除进程内缓存，下次请求重拉。复用 provisioning webhook 通道，不单独建 invalidate 端点。
+6. ~~**接 `POST /usage/consume` 上报**~~ **已完成（2026-07-07）**：`UsageRaw` 本地缓冲 + `flushUsage()` 异步 Job 上报。metric：`storage.bytes` / `service.api.call` / `quality.check.run` / `varda.credit`（见 `biz-260`）。
 7. **`MOCK_STATE`/`MOCK_TIER` 的去留**：`PlatformEntitlementResolver` 落地后，`MockEntitlementResolver` 的 mock 回退路径仍需保留给本地开发/无真实 IdP 的场景（CI、local dev）——不是要删除 mock，是要让 mock 与新 resolver 共存，按环境切换（现有 `getEntitlementResolver()` 工厂函数已经是切换点）。
 
 ---
@@ -46,3 +46,4 @@
 | 2026-07-03 | 首版：核对代码真源（`entitlement/*.ts(x)`、`auth/lib/claims.ts`）与三份源文档，发现 tier 已先行升级为 5 档、claim 双线格式并存、trial/free 现状缺口；产出 ent-100/110/120/300 四篇（收窄边界后，仅 arda 侧消费职责）|
 | 2026-07-03 | 全库扫描并修正旧 4 档 tier 残留（6 处）：`entitlement.md`（Tier 表 + ArdaClaim 注释 + Invariants 表）、`README.md`（正文 + 架构图）、`CLAUDE.md`（产品定位段）、`decisions.md`（"Subscription Tiers as a Closed Enum"决策）、`vxture-platform-integration-requirements.md` §3.2（漂移表，tier 行标记已对齐、state 行保留待办）、`dev-login/route.ts`（过期示例 URL `tier=team`）|
 | 2026-07-03 | **决策 A 确认并推翻 ADR §3.4 反向表述**：`state=none`（无订阅）时 free 档功能也不可用，门控保持二元墙（`status !== "active"` 一律拒绝），非按 features/quota 逐项渲染放行。修正 4 处引用旧"无 free 特例、按 features/quota 渲染放行"原则的文档：`ADR-entitlement-and-workspace.md` §3.4 + §8 任务4、`ADR-11` §12 MVP-1 验收标准、`vxture-platform-integration-requirements.md` §3.1；`ent-110` §2 补充决策确认注记作为权威结论落点。|
+| 2026-07-07 | 任务 3-6 全部完成：`PlatformEntitlementResolver`（进程内 45s TTL Map，非 Redis）、`resolveQuota()` + `invalidateCache()`、`subscription_changed` → 立即清缓存、`UsageRaw` 缓冲 + `flushUsage()` → `POST /usage/consume`。同批新增 `GET /api/entitlement/quota` 端点、4 个 METRICS 常量、provisioning webhook（含 `grant.invalidated` v1 noop）。|

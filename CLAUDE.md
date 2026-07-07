@@ -11,7 +11,7 @@ as one owned image (`arda-app`) into two environments (beta + prod).
 Topology is two-host. The shared vxture public edge (edge host) terminates TLS
 with the wildcard `*.vxture.com` cert and reverse-proxies over tailscale to
 ARDA_DEPLOY_HOST, which is private compute (tailnet-only, no public IP) running
-`arda-app` + `arda-redis` only. arda does NOT own the edge; it contributes the
+`arda-app` + `arda-redis` + `arda-db` only. arda does NOT own the edge; it contributes the
 vhost source artifacts in `configs/edge/*.conf`, which an operator installs into
 the vxture project repository. There is no on-host
 TLS or nginx in this repo - the app is published on ARDA_DEPLOY_HOST's tailnet

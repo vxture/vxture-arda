@@ -26,7 +26,7 @@
 | 数据架构 | `data` | 持久层 / schema / 迁移 | [`arda-data-000-index`](arda-data-000-index.md) 系列（`data-100/11x/2xx/300`） |
 | **业务架构** | `biz` | 能力全景 / 板块详细 / 实施（**本系列**） | 新建 |
 | 权益门控 | `ent` | **arda 侧消费职责**：本地 Resolver/Gate/同步 + 消费契约（不含平台侧订阅/Plan/合并算法设计，见 `ent-000` §0 边界） | [`arda-ent-000-index`](arda-ent-000-index.md) 系列（已完成，`ent-100/110/120/300`） |
-| 对接 | `plat` | **arda 侧的 OIDC RP 契约 + 对接需求追踪**（不含平台侧权益/指令通道内部实现，见 `plat-000` §0 边界） | [`arda-plat-000-index`](arda-plat-000-index.md) 系列（已完成，`plat-100/110/300`） |
+| 对接 | `plat` | **arda 侧的 OIDC RP 契约 + 对接需求追踪 + 实施回传**（不含平台侧权益/指令通道内部实现，见 `plat-000` §0 边界） | [`arda-plat-000-index`](arda-plat-000-index.md) 系列（已完成，`plat-100/110/200/300`） |
 
 > `biz`、`data`、`ent`、`plat` 四个系列均已完成。逻辑归属见上表。
 >
