@@ -1,6 +1,6 @@
 # arda 权益门控 · 消费契约（arda-ent-120-consumption-contract）
 
-> 状态：目标设计（平台端点尚未实现，`ent-300` 追踪落地进度）
+> 状态：C2/C3 端点 2026-07-07 已上生产（平台回函 `arda-handoff-reply-01.md` §7.2 确认；本文旧"尚未实现"表述已过时）；arda 侧消费实现见 `plat-200`
 > 层：第 2 层 · 消费契约（`ent` 系列，见 [`ent-000`](arda-ent-000-index.md) 索引）
 > 范围：arda 怎么调用平台的权益/计量端点、怎么解读响应体——**只是契约的形状（字段/请求/响应），不是平台内部怎么算出这些字段的**。平台侧的 Org/Workspace/Membership/Plan/Product 建模与权益解析合并算法、瀑布扣减算法，一律不在本文展开，见 [`ent-000`](arda-ent-000-index.md) §0 边界。
 > 上游：`ADR-11-subscription-entitlement-design.md` §11.7（仅摘录契约形状字段）；`ent-100`/`ent-110`（本地消费方视角）
@@ -60,12 +60,13 @@ POST /usage/consume
     consumed,              # 本次实际扣减总量
     remaining_total,       # 该 (product, metric) 剩余合计
     per_pool_breakdown: [ { subscription_id, metric, took, remaining } ],  # 仅用于对账/审计展示，arda 不需要理解其内部路由依据
+    replayed: false,       # 幂等回放时为 true（同 key 重试返回与首次相同结果，不二次扣减）
     gated: false
   }
 -> 409 {
     gated: true, reason: "quota_exhausted",
     consumed,              # 耗尽前已扣的部分（部分成功语义，见下）
-    remaining_total: 0
+    remaining_total       # 真实余额（reply-01 §5 更正：atomic 拒绝可留正值，非恒为 0）
   }
 ```
 
@@ -74,7 +75,10 @@ POST /usage/consume
 **arda 侧职责**：
 - 只上报**数量**（`amount` + `metric`），**不上报内容**——消耗的是什么（方案正文、数据集内容）永远留在 arda 侧，不进这条通道（对应 [`ent-100`](arda-ent-100-architecture.md) 隐含的 SoR 边界：内容是产品端业务数据，数字是平台计量事实）。
 - `idempotency_key` 防重放/重复计量：同一操作重试必须带同一个 key，`consume` 调用本身必须幂等（与 [`data-140`](arda-data-140-audit.md) 的幂等约定同构，但这是两条独立通道，不复用同一个 key 空间）。
-- **超额语义**（实现时按 metric 类型选择，需与平台协商确认）：可分割消耗（如字数）建议走"部分成功"（能扣多少扣多少，返回 409 + `consumed > 0`）；原子动作（如一次生成）建议走"全有或全无"（额度不足整笔拒绝、不扣）。arda 侧调用方需要按具体 metric 处理这两种返回形态。
+- **超额语义**（reply-01 R5 已定，按操作成本分流）：
+  - `service.api.call` / `quality.check.run` = **divisible 后报**（先做事后记账）：409 为**终态**——置本地 gated 标志（拦新调用+横幅）、该 UsageRaw 行标记完成，**不记 flushError、不重试**；部分扣减以响应 `consumed` 为准，未覆盖部分不追缴（reply-01 §5.2）。
+  - `varda.credit` = **atomic 预扣**：**先 consume 再执行 AI 操作**，409 → 拒绝执行（贵操作前置门控）；执行失败不返还（v1 接受，量小）。
+  - **gated 是从 C2 派生的判断，不是持久标志**（reply-01 §5.1）：`gated ⇔ C2 该 metric 行 remaining ≤ 0`；flush 收 409 → `invalidateCache(workspaceId)` → 下次 C2 拉取（≤45s）自然反映；周期重置后平台读侧自动恢复满额，门自动开——**不要**持久化 gated 标志、写解锁定时器或专门轮询。
 
 ---
 

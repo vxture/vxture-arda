@@ -52,12 +52,14 @@ All keys are flat (no product prefix per P2.1 note).
 These are reported by arda via POST /usage/consume.
 Canonical metric names (also in quota.ts METRICS constant):
 
-| Metric | Unit | Reset | Description |
-|---|---|---|---|
-| `storage.bytes` | bytes | none (cumulative capacity) | Workspace shared pool. arda reports delta: +sizeBytes on Dataset register, -sizeBytes on delete. Reporting mode: delta or snapshot - TBD with platform. |
-| `service.api.call` | count | monthly | External DataService calls (rest_api/query/export/share). amount=1 per call. Internal varda calls excluded. |
-| `quality.check.run` | count | monthly | QualityRule batch execution runs. amount=rules executed per batch. |
-| `varda.credit` | credits | monthly | varda AI operation credit consumption. See credit table in section 4. |
+Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
+
+| Metric | Kind | Reset | Overage mode | Description |
+|---|---|---|---|---|
+| `storage.bytes` | **gauge** | none (water level) | admission-only (no consume) | Workspace shared pool. Snapshot reporting via future `PUT /usage/gauge` (R4: delta rejected). Not wired to consume until gauge endpoint ships; C2 display + local admission only. |
+| `service.api.call` | counter | monthly | **divisible 后报** | External DataService calls (rest_api/query/export/share). amount=1 per call. Internal varda calls excluded. 409 = terminal, no retry. |
+| `quality.check.run` | counter | monthly | **divisible 后报** | QualityRule batch execution runs. amount=rules executed per batch. 409 = terminal, no retry. |
+| `varda.credit` | counter | monthly | **atomic 预扣** | varda AI credit. Consume BEFORE the AI op; 409 → reject op. See credit table in section 4. |
 
 ---
 
@@ -109,47 +111,59 @@ credits to token cost internally (1 credit = ~2K tokens as baseline).
 
 ---
 
-## 5. Storage pool reporting design
+## 5. Storage pool reporting design (RESOLVED: gauge snapshot, reply-01 R4)
 
-### arda reports (C3)
+storage.bytes is a **gauge** (water level), not a counter. Delta was rejected
+(needs negative amounts; drifts permanently on a missed delete; no snapshot to
+reconcile against). arda reports the current total via a future gauge endpoint,
+NOT via consume.
+
+### arda reports (C3 gauge, future endpoint)
 
 ```
-POST /usage/consume
+PUT /usage/gauge                 # shape preview per reply-01 R4; product_310 D5
 {
   workspace_id: <wsId>,
   product: "arda",
   metric: "storage.bytes",
-  amount: <delta_bytes>,           // + on register, - on delete
-  idempotency_key: "storage-<wsId>-<datasetId>-<version>"
+  value: <current_total_bytes>,  // absolute water level, not a delta
+  observed_at: <iso8601>         // last-write-wins ordering key
 }
 ```
 
-Trigger points in arda code (to be wired when Dataset CRUD routes exist):
-- Dataset create with sizeBytes -> +sizeBytes
-- Dataset delete            -> -sizeBytes (if sizeBytes was set)
-- Dataset update sizeBytes  -> +(new - old)
-- File asset upload         -> +fileBytes (future, if arda hosts file bytes)
+Platform stores the latest value per (workspace, product, metric); cross-product
+shared pool = platform sums each product's slice at read time. Self-healing
+(each report overwrites), naturally idempotent, aligned with arda-db as SoR.
 
-### arda reads remaining (C2)
+Trigger: periodic (or write-path throttled) snapshot of `SUM(Dataset.sizeBytes)`
+for the workspace. **Until the gauge endpoint ships, storage is NOT wired to
+recordUsage** (transition per R4) - C2 display + local admission only.
+
+### arda reads remaining (C2) + admission enforcement
 
 ```typescript
-// quota.ts: parsePool(quota_pools, "storage.bytes")
-// -> { limit, remaining, pct }
-// Displayed in admin storage card.
+// quota.ts: parsePool(quota_pools, "storage.bytes") -> { limit, remaining, pct }
+// remaining = plan limit - Σ(each product's water level). arda display unchanged.
 ```
+
+Admission check (reply-01 §4.1): enforced BEFORE byte transfer, on the client's
+**declared** file size (not post-write actual):
+1. Apply: `declared_size <= C2 remaining` gates the upload token issuance.
+2. Transfer: server counts received bytes, cuts the connection + cleans partials
+   if it exceeds declared size or remaining.
+3. Commit: actual arda-db size drives the gauge snapshot. Declared size is
+   admission-only, never accounted.
+
+Not strongly consistent: concurrent admissions may briefly overshoot (expected,
+not a defect). The gauge records the true (over)level next snapshot; C2 remaining
+goes negative and the gate closes new uploads (`remaining <= 0`); **deletes always
+pass**; level converges as users clean up. No reservation/pre-hold in v1 (storage
+overshoot = transient disk, not money; cf. R5 cost-tiered strictness).
 
 UI thresholds (arda-side local check):
 - pct < 0.20 -> yellow warning banner
 - pct < 0.05 -> red alert, block new asset registration
-
-### Pending decision with platform
-
-storage.bytes reporting mode: delta accumulation vs periodic snapshot.
-- Delta: arda reports +/- on each operation. Platform accumulates.
-  Risk: drift if arda misses a delete event.
-- Snapshot: arda periodically (e.g. hourly) reports current total bytes.
-  Platform takes the latest value, not sum.
-Recommendation: snapshot mode is more resilient. Confirm with platform team.
+- remaining <= 0 -> gate closed on new uploads (deletes still allowed)
 
 ---
 
@@ -172,7 +186,7 @@ For vxture platform team to configure before arda e2e test:
 - [ ] Register product "arda" in platform entitlement system
 - [ ] Configure capabilities map for each of the 5 tiers (section 3a)
 - [ ] Configure quota_pools for each tier with the 4 metrics (section 3b)
-- [ ] Confirm storage.bytes reporting mode (delta vs snapshot)
+- [x] storage.bytes reporting mode = gauge snapshot (RESOLVED, reply-01 R4); platform to ship `PUT /usage/gauge` (product_310 D5)
 - [ ] Confirm varda.credit -> token conversion rate
 - [ ] Set ARDA_PROVISION_WEBHOOK_SECRET and share with arda operator
 - [ ] Test workspace: create a workspace with product=arda, tier=pro, verify

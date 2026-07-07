@@ -56,6 +56,19 @@
 
 ---
 
+## 2b. 平台回函 reply-01 裁定落地（2026-07-07）
+
+平台回函 `arda-handoff-reply-01.md` 对 arda 回传对账,开出 R1-R5。**核实后:R2/R3 代码本已正确(是 impl-handoff 文档写错触发的裁定),仅 R1 是真实代码补强。**
+
+| # | 裁定 | arda 侧落地 | e2e 阻断 |
+|---|---|---|---|
+| R1 | webhook 签名 = Stripe 风格 `t=,v1=` | `verify.ts`：多 `v1` 候选 + 常数时间比对 + 300s 窗（原已 Stripe 格式,补多值/常数时间）| 是 → **完成** |
+| R2 | back-channel logout = `/auth/backchannel-logout` | 代码本已在此路径；仅勘误 impl-handoff 文档 | 是 → **完成（无代码改动）** |
+| R3 | 上下文 claim 在 access_token | `claims.ts` 本已从 access_token 读 + refresh 重取；仅勘误文档 | 是 → **完成（无代码改动）** |
+| R4 | storage = gauge 快照（delta 否决）| 过渡态不接 consume（已符合,无触发点）；注释/文档更新为 gauge | 否 |
+| R5 | counter 超额分流 | `flush.ts` 409 = 终态不重试 + `invalidateCache`（不记 flushError）；varda atomic 预扣待触发点 | 否 |
+| §6 | 键名 `tier` / `service_endpoint.max` | `quota.ts` 本已 `service_endpoint.max`；移除 `platform-client.ts` 的 `data.tier` 回退 | - |
+
 ## 3. 待决策项（已决定）
 
 | 项目 | 决策 |
@@ -63,7 +76,8 @@
 | C3 metric 定义 | `service.api.call`（外部 DataService 调用）/ `quality.check.run` / `varda.credit` / `storage.bytes`（workspace 共享池）|
 | varda agent 开放档位 | starter（只读，50 credits）/ pro（只读，500）/ business（读写，5000/席位）|
 | 席位定义 | 仅真实人类，agent 不占席位 |
-| 存储容量语义 | workspace 共享大池，arda 独立上报，平台汇总；上报模式（delta vs 快照）待与平台确认 |
+| 存储容量语义 | **已定（reply-01 R4）**：gauge 快照,arda 报当前水位到未来 `PUT /usage/gauge`,不接 consume；平台读时跨产品求和 |
+| counter 超额模式 | **已定（reply-01 R5）**：api.call/quality.check.run = divisible 后报;varda.credit = atomic 预扣 |
 | 数据外发量 | Phase 1 按 api.call 计次；Phase 2 export/share 类型加权；Phase 3 bytes 计量 |
 
 ---
@@ -88,3 +102,4 @@
 | 2026-07-07 | 平台侧 P1/P2/P4 全线交付 |
 | 2026-07-07 | arda 侧 C2/C3/P4 代码全线实施完成；owner 操作项已完成 5 项；剩余 O1-O3 待执行；更新验收 checklist；新增计费模型（biz-260）引用 |
 | 2026-07-07 | O1/O2 完成：worker-02 两库全量迁移（0001-0007 手动 psql）+ 容器重启（healthy）；新增 `plat-200-impl-handoff.md` 回传文档；O3 更新为含 `plat-200` 引用 |
+| 2026-07-07 | 平台回函 reply-01 裁定落地（§2b）：R1 verify.ts 多 v1+常数时间；R5 flush.ts 409 终态+invalidateCache；§6 移除 data.tier 回退；R2/R3 核实代码本已正确、勘误 impl-handoff v1.1；R4 storage=gauge 快照写入 biz-260/ent-120 |

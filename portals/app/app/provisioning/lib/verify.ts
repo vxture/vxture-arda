@@ -1,13 +1,16 @@
 /**
- * HMAC-SHA256 webhook signature verification.
- * Wire format per identity-platform-rp-integration §5:
- *   x-vxture-signature: t=<ts>,v1=<hex>
- *   signed payload: "<ts>.<raw_body_bytes>"
+ * HMAC-SHA256 webhook signature verification (Stripe-style, RP integration §5;
+ * ruling: arda-handoff-reply-01 R1).
+ *   x-vxture-signature: t=<unix_ts>,v1=<hex>[,v1=<hex> ...]
+ *   signed payload:     "<ts>.<raw_request_body_bytes>"   (original bytes, no re-serialize)
+ *
+ * A header may carry MULTIPLE v1 values during a secret-rotation double-sign
+ * window; the signature is valid if the recomputed MAC matches ANY of them.
  *
  * Rejects if:
- *   - signature header is missing or malformed
- *   - timestamp is older than TOLERANCE_SEC (replay protection)
- *   - HMAC does not match
+ *   - signature header is missing or malformed (no t / no v1)
+ *   - |now - t| > TOLERANCE_SEC (replay window)
+ *   - the recomputed MAC matches none of the v1 candidates
  */
 
 const TOLERANCE_SEC = 300; // 5 min replay window
@@ -17,6 +20,29 @@ export interface VerifyResult {
   reason?: string;
 }
 
+/** Parse "t=..,v1=..,v1=.." into the timestamp and every v1 candidate. */
+function parseSignatureHeader(header: string): { ts: string | null; v1s: string[] } {
+  let ts: string | null = null;
+  const v1s: string[] = [];
+  for (const part of header.split(",")) {
+    const eq = part.indexOf("=");
+    if (eq < 0) continue;
+    const k = part.slice(0, eq).trim();
+    const v = part.slice(eq + 1).trim();
+    if (k === "t") ts = v;
+    else if (k === "v1" && v) v1s.push(v);
+  }
+  return { ts, v1s };
+}
+
+/** Constant-time hex-string equality. Length mismatch => false (no early exit). */
+function timingSafeHexEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 export async function verifyWebhookSignature(
   rawBody: Uint8Array,
   signatureHeader: string | null,
@@ -24,12 +50,8 @@ export async function verifyWebhookSignature(
 ): Promise<VerifyResult> {
   if (!signatureHeader) return { ok: false, reason: "missing signature header" };
 
-  const parts = Object.fromEntries(
-    signatureHeader.split(",").map((p) => p.split("=") as [string, string]),
-  );
-  const ts = parts["t"];
-  const v1 = parts["v1"];
-  if (!ts || !v1) return { ok: false, reason: "malformed signature header" };
+  const { ts, v1s } = parseSignatureHeader(signatureHeader);
+  if (!ts || v1s.length === 0) return { ok: false, reason: "malformed signature header" };
 
   const tsNum = Number(ts);
   if (!Number.isFinite(tsNum)) return { ok: false, reason: "invalid timestamp" };
@@ -47,7 +69,7 @@ export async function verifyWebhookSignature(
     ["sign"],
   );
 
-  // signed payload = "<ts>.<raw_body>"
+  // signed payload = "<ts>.<raw_body>" over the ORIGINAL bytes (never re-serialize).
   const prefix = enc.encode(`${ts}.`);
   const signed = new Uint8Array(prefix.length + rawBody.length);
   signed.set(prefix, 0);
@@ -58,6 +80,12 @@ export async function verifyWebhookSignature(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  if (expected !== v1) return { ok: false, reason: "signature mismatch" };
+  // Constant-time compare against every candidate (rotation double-sign window):
+  // scan all of them (no short-circuit) and accept on any match.
+  let matched = false;
+  for (const v1 of v1s) {
+    if (timingSafeHexEqual(expected, v1)) matched = true;
+  }
+  if (!matched) return { ok: false, reason: "signature mismatch" };
   return { ok: true };
 }
