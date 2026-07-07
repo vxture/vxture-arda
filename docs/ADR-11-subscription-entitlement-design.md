@@ -8,9 +8,10 @@
 >          ③ 附带基座 = free 档能力来源、对外称 **bundled**（旧称 standard），能力就高合并但不参与计费 → 无需差价抵扣。
 >
 > **术语（bundled，旧 standard）**：workspace **没有单独订阅 arda**，但其订阅的某个 agent Plan **附带**了 arda 的数据底座能力——
-> arda 从**后台**为该 agent 提供数据支撑（DataService 取用），**不提供 arda 产品 UI**。其能力档 = `free`（五档之一），
+> arda 从**后台**为该 agent 提供数据支撑（DataService 取用），**不提供 arda 产品 UI**。
 > billing = `bundled_free`（0 元、不计费），**权益管理模式与单独订阅完全一致**（同 C2 capabilities/quota_pools、就高合并、瀑布扣减）。
-> tier 仍为五档 `free/starter/pro/business/enterprise`——bundled 不是第六档，是**接入来源标签**，其档位落在 `free`。
+> tier 仍为五档 `free/starter/pro/business/enterprise`——bundled 不是第六档，是**接入来源标签**，合并时档位按 `free` 计。
+> **bundled 是独立可配的权益档**（非 free 硬别名）：当前取值与 free 基本一致，**但 `member.max = 0`**（后台 agent 模式无人类席位；free = 1），后续平台可单独调优。
 
 ---
 
