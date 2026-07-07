@@ -114,7 +114,8 @@ Subscription {
 - **前端**：按当前订阅的 `features` 渲染功能入口可见性。
 - **BFF**：按当前订阅的 `state` / `tier` / `features` 做授权与配额校验（不可信前端，服务端必须二次校验）。
 - 配额（quota）在 AI Gateway 等计量点按当前订阅 tier 生效。
-- **门控对所有档位一视同仁，无 free 特例**：free 只是「features 较短、quota 较低」的一条普通订阅，门控统一为「按 features/quota 渲染与放行」，不是「未订阅就挡墙」。
+- ~~门控对所有档位一视同仁，无 free 特例：free 只是「features 较短、quota 较低」的一条普通订阅，门控统一为「按 features/quota 渲染与放行」，不是「未订阅就挡墙」。~~
+  **已推翻（2026-07-03，决策 A）**：正确规则是——**订阅状态为 `none`（无任何订阅）时，free 档功能也不可用**，门控仍是二元墙（`status !== "active"` 一律拒绝），而非按 features/quota 逐项渲染放行。`free` tier 只在 `expired`/`none` 两种非活跃状态下作为占位值出现，从未单独触发放行。权威结论见 [`ent-100`](20-design/arda-ent-100-architecture.md) §1.4、[`ent-110`](20-design/arda-ent-110-local-implementation.md) §2。
 
 **features/quota 的归属划分（重要）**：
 
@@ -247,7 +248,7 @@ expired → 回落 free（不删数据）       │
 1. **引入持久层（服务领域数据）**：Prisma + Postgres 服务（如 `arda-db`），更新 docker-compose、部署栈、`06-check-deploy-contracts.py`（当前仅 app+redis）、per-stack 数据目录与备份。**权益不在此建表。**
 2. **业务数据模型 + workspace 隔离**：领域实体均带 `workspaceId`，强过滤；workspace 本地记录仅用于隔离（镜像平台，不持有生命周期）。
 3. **权益来源改造（无表）**：`EntitlementResolver` 从读 token claim 改为「实时拉取 + Redis 缓存」按 `active_workspace + product=arda` 查平台权益端点；弃用 `arda:subscription` claim；更新集成标准文档。枚举锁定：`state=trial|subscribed|expired|none`，`tier=free|starter|pro|business|enterprise`。
-4. **门控重设计**：`EntitlementGate` 从「二元墙」改为「按 features/quota 矩阵渲染/放行」，按「当前 workspace×产品」求值，free 无特例；features 键由 arda 定义、档位映射由平台下发。
+4. **门控**：`EntitlementGate` **保留二元墙**（`status !== "active"` 一律拒绝，见 §3.4 已推翻的旧表述与决策 A），按「当前 workspace×产品」求值；features 键由 arda 定义、档位映射由平台下发（该部分不变，仅门控放行逻辑不改为按 features/quota 逐项渲染）。
 5. **同步通道**：实时拉取端点 + 短 TTL 缓存 + 平台 `invalidate(workspaceId,product)` 失效通知（秒级生效）；与指令通道共用。
 6. **平台→arda 指令通道**：服务间签名鉴权 + 幂等 + 审计；承载 seed / wipe / invalidate。
 7. **上下文切换**：org/workspace 切换为应用内动作，重查权益 + 重载业务数据，不重新登录；常态无切换器，多上下文为扩展。

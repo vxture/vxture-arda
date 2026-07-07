@@ -9,7 +9,7 @@
 
 ```
 Name:       Vxture Arda
-Repo:       vxture/Data-Arda
+Repo:       vxture/vxture-Arda
 Deploy host: ARDA_DEPLOY_HOST (private compute, tailnet-only)
 User:       stone
 Purpose:    Data capability portal shell - unified entry point for data work
@@ -74,21 +74,21 @@ route stubs behind the auth-gated layout. CI/CD is fully operational:
 | Document | Content |
 |----------|---------|
 | [`agent.md`](agent.md) | **This file.** Identity, service inventory, domain map, constraints |
-| [`specs/product.md`](specs/product.md) | Product scope and non-goals |
-| [`specs/domains.md`](specs/domains.md) | Domain responsibilities and public URL contracts |
-| [`specs/security.md`](specs/security.md) | Security boundaries: OIDC, session, cookie scope |
-| [`design/architecture.md`](design/architecture.md) | Traffic flow, container topology, server directory layout |
-| [`design/modules.md`](design/modules.md) | Per-service spec: config, volumes, ports, environment variables |
-| [`design/decisions.md`](design/decisions.md) | Design decisions: BFF pattern, entitlement model, env guard |
-| [`design/entitlement.md`](design/entitlement.md) | Subscription tier gating: ArdaClaim, states, tiers, resolver |
-| [`design/identity-app-integration-standard.md`](design/identity-app-integration-standard.md) | Vxture App Integration Standard v1.0 (OIDC RP contract) |
-| [`implementation/repository.md`](implementation/repository.md) | Repository layout and source-of-truth paths |
-| [`implementation/scripts.md`](implementation/scripts.md) | Deployment script entrypoints and ordered steps |
-| [`deployment/deployment.md`](deployment/deployment.md) | Deploy steps, .env reference, verification checklist |
-| [`deployment/checklists.md`](deployment/checklists.md) | Scenario matrix, preservation contracts, deployment safety |
-| [`operations/operations.md`](operations/operations.md) | Backup, rollback, monitoring, routine operations |
-| [`operations/github-actions.md`](operations/github-actions.md) | CI/CD design, quality gate, promotion contract |
-| [`memory/README.md`](memory/README.md) | Pointer to where Claude's persistent memory lives |
+| [`10-specs/product.md`](10-specs/product.md) | Product scope and non-goals |
+| [`10-specs/domains.md`](10-specs/domains.md) | Domain responsibilities and public URL contracts |
+| [`10-specs/security.md`](10-specs/security.md) | Security boundaries: OIDC, session, cookie scope |
+| [`20-design/architecture.md`](20-design/architecture.md) | Traffic flow, container topology, server directory layout |
+| [`20-design/modules.md`](20-design/modules.md) | Per-service spec: config, volumes, ports, environment variables |
+| [`20-design/decisions.md`](20-design/decisions.md) | Design decisions: BFF pattern, entitlement model, env guard |
+| [`20-design/entitlement.md`](20-design/entitlement.md) | Subscription tier gating: ArdaClaim, states, tiers, resolver |
+| [`20-design/identity-app-integration-standard.md`](20-design/identity-app-integration-standard.md) | Vxture App Integration Standard v1.0 (OIDC RP contract) |
+| [`30-implementation/repository.md`](30-implementation/repository.md) | Repository layout and source-of-truth paths |
+| [`30-implementation/scripts.md`](30-implementation/scripts.md) | Deployment script entrypoints and ordered steps |
+| [`40-deployment/deployment.md`](40-deployment/deployment.md) | Deploy steps, .env reference, verification checklist |
+| [`40-deployment/checklists.md`](40-deployment/checklists.md) | Scenario matrix, preservation contracts, deployment safety |
+| [`50-operations/operations.md`](50-operations/operations.md) | Backup, rollback, monitoring, routine operations |
+| [`50-operations/github-actions.md`](50-operations/github-actions.md) | CI/CD design, quality gate, promotion contract |
+| [`90-memory/README.md`](90-memory/README.md) | Pointer to where Claude's persistent memory lives |
 
 ---
 

@@ -11,7 +11,7 @@
  *
  * Quick-switch URLs for manual testing:
  *   /auth/dev-login?state=trial&tier=pro
- *   /auth/dev-login?state=subscribed&tier=team
+ *   /auth/dev-login?state=subscribed&tier=business
  *   /auth/dev-login?state=expired
  *   /auth/dev-login?state=free
  */
