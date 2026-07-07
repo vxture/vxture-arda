@@ -30,7 +30,7 @@ The state describes where the user is in the Arda subscription lifecycle.
 | State | Forced tier | `had_trial` |
 |---|---|---|
 | `trial` | `pro` (full-feature preview) | `false` until user has been on trial, then `true` |
-| `subscribed` | `pro`, `team`, or `enterprise` | any |
+| `subscribed` | `starter`, `pro`, `business`, or `enterprise` | any |
 | `expired` | `free` | any |
 | `free` | `free` | `false` (no trial) or `true` (was on trial) |
 
@@ -41,9 +41,10 @@ The state describes where the user is in the Arda subscription lifecycle.
 | Tier | Rank | Intended users |
 |---|---|---|
 | `free` | 0 | Lapsed or direct-free users |
-| `pro` | 1 | Individual paid subscribers |
-| `team` | 2 | Team subscriptions |
-| `enterprise` | 3 | Enterprise contracts |
+| `starter` | 1 | Individual entry-level subscribers |
+| `pro` | 2 | Individual paid subscribers |
+| `business` | 3 | Team subscriptions |
+| `enterprise` | 4 | Enterprise contracts |
 
 Tiers are ordered: a higher rank entitles the user to all features of lower
 tiers. Use `tierMeets(user.tier, minTier)` for feature gates:
@@ -62,7 +63,7 @@ if (tierMeets(subscription.tier, "pro")) { ... }
 ```typescript
 interface ArdaClaim {
   state: ArdaState;        // "trial" | "subscribed" | "expired" | "free"
-  tier: Tier;              // "free" | "pro" | "team" | "enterprise"
+  tier: Tier;              // "free" | "starter" | "pro" | "business" | "enterprise"
   had_trial: boolean;      // true iff user ever entered a trial
 }
 ```

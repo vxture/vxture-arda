@@ -65,6 +65,11 @@ services:
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
       # Host-only cookie (no leading dot): scoped to this exact domain.
       RP_SESSION_COOKIE_DOMAIN: "${RP_SESSION_COOKIE_DOMAIN:-}"
+      # -- Platform API (C2 entitlement + C3 consume) -----------------------
+      PLATFORM_API_URL: "${PLATFORM_API_URL:-}"
+      PLATFORM_INTERNAL_AUTH_TOKEN: "${PLATFORM_INTERNAL_AUTH_TOKEN:-}"
+      # -- Platform provisioning webhook (C3) --------------------------------
+      PROVISION_WEBHOOK_SECRET: "${PROVISION_WEBHOOK_SECRET:-}"
       # -- App config --------------------------------------------------------
       DEFAULT_LANDING: "${DEFAULT_LANDING:-/data-assets/overview}"
       MOCK_STATE: "${MOCK_STATE:-subscribed}"

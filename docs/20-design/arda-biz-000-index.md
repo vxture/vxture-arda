@@ -25,11 +25,12 @@
 |---|---|---|---|
 | 数据架构 | `data` | 持久层 / schema / 迁移 | [`arda-data-000-index`](arda-data-000-index.md) 系列（`data-100/11x/2xx/300`） |
 | **业务架构** | `biz` | 能力全景 / 板块详细 / 实施（**本系列**） | 新建 |
-| 权益门控 | `ent` | 订阅 / feature-key / 两轴门控 | `ADR-11`、`entitlement.md`、`arda-functional-domains-and-entitlement.md` |
-| 对接 | `plat` | 平台 / IdP 契约 | `vxture-platform-integration-requirements.md`、`identity-app-integration-standard.md` |
-| 计量 | `mtr` | 用量 / 配额 / 瀑布扣减 | 现嵌于 `ADR-11 §11.5-11.7` |
+| 权益门控 | `ent` | **arda 侧消费职责**：本地 Resolver/Gate/同步 + 消费契约（不含平台侧订阅/Plan/合并算法设计，见 `ent-000` §0 边界） | [`arda-ent-000-index`](arda-ent-000-index.md) 系列（已完成，`ent-100/110/120/300`） |
+| 对接 | `plat` | **arda 侧的 OIDC RP 契约 + 对接需求追踪**（不含平台侧权益/指令通道内部实现，见 `plat-000` §0 边界） | [`arda-plat-000-index`](arda-plat-000-index.md) 系列（已完成，`plat-100/110/300`） |
 
-> 本轮先落地 `biz` 系列；`da/en/if/me` 先规划槽位，既有文档暂不改名（改名涉及跨文档链接更新，另行迁移）。逻辑归属见上表。
+> `biz`、`data`、`ent`、`plat` 四个系列均已完成。逻辑归属见上表。
+>
+> 本表只列 **arda 侧维度**。"计量/瀑布扣减"（曾用代号 `mtr`）经核实是 vxture 平台内部算法，不是 arda 要设计或归档的维度，因此不再作为一行出现在此表——arda 只作为消费方调用 `POST /usage/consume`，契约细节见 [`ent-120`](arda-ent-120-consumption-contract.md) §2。
 
 ---
 
@@ -71,6 +72,7 @@
 | `biz-441` | [数据服务 功能设计](arda-biz-441-services.md) | 功能 | 完成（待评审） |
 | `biz-451` | [数据生命周期 功能设计](arda-biz-451-lifecycle.md) | 功能 | 完成（待评审） |
 | `biz-300` | [实施计划](arda-biz-300-implementation.md) | 3 | 完成（待评审） |
+| `biz-260` | [商业化/计费模型](arda-biz-260-billing.md) | 2 · 跨切面 | 完成（待平台配置） |
 
 ## 3. 板块划分（第 2 层）
 

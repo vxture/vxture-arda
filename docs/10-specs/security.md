@@ -78,10 +78,11 @@ when the access token nears expiry.
 ## Identity vs Session Isolation
 
 accounts.vxture.com is the single source of truth for identity and subscription
-state. Both prod and beta authenticate against the same IdP with the same
-`arda` OIDC client. A user's `ArdaClaim` (`state`, `tier`, `had_trial`) is
-the same regardless of which stack they hit - it comes from the IdP, not from
-any server-side env var.
+state. Both prod and beta authenticate against the same IdP over the same user
+directory, but as two separate OIDC clients (`arda` for prod, `arda-beta` for
+beta), each with its own secret. A user's `ArdaClaim` (`state`, `tier`,
+`had_trial`) is the same regardless of which stack they hit - it comes from the
+IdP, not from any server-side env var.
 
 Session data is isolated per stack. Each stack has its own Redis instance and
 host-only cookie domain. A session created on prod (`arda.vxture.com`) is

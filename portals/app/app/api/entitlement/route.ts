@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const resolver = getEntitlementResolver();
-  const subscription: Subscription = await resolver.resolve(session.ardaClaim);
+  const subscription: Subscription = await resolver.resolve(session.ardaClaim, session.workspaceId);
 
   return NextResponse.json(subscription);
 }

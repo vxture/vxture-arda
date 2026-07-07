@@ -17,10 +17,9 @@ ARDA_DEPLOY_HOST  (private compute, tailnet-only, no public IP)
   arda-app (Next.js, internal :3230, published on APP_PUBLISH_PORT)
     |- /                    -> Next.js pages (redirect to default landing if authed)
     |- /auth/*              -> OIDC RP routes (login, callback, logout, session)
-    |- /entitlement/*       -> Tier gate and upgrade surfaces
-    |- /(app)/*             -> Auth-gated capability surfaces
+    |- /(app)/*             -> Auth-gated capability surfaces (dashboard, catalog, etc.)
     |- /api/health          -> Healthcheck (no auth required)
-    |- /api/entitlement     -> Entitlement check API
+    |- /api/entitlement     -> Entitlement check API (EntitlementGate reads this)
     `- OIDC RP              -> accounts.vxture.com (Authorization Code + PKCE)
   |
   arda-redis (session store, container-internal only)
@@ -28,7 +27,16 @@ ARDA_DEPLOY_HOST  (private compute, tailnet-only, no public IP)
     |- rpsess:<id>          -> RP session (identity claims, tier)
     |- rptok:<id>           -> Token bundle (access + refresh, server-side only)
     `- sid:<sid>            -> Back-channel logout index (OIDC sid -> RP session)
+  |
+  arda-db (Postgres 16, domain/business data, container-internal only)
+    `- see docs/20-design/arda-data-100-architecture.md for the full schema
 ```
+
+> **Note (2026-07-03):** the domain persistence layer (`arda-db`, Postgres 16) was
+> added after this doc was first written; the diagram above and the sections
+> below are now updated to include it. Full schema/table design lives in the
+> [`arda-data-*`](arda-data-000-index.md) series, not here - this file stays at
+> the topology/runtime level.
 
 The edge vhost (contributed as source artifacts in `configs/edge/`) proxies
 `APEX_DOMAIN` to `ARDA_DEPLOY_HOST:APP_PUBLISH_PORT` over tailscale. There is no
@@ -79,14 +87,16 @@ Host ports (beta stack, same host):
 Containers (prod):
   arda-app       (Next.js OIDC RP / app-BFF)
   arda-redis     (server-side session store)
+  arda-db        (Postgres 16, domain business data)
 
 Containers (beta, separate compose project on same host):
   arda-beta-app
   arda-beta-redis
+  arda-beta-db
 
-The two stacks never share a network, a container, a Redis instance, or a
-data directory. PROJECT_NAME drives both the Docker compose project name and
-the container_name prefix, ensuring zero collision.
+The two stacks never share a network, a container, a Redis instance, a
+Postgres instance, or a data directory. PROJECT_NAME drives both the Docker
+compose project name and the container_name prefix, ensuring zero collision.
 ```
 
 ---
@@ -100,15 +110,21 @@ determined entirely by which `.env` is loaded:
 |---|---|---|
 | `PROJECT_NAME` | `arda` | `arda-beta` |
 | `APP_PUBLISH_PORT` | `3230` | `3231` |
+| `OIDC_CLIENT_ID` | `arda` | `arda-beta` |
 | `ROOT_DIR` | `/srv/md0/arda` | `/srv/md1/arda-beta` |
 | `DATA_DIR` | `/srv/md0/arda/data` | `/srv/md1/arda-beta/data` |
 | `APEX_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |
 | `REDIS_URL` | `redis://arda-redis:6379` | `redis://arda-beta-redis:6379` |
+| `DATABASE_URL` | `postgresql://arda:...@arda-db:5432/arda?schema=public` | `postgresql://arda:...@arda-beta-db:5432/arda?schema=public` |
 | `MOCK_STATE` | `subscribed` | `trial` |
 | `NEXT_PUBLIC_APP_ENV` | `prod` | `beta` |
 
-The `REDIS_URL` hostname (`${PROJECT_NAME}-redis`) resolves to the correct Redis
-container on each stack's network, so the app always reaches its own Redis.
+The `REDIS_URL` hostname (`${PROJECT_NAME}-redis`) and the `DATABASE_URL`
+hostname (`${PROJECT_NAME}-db`) each resolve to the correct Redis/Postgres
+container on that stack's network, so the app always reaches its own
+dependencies. See [`data-100`](arda-data-100-architecture.md) §3 for the full
+runtime topology and [`data-300`](arda-data-300-migration.md) §3 for the
+deploy-time service table.
 
 ---
 
@@ -117,10 +133,13 @@ container on each stack's network, so the app always reaches its own Redis.
 This is the most important architectural invariant to understand:
 
 **Identity (shared):** Both stacks are OIDC RPs against the same
-`accounts.vxture.com`. The same user record, the same `arda` OIDC client, and
-the same `arda` claim (carrying `state` and `tier`) apply to both environments.
-A user's subscription state is authoritative from accounts.vxture.com - not from
-any env var in this repo.
+`accounts.vxture.com` and authenticate the same user directory. The same user
+record and the same `arda` claim (carrying `state` and `tier`) apply to both
+environments. A user's subscription state is authoritative from
+accounts.vxture.com - not from any env var in this repo. The OIDC *client*,
+however, is per-stack (`arda` for prod, `arda-beta` for beta): two distinct app
+registrations over one shared user directory, for token-audience and
+back-channel-logout isolation. See `20-design/decisions.md`.
 
 **Session data (isolated):** Each stack runs its own Redis instance. Session
 cookies are host-only, scoped to the exact domain (`arda.vxture.com` vs
@@ -153,7 +172,8 @@ from the runner checkout. The layout under each stack root is:
 |   `-- VERSION                    # Deployed commit SHA
 |-- runtime/                       # RUNTIME_DIR: regenerable at any time
 |-- data/                          # DATA_DIR: persistent state
-|   `-- redis/                     # Redis AOF data (appendonly)
+|   |-- redis/                     # Redis AOF data (appendonly)
+|   `-- postgres/                  # Postgres data directory (arda-db)
 `-- backup/                        # BACKUP_DIR
 
 /srv/md1/arda-beta/                (beta stack root, same host, md1 RAID array)
@@ -161,9 +181,11 @@ from the runner checkout. The layout under each stack root is:
 ```
 
 `etc/.env` is the only file that persists across redeploys. All other state
-under `data/` is Redis AOF (append-only file), which survives container restarts
-and redeploys. The `deploy/` subtree is disposable and safe to delete; it is
-recreated on the next release.
+under `data/` is either Redis AOF (append-only file) or the Postgres data
+directory, both of which survive container restarts and redeploys. The
+`deploy/` subtree is disposable and safe to delete; it is recreated on the
+next release. Postgres backup coverage is tracked as an open item in
+[`data-300`](arda-data-300-migration.md) §5.
 
 ---
 
@@ -174,6 +196,7 @@ recreated on the next release.
 | 3230 (prod) | Tailnet only | arda-app | App HTTP, proxied by edge over tailscale |
 | 3231 (beta) | Tailnet only | arda-beta-app | App HTTP, proxied by edge over tailscale |
 | 6379 | Container-internal | arda-redis | Session store; never published to host |
+| 5432 | Container-internal | arda-db | Domain business data (Postgres 16); never published to host |
 
 ---
 

@@ -44,16 +44,21 @@ Same URL structure as prod. The beta stack differs only in:
 - `MOCK_STATE=trial` (beta users are in trial state)
 - `NEXT_PUBLIC_APP_ENV=beta`
 
-### OIDC Redirect URIs Registered on arda OIDC Client
+### OIDC Clients (One Per Stack)
 
-Both redirect URIs must be registered on the `arda` OIDC client in
-accounts.vxture.com. The OIDC client ID is `arda` for both environments (single
-product, single client).
+Prod and beta are two SEPARATE OIDC clients on accounts.vxture.com, each with
+its own client secret. A confidential client's secret is bound to its client
+ID, and OIDC back-channel logout registers one logout URI per client, so two
+stacks that both need central logout require two clients.
 
-```
-https://arda.vxture.com/auth/callback       (prod)
-https://beta-arda.vxture.com/auth/callback  (beta)
-```
+| Stack | Client ID | Registered redirect URI |
+|---|---|---|
+| prod | `arda` | `https://arda.vxture.com/auth/callback` |
+| beta | `arda-beta` | `https://beta-arda.vxture.com/auth/callback` |
+
+Each client also registers its own post-logout redirect and back-channel logout
+URI on its own domain. Both clients authenticate the SAME user directory (one
+IdP realm); "two clients" isolates the app registrations, not the users.
 
 ---
 

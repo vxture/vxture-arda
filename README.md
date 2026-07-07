@@ -18,8 +18,9 @@ surfaces are built out behind that shell over time.
   it delegates sign-in to the central accounts service and consumes the
   resulting session.
 - Subscription-tier gate. After authentication a pluggable resolver determines
-  the user's tier (`free` / `pro` / `team` / `enterprise`). The resolver is an
-  interface so the backing source can change without touching the gate.
+  the user's tier (`free` / `starter` / `pro` / `business` / `enterprise`). The
+  resolver is an interface so the backing source can change without touching
+  the gate.
 - Configurable default landing. Once authenticated and gated, the user lands on
   a configurable default page (default `/data-assets/overview`).
 
@@ -45,7 +46,7 @@ arda-app (Next.js, published on APP_PUBLISH_PORT)
    |- /            -> Next.js pages
    |- /api/*       -> Next.js route handlers
    |- OIDC RP      -> accounts.vxture.com (sign-in / token exchange)
-   |- tier gate    -> pluggable subscription resolver (free/pro/team/enterprise)
+   |- tier gate    -> pluggable subscription resolver (free/starter/pro/business/enterprise)
    |- session / cache -> arda-redis
    `- default landing -> /data-assets/overview (configurable)
 ```

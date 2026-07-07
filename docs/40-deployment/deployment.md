@@ -112,7 +112,8 @@ cp .env.example /srv/md1/arda-beta/etc/.env  # beta
 | `ROOT_DIR` | `/srv/md0/arda` | `/srv/md1/arda-beta` |
 | `APEX_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |
 | `APP_PUBLISH_PORT` | `3230` | `3231` |
-| `OIDC_CLIENT_SECRET` | (provisioned) | (provisioned) |
+| `OIDC_CLIENT_ID` | `arda` | `arda-beta` |
+| `OIDC_CLIENT_SECRET` | (provisioned, `arda` client) | (provisioned, `arda-beta` client) |
 | `OIDC_REDIRECT_URI` | `https://arda.vxture.com/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
 | `REDIS_URL` | `redis://arda-redis:6379` | `redis://arda-beta-redis:6379` |
 | `RP_SESSION_COOKIE_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |

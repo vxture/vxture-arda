@@ -39,24 +39,37 @@ preferable to silently accepting unverified codes.
 
 ---
 
-## Single OIDC Client, Shared Identity, Isolated Sessions
+## Two OIDC Clients (Per-Stack), Shared Identity, Isolated Sessions
 
-**Decision:** Both prod and beta use the same `OIDC_CLIENT_ID=arda` against the
-same `accounts.vxture.com`. Identity (user records, subscription state, the
-`arda` claim) is shared. Session data (Redis, cookies) is isolated per stack.
+**Decision:** Prod and beta are two SEPARATE OIDC clients against the same
+`accounts.vxture.com`: prod uses `OIDC_CLIENT_ID=arda`, beta uses `arda-beta`.
+Each client has its own client secret. Identity (user records, subscription
+state, the `arda` claim) is shared - both clients authenticate the same user
+directory. Session data (Redis, cookies) is isolated per stack.
 
-**Rationale:** Arda is one product with one user base. The subscription state
-(`state`, `tier`) is owned by accounts.vxture.com and is authoritative for both
-stacks - there is no "beta subscription" vs "prod subscription". The two stacks
-differ in which users are expected to land there (trial users -> beta, subscribed
-users -> prod), and EnvGuard enforces the redirect. Session isolation (separate
-Redis, host-only cookies) is a data hygiene requirement, not an identity split.
+**Rationale:** Two forces require two clients, not one:
+- **Central logout.** OIDC back-channel logout registers exactly one
+  `backchannel_logout_uri` per client. With a single shared client the IdP
+  could notify only one stack on central logout; the other stack would stay
+  logged in. Two clients let each stack register its own logout URI. (This was
+  the root cause of the historical beta logout bug.)
+- **Isolation.** Beta is an internal pre-release / demo stack (lower trust,
+  wider access). A separate client gives it a separate token audience (a beta
+  token cannot be replayed against prod) and a separate secret (a beta leak
+  does not compromise the prod client).
+
+"One user base" does not imply one client: the user directory is a property of
+the IdP realm, not of the OIDC client. Both clients authenticate the same
+users; the split isolates the app registrations, not the users. EnvGuard still
+routes users to the stack that matches their subscription state. Session
+isolation (separate Redis, host-only cookies) is a data hygiene requirement
+layered on top.
 
 **Consequence:**
 - The same user can authenticate on both stacks simultaneously with two
   independent sessions; this is intentional and not a bug.
-- If the `arda` OIDC client is revoked or rotated, both environments are
-  affected simultaneously.
+- Each stack's client secret is provisioned and rotated independently. Rotating
+  the `arda` secret does not affect beta, and vice versa.
 - `MOCK_STATE=trial` on the beta `.env` is a local-dev fallback only (used
   when no real `arda` claim is present). In production, the claim from
   accounts.vxture.com is authoritative and overrides any MOCK_* env vars.
@@ -132,8 +145,9 @@ exception is `http://localhost:3230` for local development.
 
 ## Subscription Tiers as a Closed Enum
 
-**Decision:** Subscription tiers are a fixed ordered enum: `free < pro < team <
-enterprise`. The `tierMeets(tier, min)` utility compares by rank index.
+**Decision:** Subscription tiers are a fixed ordered enum: `free < starter <
+pro < business < enterprise`. The `tierMeets(tier, min)` utility compares by
+rank index.
 
 **Rationale:** An open-ended tier system (arbitrary strings, bitmask
 capabilities) would require all feature checks to know about all capabilities.

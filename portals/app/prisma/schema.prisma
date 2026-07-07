@@ -318,13 +318,37 @@ model AuditLog {
 
 /// Local mirror of a platform workspace, used purely as the isolation anchor.
 /// arda does NOT own workspace lifecycle (create/clone/delete = platform).
+/// tenantId and plan are set by the C3 provisioning webhook on first provisioning.
+/// status: provisioned | deprovisioned (deprovisioned rows retained for audit).
 model WorkspaceRef {
   id         String   @id // = platform/IdP active_workspace
   orgId      String
+  tenantId   String? // from provisioning webhook payload
+  plan       String? // arda plan code at last provisioning
+  status     String   @default("provisioned") // provisioned | deprovisioned
   seedStatus String? // platform marker: needs sample-data fill (ADR section 4)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([orgId])
+  @@index([status])
+}
+
+/// Idempotency + seq tracking for inbound C3 provisioning webhook events.
+/// Logical schema: context.
+/// Per-event dedup: id is the platform-assigned delivery uuid.
+/// Seq is per (workspaceId, product) monotonic; stale events (seq <= lastSeq) are
+/// ignored without error per handoff §2 wire contract.
+model ProvisioningEvent {
+  id          String   @id // platform delivery uuid (x-vxture-delivery header)
+  workspaceId String
+  tenantId    String
+  eventType   String // tenant.provisioned | tenant.deprovisioned | subscription_changed
+  seq         Int
+  plan        String?
+  processedAt DateTime @default(now())
+
+  @@index([workspaceId])
 }
 
 /// Read-only, versioned sample-data templates (global, platform/ops-curated).
@@ -346,4 +370,29 @@ model TemplateVersion {
   template SeedTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, version])
+}
+
+// ------------------------------------------------------- local_usage ----------
+
+/// C3 usage buffer: records are written on each billable action and flushed to
+/// the platform consume endpoint (POST /usage/consume) by the ConsumeFlushJob.
+/// Logical schema: local_usage.
+/// idempotencyKey: caller-supplied; replayed platform calls return replayed:true.
+/// flushed: false until the platform consume call returns 200 or 409 (quota
+/// exhausted counts as consumed). Failed calls remain flushed=false for retry.
+model UsageRaw {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  product        String   @default("arda")
+  metric         String // e.g. datasource.registered | query.count (TBD: owner decision)
+  amount         Int      @default(1)
+  idempotencyKey String   @unique
+  flushed        Boolean  @default(false)
+  flushAttempts  Int      @default(0)
+  flushError     String?
+  createdAt      DateTime @default(now())
+  flushedAt      DateTime?
+
+  @@index([flushed, createdAt])
+  @@index([workspaceId])
 }

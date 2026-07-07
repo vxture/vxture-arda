@@ -3,6 +3,10 @@
 > Status: Interface specification (integration reference).
 > This document describes the contract that Arda implements as an OIDC relying
 > party against accounts.vxture.com.
+> See also: [`arda-plat-110-oidc-contract.md`](arda-plat-110-oidc-contract.md)
+> for arda's numbered-series counterpart (same contract, cross-checked against
+> the current auth code, with the additional `appOrigin` / back-channel replay
+> details this file does not cover).
 
 Arda follows the Vxture App Integration Standard v1.0. The upstream authoritative
 specification is maintained in the vxture/umbra repository at:
@@ -18,14 +22,25 @@ implementation of that standard.
 
 ## Arda OIDC Client Registration
 
-| Parameter | Value |
-|---|---|
-| Client ID | `arda` |
-| Client authentication | `client_secret_basic` (recommended) |
-| Redirect URIs | `https://arda.vxture.com/auth/callback`, `https://beta-arda.vxture.com/auth/callback` |
-| Post-logout redirect URIs | `https://arda.vxture.com/`, `https://beta-arda.vxture.com/` |
-| Scopes | `openid profile email arda:subscription` |
-| Deployment mode | Mode A (cross-subdomain, `*.vxture.com`) |
+Arda registers two OIDC clients on accounts.vxture.com, one per stack. Each is a
+confidential client with its own secret, callback, post-logout, and
+back-channel-logout URI. Two clients (not one client with two redirect URIs) are
+required because OIDC back-channel logout allows a single logout URI per client;
+the split also isolates token audience and secret blast-radius between the prod
+and the internal beta stack.
+
+| Parameter | Prod client | Beta client |
+|---|---|---|
+| Client ID | `arda` | `arda-beta` |
+| Client authentication | `client_secret_basic` | `client_secret_basic` |
+| Redirect URI | `https://arda.vxture.com/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
+| Post-logout redirect URI | `https://arda.vxture.com/` | `https://beta-arda.vxture.com/` |
+| Back-channel logout URI | `https://arda.vxture.com/auth/backchannel-logout` | `https://beta-arda.vxture.com/auth/backchannel-logout` |
+| Scopes | `openid profile email phone arda` | `openid profile email phone arda` |
+| Deployment mode | Mode A (cross-subdomain, `*.vxture.com`) | Mode A (cross-subdomain, `*.vxture.com`) |
+
+Both clients authenticate the same user directory (one IdP realm); the split
+isolates the app registrations, not the users.
 
 ---
 
@@ -54,8 +69,10 @@ is not supported. The code verifier is generated per-request, stored in Redis un
 
 ## The `arda` Scope Claim
 
-Arda requests the `arda:subscription` scope. accounts.vxture.com populates the
-`arda` claim in the access token with lifecycle state and subscription tier:
+Arda requests the `arda` scope (current; `arda:subscription` was an earlier
+scope name being phased out, see `docs/60-workplan/vxture-platform-integration-requirements.md`
+section 2.3). accounts.vxture.com populates the `arda` claim in the access
+token with lifecycle state and subscription tier:
 
 ```json
 {
