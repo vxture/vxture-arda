@@ -55,9 +55,9 @@ export async function fetchPlatformEntitlement(
 function mapToSubscription(body: EntitlementsResponse): Subscription {
   const caps = body.capabilities ?? {};
 
-  // Platform emits tier as a flat key. Per product_310 P2.1 note:
-  // capabilities uses flat `tier` key (not `{product}.tier`).
-  const rawTier = caps["tier"] ?? caps["data.tier"];
+  // Platform emits tier as a flat key `tier` (NOT `data.tier`/`{product}.tier`) -
+  // the envelope already carries product (reply-01 §6; product_310 P2.1 note).
+  const rawTier = caps["tier"];
   const tier: Tier =
     typeof rawTier === "string" && (TIER_ORDER as string[]).includes(rawTier)
       ? (rawTier as Tier)

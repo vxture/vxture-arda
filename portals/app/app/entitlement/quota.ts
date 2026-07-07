@@ -13,13 +13,18 @@
 // Use these everywhere instead of bare strings to avoid typos.
 
 export const METRICS = {
-  /** Workspace shared storage pool (bytes). Delta per Dataset register/delete. */
+  /**
+   * Workspace shared storage pool (bytes). GAUGE (snapshot), not a counter -
+   * reported via the future PUT /usage/gauge, NOT POST /usage/consume
+   * (reply-01 R4: delta rejected). Until the gauge endpoint ships, storage is
+   * C2-display + local admission only and is NOT wired into recordUsage.
+   */
   STORAGE_BYTES: "storage.bytes",
-  /** External DataService call (rest_api / query / export / share). amount=1. */
+  /** External DataService call. counter, divisible 后报 (reply-01 R5). amount=1. */
   SERVICE_API_CALL: "service.api.call",
-  /** QualityRule batch execution. amount=rules_run (default 1). */
+  /** QualityRule batch execution. counter, divisible 后报 (reply-01 R5). amount=rules_run. */
   QUALITY_CHECK_RUN: "quality.check.run",
-  /** varda AI operation credit consumption. amount=credits_spent. */
+  /** varda AI credit. counter, ATOMIC pre-deduct (reply-01 R5). amount=credits_spent. */
   VARDA_CREDIT: "varda.credit",
 } as const;
 

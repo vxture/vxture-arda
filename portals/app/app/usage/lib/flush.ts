@@ -2,20 +2,28 @@
  * ConsumeFlushJob: reads unflushed UsageRaw rows and POSTs them to the
  * platform consume endpoint (POST /usage/consume).
  *
- * Per handoff §2 / ent-120 §2:
- *   - 200: consumed. Mark flushed=true.
- *   - 409: quota exhausted (gated). Also mark flushed=true - quota state is
- *           authoritative on the platform; we do not retry gated events.
+ * Per handoff §2 / ent-120 §2 / reply-01 R5 (divisible 后报):
+ *   - 200: consumed. Mark flushed=true, no error.
+ *   - 409: quota exhausted. TERMINAL, not an error and NOT retried
+ *           (reply-01 R5: "该行标记完成——不是 flushError，不重试"). Mark
+ *           flushed=true with flushError=null, and evict the C2 cache so the
+ *           next admission check re-pulls the now-exhausted remaining
+ *           (reply-01 §5.1: gated is DERIVED from C2 remaining<=0, not a
+ *           persistent flag; C2 self-heals on period reset).
  *   - Other: transient error. Increment flushAttempts, keep flushed=false.
  *
- * Max attempts: FLUSH_MAX_ATTEMPTS (default 5). After that, log and give up
+ * Max attempts: MAX_ATTEMPTS (default 5). After that, log and give up
  * (mark flushed=true with error) to avoid an infinite retry loop.
+ *
+ * NOTE: varda.credit is ATOMIC pre-deduct (reply-01 R5) - it consumes
+ * synchronously BEFORE the AI op, not through this async buffer/flush path.
  *
  * This job is triggered by GET /api/usage/flush (see route). Callers may
  * invoke it on startup, on a schedule, or after each significant operation.
  */
 
 import { prisma } from "../../lib/db";
+import { getEntitlementResolver } from "../../entitlement/resolver";
 
 const FLUSH_BATCH = 50;
 const MAX_ATTEMPTS = 5;
@@ -82,18 +90,26 @@ export async function flushUsage(): Promise<FlushResult> {
       });
 
       if (res.status === 200 || res.status === 409) {
-        const data = (await res.json()) as { replayed?: boolean; gated?: boolean };
+        // Drain the body (replayed/gated/consumed) even if unused, so the socket
+        // is freed; 409 is a normal terminal outcome, never a flushError.
+        await res.json().catch(() => ({}));
         await prisma.usageRaw.update({
           where: { id: row.id },
           data: {
             flushed: true,
             flushedAt: new Date(),
             flushAttempts: row.flushAttempts + 1,
-            flushError: data.gated ? "quota_exhausted" : null,
+            flushError: null,
           },
         });
-        if (res.status === 409) result.gated++;
-        else result.succeeded++;
+        if (res.status === 409) {
+          // Terminal, no retry. Evict C2 so the next admission check sees the
+          // exhausted remaining (reply-01 §5.1 gated-derivation).
+          getEntitlementResolver().invalidateCache(row.workspaceId);
+          result.gated++;
+        } else {
+          result.succeeded++;
+        }
       } else {
         await prisma.usageRaw.update({
           where: { id: row.id },
