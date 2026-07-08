@@ -39,21 +39,26 @@ capabilities: {
 }
 ```
 
-- **持久 gating 态只有 4 个**：`none / trial / subscribed / expired`。
+- **持久 gating 态只有 4 个**：`none / trial / subscribed / expired`——判据 = "**订阅停留的条件**"（不是过程、不是另一根轴）。每态对一种停留语义，互不可并（§1.6）。
 - **cancelled 不是态，是事件**（owner 裁定）：cancel = **取消订阅（即时退款）**，不是取消续费——一次事件把订阅 `subscribed → none` **立即**结束（平台侧做退款核算）。产品端只看到 `status` 翻到 `none`，无 `cancelled` 值、无 `auto_renew` 旗标。
-- **suspended 不进 C2 status**：账号/服务强制冻结走 **token `account_status`**（reply-01 R3 已在 access_token）——它是叠加层，查 C2 前即可一票拦停，不占 status 值域。
+- **suspended 不进 C2 status**：账号/服务强制冻结走 **token `account_status`**（reply-01 R3 已在 access_token）——它是**另一根轴**的叠加层，查 C2 前即可一票拦停，不占 status 值域。
+- **grace/催缴、pending/首付未确认 都不是态**：前者是 `expired` 内部的**过程**（倒计时），后者没付成 = 还没进任何订阅 = `none`。
 
-### 1.3 状态机
+### 1.3 状态机（owner 2026-07-08 精修）
 
 ```
-none ──订阅──▶ trial ──转正/付费──▶ subscribed
-none ──直购────────────────────▶ subscribed
-subscribed ──cancel(取消订阅,即时退款)──▶ none        # 事件，立即
-subscribed ──续费失败/欠费──▶ expired ──付费─▶ subscribed
-                                    └──缓冲到期─▶ none
-trial ──到期──▶ expired | none
-任意 ──账号冻结──▶ token.account_status="suspended"   # 叠加层，非订阅态
+none ──订阅/试用──▶ trial ──转正/付费──▶ subscribed
+                       └──到期未转──▶ none  (had_trial=true)     # 试用未转 → none，不是 expired
+none ──直购──────────────────────▶ subscribed
+subscribed ──cancel(取消订阅,即时退款)──▶ none                    # 事件，立即
+subscribed ──续费失败/欠费──▶ expired ──续回付费─▶ subscribed
+                                    └──缓冲耗尽─▶ none
+account ──冻结/解冻──▶ token.account_status="suspended"          # 另一根轴，叠加
 ```
+
+**两条精修（请平台对齐）：**
+1. **`trial` 到期未转化 → `none`（非 `expired`）**：试用者从没付过钱，判 `expired` 会污染"付费流失"口径与再获取漏斗。`expired` **专表"付费订阅失效"**。
+2. **`had_trial` 是历史属性，不是状态**：它记"是否用过试用"，驱动 `none` 的文案（"试用已用过，来订阅" vs "开始试用"），但不改变当前停在哪。同理"从未订 vs 已流失"也是 `none` 的历史属性，不是两个态。
 
 ### 1.4 产品-有效状态合并规则（一产品可多订阅供给）
 
@@ -62,9 +67,21 @@ trial ──到期──▶ expired | none
 
 ### 1.5 为什么 cancel→none 而非→expired（关键，勿合并）
 
-- `expired` = **被动失效**（没续上钱）：受限、催缴、UX = "快续订别断"；
+- `expired` = **被动失效**（没续上钱）：受限（降级/只读、数据仍在）、催缴、UX = "快续订别断"；
 - `none`（cancel 后）= **主动离开**：干净、不弹催缴、UX = "已取消，随时回来"。
 - 两者**再获取漏斗完全不同**，合并会污染 UX 与增长数据。
+
+### 1.6 四态不可再削（每态一种停留语义 + 访问级）
+
+| 态 | 停留条件 | 访问级 | 为什么不能并入别的 |
+|---|---|---|---|
+| `none` | 无有效订阅（从未订 / 已离开） | 零 | 唯一"非客户"停留态 |
+| `trial` | 试用生效、未付费、有时限 | 全（试用档） | 权益受限 + 出口边 `→none`，与 subscribed 不同 |
+| `subscribed` | 付费正常 | 全 | 唯一"正常付费"停留态 |
+| `expired` | 付费被动失效、受限 | 降级 | 与 `none` 差别在**数据保留 + 一键续回 subscribed 的边**，非访问级 |
+
+- `subscribed`/`trial` 都是全访问，但**出口边不同**（`subscribed→expired` / `trial→none`）→ 必须分开；
+- `expired`≠`none`：哪怕访问级都低，`expired` 带数据保留 + 续回边 → 转移语义不同 → 两个态。
 
 ---
 
@@ -131,11 +148,12 @@ trial ──到期──▶ expired | none
 
 ## 7. 请平台确认项
 
-1. C2 `capabilities.status`（4 态）+ 合并规则（§1.4）纳入 C2 契约 / product_220 v1.1；
-2. `account_status="suspended"` 保持在 access_token（reply-01 R3），作为账号级叠加层；
-3. quota_pools 增 `audience` + 租户管理员 credit 共享策略（§2）；
-4. §4.2 钉入"贵资源必 counter+atomic、gauge 仅限超冲不亏钱资源"不变量；
-5. cancel 语义 = 取消订阅即时退款→none（非取消续费），平台侧退款核算对齐。
+1. C2 `capabilities.status`（4 态 `none/trial/subscribed/expired`）+ 合并规则（§1.4）纳入 C2 契约 / product_220 v1.1；
+2. **状态机精修**（§1.3）：`trial` 到期未转 → `none`（非 expired）；`expired` 仅表付费失效；`had_trial` 作历史属性下发（非 status 值）；
+3. `account_status="suspended"` 保持在 access_token（reply-01 R3），作为账号级叠加层；
+4. quota_pools 增 `audience` + 租户管理员 credit 共享策略（§2）；
+5. §4.2 钉入"贵资源必 counter+atomic、gauge 仅限超冲不亏钱资源"不变量；
+6. cancel 语义 = 取消订阅即时退款→none（非取消续费），平台侧退款核算对齐。
 
 ---
 

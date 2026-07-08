@@ -79,7 +79,7 @@
 | tier 档位 | 五档 `free/starter/pro/business/enterprise`（不变）|
 | 接入来源（正交 tier）| standalone（单独订阅,得 UI+数据）/ **bundled**（旧称 standard,无单独订阅、agent 附带、后台数据支撑、不给 UI、billing=bundled_free、权益管理同 standalone）。产品 UI 门控要 standalone;数据取用门控收 bundled 或 standalone |
 | bundled 权益配置 | **独立可配组件**(`component_role=bundled`,tier=NULL);C2 以布尔 `bundled` 暴露(正交 tier);当前 ≈ free,**`member.max=0`**;权威=product_220+plat-210(取代"tier rank=free") |
-| C2 status(reply-02) | 4 gating 态 `none/trial/subscribed/expired`;cancel=取消订阅即时退款→none(非态);suspended 走 token account_status。arda 已按此改 `ArdaState`/`quota.ts`,待平台 C2 发 status 字段 |
+| C2 status(reply-02) | 4 停留态 `none/trial/subscribed/expired`;cancel=取消订阅即时退款→none(事件非态);**trial 到期未转→none(非 expired)**;**expired 仅付费失效**;had_trial 是历史属性非 status 值;suspended 走 token account_status(另一轴)。arda 已按此改 `ArdaState`/`quota.ts`,待平台 C2 发 status 字段 |
 | ai.credit(product_220) | `varda.credit→ai.credit` 升格 L0;池按产品 earmark、租户管理员可开共享溢出、全程归因(reply-02 §2);arda metric 常量已改 |
 | 存储容量语义 | **已定（reply-01 R4）**：gauge 快照,arda 报当前水位到未来 `PUT /usage/gauge`,不接 consume；平台读时跨产品求和 |
 | counter 超额模式 | **已定（reply-01 R5）**：api.call/quality.check.run = divisible 后报;varda.credit = atomic 预扣 |
