@@ -14,12 +14,18 @@
 
 // -- Lifecycle status ---------------------------------------------------------
 
-/** Subscription lifecycle for (workspace, product=arda). Four gating states.
- *  none       - never subscribed, or cleanly cancelled (voluntary exit).
- *  trial      - unpaid trial; time/quota limited.
+/** Subscription lifecycle for (workspace, product=arda). Four resting states -
+ *  a STATE is where the subscription rests, not a transition (see plat-210 §1).
+ *  none       - never subscribed, cleanly cancelled, OR a trial that ended
+ *               unconverted (had_trial then records the history). Zero access.
+ *  trial      - unpaid trial; time/quota limited. Full (trial-tier) access.
  *  subscribed - paid subscription active; full service.
- *  expired    - involuntary lapse (renewal unpaid); restricted, dunning.
- *  (suspended is account-level via access_token `account_status`, not here.) */
+ *  expired    - a PAID subscription lapsed involuntarily (renewal unpaid);
+ *               restricted/degraded (data retained, one-click renew). NOT used
+ *               for an unconverted trial (that goes to `none`).
+ *  Excluded by design: `cancelled` (an immediate-refund EVENT subscribed->none),
+ *  grace/dunning (a process inside `expired`), and `suspended` (account-level,
+ *  via access_token `account_status` - a different axis). */
 export type SubscriptionStatus = "none" | "trial" | "subscribed" | "expired";
 
 /** @deprecated legacy alias kept for the token-claim wire format. Same values
