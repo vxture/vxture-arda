@@ -12,6 +12,7 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
   echo ""
   echo "  Creates timestamped backup archives of runtime state:"
   echo "    - .env file"
+  echo "    - Postgres domain data (pg_dump custom-format dump)"
   echo "    - Redis append-only / snapshot data"
   echo "    - Crontab"
   echo ""
@@ -37,6 +38,40 @@ if [[ -f "$ROOT_DIR/etc/.env" ]]; then
   log_ok "Environment -> $(basename "$ENV_BACKUP")"
 else
   log_warn "Environment file not found at $ROOT_DIR/etc/.env - skipping"
+fi
+
+# -- Postgres domain data ------------------------------------------------------
+# Logical dump of the live DB via pg_dump custom format (-Fc): consistent (a
+# single MVCC snapshot) and restorable with pg_restore, unlike a raw tar of a
+# running PGDATA dir which would be torn/inconsistent. Runs pg_dump inside the
+# running db container so no client tooling is needed on the host. The dump is
+# written to a temp file first and only promoted after an integrity check, so a
+# failed dump never leaves a truncated archive behind.
+log_step "Backing up Postgres domain data..."
+DB_CONTAINER="${PROJECT_NAME:-arda}-db"
+if docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
+  DB_ARCHIVE="$BACKUP_DIR/postgres-${TIMESTAMP}.dump"
+  DB_TMP="${DB_ARCHIVE}.partial"
+  if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-arda}" "$DB_CONTAINER" \
+       pg_dump -U "${POSTGRES_USER:-arda}" -d "${POSTGRES_DB:-arda}" -Fc > "$DB_TMP"; then
+    # Integrity: pg_restore --list must parse the archive header/TOC.
+    if docker exec -i "$DB_CONTAINER" pg_restore --list < "$DB_TMP" >/dev/null 2>&1; then
+      mv "$DB_TMP" "$DB_ARCHIVE"
+      chmod 600 "$DB_ARCHIVE"
+      SIZE=$(du -sh "$DB_ARCHIVE" | cut -f1)
+      log_ok "Postgres data -> $(basename "$DB_ARCHIVE") ($SIZE)"
+    else
+      rm -f "$DB_TMP"
+      log_error "Postgres dump failed integrity check (pg_restore --list): $DB_ARCHIVE"
+      exit 1
+    fi
+  else
+    rm -f "$DB_TMP"
+    log_error "pg_dump failed for $DB_CONTAINER"
+    exit 1
+  fi
+else
+  log_warn "Postgres container '$DB_CONTAINER' not running - skipping"
 fi
 
 # -- Redis data ----------------------------------------------------------------
@@ -88,7 +123,7 @@ while IFS= read -r -d '' f; do
     DELETED=1
   fi
 done < <(
-  find "$BACKUP_DIR" -type f \( -name "*.tar.gz" -o -name "*.txt" \) -mtime +30 -print0 2>/dev/null
+  find "$BACKUP_DIR" -type f \( -name "*.tar.gz" -o -name "*.txt" -o -name "*.dump" \) -mtime +30 -print0 2>/dev/null
 )
 
 if [[ "$DELETED" == "0" ]]; then
