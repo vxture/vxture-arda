@@ -10,12 +10,16 @@
 import type { Subscription, SubscriptionStatus } from "./types";
 import type { Tier } from "./types";
 import { TIER_ORDER } from "./types";
+import { SUBSCRIPTION_STATUSES } from "@vxture/shared";
 import type { WorkspaceQuota } from "./quota";
 import { mapToWorkspaceQuota } from "./quota";
 
 interface EntitlementsResponse {
   workspace_id: string;
   product: string;
+  // Subscription lifecycle is a TOP-LEVEL field (raw platform status), NOT inside
+  // capabilities (product_220 / @vxture/shared). null/absent = never subscribed.
+  subscription_status?: string | null;
   capabilities: Record<string, unknown>;
   quota_pools: Array<{ metric: string; limit: number; remaining: number; priority: number }>;
 }
@@ -67,16 +71,15 @@ function mapToSubscription(body: EntitlementsResponse): Subscription {
   // bundled: an agent Plan bundles arda's data base capability (product_220 §3).
   const bundled = caps["bundled"] === true;
 
-  // Lifecycle status (product_220 / reply-02 §1). If the platform has not yet
-  // added the field, default: tier present -> subscribed, else none.
-  const rawStatus = caps["status"];
-  const status: SubscriptionStatus =
-    rawStatus === "trial" || rawStatus === "subscribed" ||
-    rawStatus === "expired" || rawStatus === "none"
-      ? rawStatus
-      : tier != null
-        ? "subscribed"
-        : "none";
+  // Raw platform subscription status from the TOP-LEVEL body field, validated
+  // against the canonical set (@vxture/shared). Out-of-range/absent -> null
+  // (null = never subscribed).
+  const rawStatus = body.subscription_status;
+  const status: SubscriptionStatus | null =
+    typeof rawStatus === "string" &&
+    (SUBSCRIPTION_STATUSES as readonly string[]).includes(rawStatus)
+      ? (rawStatus as SubscriptionStatus)
+      : null;
 
   return { tier, status, bundled };
 }

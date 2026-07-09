@@ -1,46 +1,28 @@
 /**
  * Entitlement domain types for arda.
  *
- * Aligned to platform product_220 (catalog/entitlement/resource model) +
- * arda-plat-210 reply-02:
- *  - tier is one of the five commercial tiers OR null (null = no direct purchase).
- *  - status is the subscription lifecycle: none | trial | subscribed | expired.
- *    "cancelled" is NOT a state - cancel (取消订阅) is an immediate-refund event
- *    that transitions subscribed -> none. Account-level "suspended" rides the
- *    access_token `account_status` claim, not this status.
- *  - bundled is an orthogonal boolean: an agent Plan bundles arda's data base
- *    capability (billing bundled_free) without a standalone arda subscription.
+ * Aligned to platform product_220 + @vxture/shared 1.3.0 (canonical value sets):
+ *  - Tier and SubscriptionStatus are imported from @vxture/shared (the platform
+ *    is the single source of truth for these value sets). arda does not redefine
+ *    them locally.
+ *  - Subscription.status is the RAW platform status (SubscriptionStatus) or null
+ *    (null = never subscribed). Product-UI access = status in {active, trialing}.
+ *  - ArdaState is a SEPARATE axis: a deploy-stack routing hint (trial -> beta),
+ *    carried in the token claim and used only by EnvGuard - fully decoupled from
+ *    entitlement (which now comes from C2 / SubscriptionStatus).
+ *  - bundled is orthogonal: an agent Plan bundles arda's data base capability.
  */
 
-// -- Lifecycle status ---------------------------------------------------------
+import type { SubscriptionStatus, Tier } from "@vxture/shared";
 
-/** Subscription lifecycle for (workspace, product=arda). Four resting states -
- *  a STATE is where the subscription rests, not a transition (see plat-210 §1).
- *  none       - never subscribed, cleanly cancelled, OR a trial that ended
- *               unconverted (had_trial then records the history). Zero access.
- *  trial      - unpaid trial; time/quota limited. Full (trial-tier) access.
- *  subscribed - paid subscription active; full service.
- *  expired    - a PAID subscription lapsed involuntarily (renewal unpaid);
- *               restricted/degraded (data retained, one-click renew). NOT used
- *               for an unconverted trial (that goes to `none`).
- *  Excluded by design: `cancelled` (an immediate-refund EVENT subscribed->none),
- *  grace/dunning (a process inside `expired`), and `suspended` (account-level,
- *  via access_token `account_status` - a different axis). */
-export type SubscriptionStatus = "none" | "trial" | "subscribed" | "expired";
+// Re-export the platform value-set types so local consumers keep importing from
+// "./types" (single import surface for the entitlement module).
+export type { SubscriptionStatus, Tier } from "@vxture/shared";
 
-/** @deprecated legacy alias kept for the token-claim wire format. Same values
- *  as SubscriptionStatus; the claim historically used "free" for "none". */
-export type ArdaState = SubscriptionStatus;
+// -- Subscription tiers (order helpers; value set from @vxture/shared) ---------
 
-// -- Subscription tiers -------------------------------------------------------
-
-/** Commercial subscription tier. Five tiers, and only five (product_220 §1):
- *  free < starter < pro < business < enterprise. The platform is the source of
- *  truth; arda only consumes the value. tier is null when there is no direct
- *  purchase (bundled-only or no subscription). */
-export type Tier = "free" | "starter" | "pro" | "business" | "enterprise";
-
-/** Ordered tiers, lowest to highest. The index is the tier rank. */
+/** Ordered tiers, lowest to highest. The index is the tier rank.
+ *  Five tiers, and only five (product_220 §1). */
 export const TIER_ORDER: readonly Tier[] = ["free", "starter", "pro", "business", "enterprise"];
 
 /** Numeric rank for a tier (higher = more entitled). */
@@ -53,16 +35,15 @@ export function tierMeets(tier: Tier, min: Tier): boolean {
   return tierRank(tier) >= tierRank(min);
 }
 
-// -- Arda claim (from access token) -------------------------------------------
+// -- Deploy-stack routing hint (separate axis, NOT entitlement) ---------------
 
-/** The `arda` nested object inside the OIDC access token.
- *
- *  Invariants enforced by accounts.vxture.com:
- *    state=trial      -> tier = a platform-configured preview tier
- *    state=subscribed -> tier in {starter, pro, business, enterprise}
- *    state=expired    -> tier = "free" (or null)
- *    state=none       -> tier = "free" (or null); the wire format historically
- *                        sent "free" for this state (mapped to "none" on read). */
+/** Deploy-stack routing hint carried in the token `arda` claim. Used ONLY by
+ *  EnvGuard to route a trial user to the beta stack. Decoupled from entitlement:
+ *  it does not gate access - that is Subscription.status (from C2). */
+export type ArdaState = "trial" | "subscribed" | "expired" | "none";
+
+/** The `arda` nested object inside the OIDC access token. `state` is the routing
+ *  hint (above); `tier` seeds the mock/dev fallback Subscription. */
 export interface ArdaClaim {
   readonly state: ArdaState;
   readonly tier: Tier;
@@ -74,34 +55,33 @@ export interface ArdaClaim {
 export interface Subscription {
   /** Direct-purchase tier, or null when there is no standalone subscription. */
   readonly tier: Tier | null;
-  /** Lifecycle status (product_220 / reply-02). */
-  readonly status: SubscriptionStatus;
+  /** Raw platform subscription status (SubscriptionStatus), or null = never
+   *  subscribed (product_220 / @vxture/shared). */
+  readonly status: SubscriptionStatus | null;
   /** True when an agent Plan bundles arda's data base capability (orthogonal to
    *  tier/status). Enables backend/agent data access without a standalone sub. */
   readonly bundled: boolean;
 }
 
-/** Product-UI access gate (product_220 §3): a standalone active subscription.
- *  Data-access (agent DataService) additionally accepts bundled - see
- *  hasDataAccess. */
+/** Product-UI access gate (product_220 §3): an active or trialing subscription. */
 export function hasProductAccess(sub: Subscription): boolean {
-  return sub.tier != null && (sub.status === "trial" || sub.status === "subscribed");
+  return sub.status === "active" || sub.status === "trialing";
 }
 
-/** Data-access gate (product_220 §3): standalone active OR bundled. */
+/** Data-access gate (product_220 §3): product-UI access OR bundled. */
 export function hasDataAccess(sub: Subscription): boolean {
   return hasProductAccess(sub) || sub.bundled;
 }
 
-/** Derive the gate-facing Subscription from an ArdaClaim.
- *  trial / subscribed -> tier from claim, matching status.
- *  expired / none     -> tier null (no active direct purchase), matching status. */
+/** Derive a gate-facing Subscription from an ArdaClaim (mock/dev fallback only;
+ *  real entitlement comes from C2). Maps the routing-hint state to a raw status:
+ *  trial -> trialing, subscribed -> active, expired/none -> null. */
 export function subscriptionFromClaim(claim: ArdaClaim): Subscription {
-  if (claim.state === "trial" || claim.state === "subscribed") {
-    return { tier: claim.tier, status: claim.state, bundled: false };
-  }
-  if (claim.state === "expired") {
-    return { tier: null, status: "expired", bundled: false };
-  }
-  return { tier: null, status: "none", bundled: false };
+  const status: SubscriptionStatus | null =
+    claim.state === "trial"
+      ? "trialing"
+      : claim.state === "subscribed"
+        ? "active"
+        : null;
+  return { tier: status ? claim.tier : null, status, bundled: false };
 }
