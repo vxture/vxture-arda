@@ -1,6 +1,7 @@
 # arda 实施回传 · 对 vxture 平台的交付状态说明（arda-plat-200-impl-handoff）
 
 > 版本：v1.1（2026-07-07，按平台回函 `arda-handoff-reply-01.md` 对账勘误）
+> 时间标记：**2607120135**（YYMMDDHHMM = 2026-07-12 01:35）
 > 面向：vxture 平台团队
 > 用途：告知平台 arda 在三通道（C1 OIDC / C2 权益 / C3 指令）及 L0 工具协议上的具体落地方式，
 >       供平台侧对接、联调、验收使用。
