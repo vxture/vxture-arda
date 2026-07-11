@@ -61,10 +61,19 @@
 | `plat-100` | 总体：三通道全景 + 耦合契约 + SoR 边界 | 1 | `vxture-platform-integration-requirements.md` §0-1 | 完成 |
 | `plat-110` | OIDC RP 契约：client 注册/endpoints/PKCE/back-channel logout/session cookie/MOCK_AUTH | 1 | `identity-app-integration-standard.md` 全文（含 scope 名修正）| 完成 |
 | `plat-200` | **arda 实施回传**：C1/C2/C3/L0 落地方式 + 端点清单 + DB schema + 双方待办（面向 vxture 平台团队）| 2 | 本次实施 | 完成 |
-| `plat-210` | **arda 回函 02**：对平台 `product_220`（目录/权益/资源模型）的采纳 + 四项增补提案（status 4 态 / ai.credit 保留+共享 / 跨产品超冲 / 组合语义）| 2 | 对 product_220 回应 | 完成（待平台确认）|
-| `plat-220` | **arda 回函 03**：C1/C2/C3 路径边界与 S2S 内网化（C2/C3 出站不走公网、flush/webhook 暴露面收口）；请平台给内网 auth-bff 地址 + webhook 源信息 | 2 | e2e 边界实测 | 完成（待平台确认）|
-| `plat-230` | **arda 回函 04（提案）**：跨产品通信 mesh 优化——两类分级（跨/同 apex）、同 apex 会话互验 + tailnet 寻址、token exchange 统一 fabric、控制/数据面分离。**须平台最终敲定** | 2 | 架构提案 | 提案（待平台敲定）|
 | `plat-300` | 迁移追踪：现状阻塞 + 平台待确认清单 + 验收判据 | 3 | `vxture-platform-integration-requirements.md` §0、§6、§7（含 §3.1 版本冲突标注）| 完成 |
+
+### 3.1 回函（临时·移入 `docs/reply/`）
+
+回函（reply）是**逐轮问答的临时文件**，结论最终沉淀回 200/300 与各权威文档后即可归档；因此**不放 `20-design/`，归入 `docs/reply/`**，文件名末尾带**时间标记（YYMMDDHHMM）**便于按签发时间排序。
+
+| 回函 | 主题 | 文件（`docs/reply/`）| 状态 |
+|---|---|---|---|
+| 回函 02（原 plat-210）| 对 `product_220` 采纳 + 四增补（status 4 态 / ai.credit 保留+共享 / 跨产品超冲 / 组合语义）| `arda-plat-210-catalog-reply-2607120135.md` | 完成（待平台确认）|
+| 回函 03（原 plat-220）| C1/C2/C3 路径边界与 S2S 内网化；请平台给内网 auth-bff 地址 + webhook 源 | `arda-plat-220-boundary-reply-2607120135.md` | 完成（待平台确认）|
+| 回函 04（原 plat-230，提案）| 跨产品通信 mesh 优化（两类分级 / 会话互验 / tailnet 寻址 / token exchange / 控制数据面分离）| `arda-plat-230-mesh-optimization-reply-2607120135.md` | 提案（待平台敲定）|
+
+> 正文中出现的 `plat-210/220/230` 为**概念标签**（对应上表回函 02/03/04），文件实体在 `docs/reply/`。
 
 ---
 
