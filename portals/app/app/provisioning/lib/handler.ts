@@ -12,10 +12,18 @@
  *   tenant.deprovisioned   -> mark WorkspaceRef status=deprovisioned
  *   subscription_changed   -> evict C2 entitlement cache for immediate re-fetch
  *   grant.invalidated      -> v1 noop (data sharing not yet built); stored for dedup
+ *
+ * Beta plans are IGNORED: beta workspaces are lazily built on first entry and do
+ * not rely on provisioning (arda_000_definition v1 §5.1). Any event whose plan
+ * is a beta plan (code prefix `arda-beta-`) is acked (200) without side effects.
  */
 
 import { prisma } from "../../lib/db";
 import { getEntitlementResolver } from "../../entitlement/resolver";
+
+/** Beta plans (code prefix `arda-beta-`) are lazily built and not provisioned
+ *  via webhook - ignore their events (arda_000_definition §5.1). */
+const BETA_PLAN_PREFIX = "arda-beta-";
 
 export interface ProvisioningPayload {
   id: string; // platform delivery uuid
@@ -39,6 +47,12 @@ export async function handleProvisioningEvent(
   payload: ProvisioningPayload,
 ): Promise<HandleResult> {
   const { id, type, seq, workspace_id, tenant_id, plan } = payload;
+
+  // Step 0: ignore beta-plan events (beta workspaces are lazily built, not
+  // provisioned via webhook - arda_000_definition §5.1). One guard, all types.
+  if (plan && plan.startsWith(BETA_PLAN_PREFIX)) {
+    return { outcome: "ignored", reason: `beta plan (${plan}); lazily built` };
+  }
 
   // Step 2: idempotency check - has this delivery id already been processed?
   const existing = await prisma.provisioningEvent.findUnique({ where: { id } });
