@@ -10,9 +10,16 @@
 
 ## 0. 结论
 
-product_220 整体采纳。三分类学（Product/SKU/Resource）、`bundled` 布尔正交于 tier、L0 `platform_metrics` 单一定义点、席位不池化、profile 盖章拷贝值——全部认同，arda 按 §9 跟进（进度见 §6）。
+product_220 整体采纳。三分类学（Product/SKU/Resource）、`bundled` 布尔正交于 tier、L0 `platform_metrics` 单一定义点、席位不池化、profile 盖章拷贝值——全部认同，arda 侧 §9 跟进**已上线**（见 §6）。
 
-以下四项为 arda 侧发现的缺口/风险，owner 已拍板，请平台确认并纳入契约：**A 生命周期状态、B 跨产品超冲、C AI credit 熄火、D 组合语义**。
+以下四项为 arda 侧发现的缺口/风险，owner 已拍板：**A 生命周期状态、B 跨产品超冲、C AI credit 熄火、D 组合语义**。
+
+> **[进度 · 2026-07-10]** 平台 `arda_200_interface v1.0` 已**采纳本回函大部分**：
+> - **A（顶层 `subscription_status` + raw-5）已落契约**（arda_200 §2.2/§2.3、`@vxture/shared` 1.3.1）——**唯值域用平台原生 raw-5** `active/trialing/expired/cancelled/suspended`（+`null`），非我原拟的 none/trial/subscribed/expired；arda 侧已按此实现（§6）。
+> - **C（ai.credit 默认自留池 + 租户开共享）已进 arda_200 §2.3**（"默认自留池；租户开共享后=自留+可及共享"）。
+> - **D（组合不是包含）已是 product_220 模型基座**。
+>
+> **仍待平台明确的开放项**（见 §7）：① `trial` 到期未转落 `null` 还是 `expired`（我方主张 null，见 §1.3）；② `suspended` 既进 `SUBSCRIPTION_STATUSES` 又是账号级，覆盖语义谁定；③ `audience` 字段 + 超额归因是否已在 metering 落库；④ B 的"贵资源必 counter+atomic"不变量是否写入 product_220 §4.2。
 
 ---
 
@@ -142,26 +149,31 @@ account ──冻结/解冻──▶ token.account_status="suspended"          #
 
 ---
 
-## 6. arda 侧 §9 跟进（进行中）
+## 6. arda 侧 §9 跟进（已上线）
 
-按 product_220 §9 + 本回函 §1：
+按 product_220 §9 + arda_200_interface v1.0 + 本回函 §1，arda 已实现并上生产：
 
 | 项 | 变更 | 状态 |
 |---|---|---|
-| `quota.ts` 类型 | `tier: Tier | null` + `bundled: boolean` + `status`；门控按 §3 公式 | 跟进 PR |
-| `ArdaState` | `trial/subscribed/expired/none`（`free` 降为 tier=null；无 cancelled 态） | 跟进 PR |
-| metric 常量 | `varda.credit → ai.credit`（`storage.bytes` 不变） | 跟进 PR |
-| 门控公式 | 产品 UI = `tier != null && status ∈ {trial,subscribed}`；数据取用 = 上式 `|| bundled` | 跟进 PR |
-| 文档对齐 | biz-260 / ADR-11 / agent-support / plat-200：删 `billing=bundled_free` 与 "tier rank=free"，改 `{role:'bundled', quota:{...}}` + 布尔 + status | 跟进 PR |
+| 值域来源 | 从 **`@vxture/shared` 1.3.1** 导入 `Tier`/`SubscriptionStatus`/`SUBSCRIPTION_STATUSES`（不再本地重定义） | 已上线（#73）|
+| `quota.ts` 类型 | `tier: Tier \| null` + `bundled: boolean`；`status: SubscriptionStatus \| null`（raw-5，`null`=从未订阅）| 已上线（#73）|
+| C2 读取 | 读**顶层 `subscription_status`**（非 `capabilities.status`），按 `SUBSCRIPTION_STATUSES` 校验，越界/缺失→`null` | 已上线（#73）|
+| metric 常量 | `varda.credit → ai.credit`（`storage.bytes` 不变）| 已上线（#70/#73）|
+| 门控公式 | 产品 UI = `status ∈ {active,trialing}`；数据取用 = 上式 `\|\| bundled` | 已上线（#73）|
+| webhook beta 忽略 | 按 `payload.plan` 前缀 `arda-beta-` 忽略 beta plan 事件（懒建，arda_000 §5.1）| 已上线 |
+| 文档对齐 | biz-260 / ADR-11 / agent-support / plat-200 已删 `billing=bundled_free`/`tier rank=free`，改布尔 + raw-5 status | 已上线（#70/#73）|
 
-## 7. 请平台确认项
+## 7. 请平台确认项（已收窄——多数已进 arda_200_interface v1.0）
 
-1. C2 `capabilities.status`（4 态 `none/trial/subscribed/expired`）+ 合并规则（§1.4）纳入 C2 契约 / product_220 v1.1；
-2. **状态机精修**（§1.3）：`trial` 到期未转 → `none`（非 expired）；`expired` 仅表付费失效；`had_trial` 作历史属性下发（非 status 值）；
-3. `account_status="suspended"` 保持在 access_token（reply-01 R3），作为账号级叠加层；
-4. quota_pools 增 `audience` + 租户管理员 credit 共享策略（§2）；
-5. §4.2 钉入"贵资源必 counter+atomic、gauge 仅限超冲不亏钱资源"不变量；
-6. cancel 语义 = 取消订阅即时退款→none（非取消续费），平台侧退款核算对齐。
+**已采纳、无需再确认**：
+- C2 顶层 `subscription_status` + raw-5 值域（arda_200 §2.2/§2.3、`@vxture/shared` 1.3.1）；
+- ai.credit 默认自留池 + 租户开共享（arda_200 §2.3）；组合不是包含（product_220 模型）。
+
+**仍待平台明确（4 项）**：
+1. **`trial` 到期未转的落点**：我方主张 → `null`（干净离开，非 `expired`；理由见 §1.3/§1.5，避免污染付费流失口径）。请平台确认 subscription 引擎在试用未转时置 `null` 还是 `expired`；
+2. **`suspended` 的覆盖语义**：它既在 `SUBSCRIPTION_STATUSES`（订阅状态值）又语义上是账号级冻结——请明确 arda 覆盖判定口径（arda 现按 `status ∈ {active,trialing}` 放行，`suspended`→不放行 UI，等同拦停；若需账号级独立 `account_status` 叠加，请在 access_token 保留，见 reply-01 R3）；
+3. **`audience` 落库 + 超额归因**：§2 的池 `audience`（默认=贡献产品）+ 租户共享策略是否已进 `metering.quota_pools`；每 consume 逐 product 归因（"谁超多少"）是否可导；
+4. **B 不变量入契约**：§3 的"成本=真金白银的共享资源（compute.gpu）一律 counter+atomic、gauge 仅限超冲不亏钱资源"是否已显式写入 product_220 §4.2。
 
 ---
 
