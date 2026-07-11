@@ -24,6 +24,7 @@
 
 import { prisma } from "../../lib/db";
 import { getEntitlementResolver } from "../../entitlement/resolver";
+import { assertInternalTarget } from "../../lib/internal-target";
 
 const FLUSH_BATCH = 50;
 const MAX_ATTEMPTS = 5;
@@ -52,6 +53,10 @@ export async function flushUsage(): Promise<FlushResult> {
     // Platform not configured - skip silently (local dev)
     return { processed: 0, succeeded: 0, gated: 0, failed: 0, abandoned: 0 };
   }
+
+  // Fail fast rather than POST usage (with the S2S secret) to a public host
+  // over cleartext http (plat-220 §4/B1). Misconfig -> throw, caught by caller.
+  assertInternalTarget(baseUrl);
 
   const rows = await prisma.usageRaw.findMany({
     where: { flushed: false, flushAttempts: { lt: MAX_ATTEMPTS } },

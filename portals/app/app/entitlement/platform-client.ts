@@ -13,6 +13,7 @@ import { TIER_ORDER } from "./types";
 import { SUBSCRIPTION_STATUSES } from "@vxture/shared";
 import type { WorkspaceQuota } from "./quota";
 import { mapToWorkspaceQuota } from "./quota";
+import { assertInternalTarget } from "../lib/internal-target";
 
 interface EntitlementsResponse {
   workspace_id: string;
@@ -34,6 +35,8 @@ export async function fetchPlatformEntitlement(
   baseUrl: string,
   authToken: string,
 ): Promise<PlatformEntitlementResult> {
+  // Fail fast rather than leak the S2S secret to a public host (plat-220 §4/B1).
+  assertInternalTarget(baseUrl);
   const url = `${baseUrl}/platform/entitlements?workspace_id=${encodeURIComponent(workspaceId)}&product=arda`;
 
   const res = await fetch(url, {
