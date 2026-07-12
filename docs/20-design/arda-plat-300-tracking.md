@@ -138,7 +138,7 @@
 | **内网 auth-bff base** | `http://100.100.197.42:3090`（worker-01 tailscale，auth-bff 既有绑定；varda-server 同路径 `:3100` 已生产验证，零新基建） | ✅ 已给 |
 | **webhook 投递** | 改 tailnet 直投；平台已实施 `ARDA_WEBHOOK_BASE_URL`（空回落 `ARDA_BASE_URL`，避免破坏 OIDC redirect）解耦，生产切换=owner 配 env + 平台 reseed | ✅ 平台已实施，**切换前不要 404 边缘** |
 | **边界对称** | 确认：平台 nginx 无 `/platform/*`/`/usage/*` location，C2/C3/gauge/可见集只经 auth-bff tailscale 绑定暴露 | ✅ 确认 |
-| **`AUTH_INTERNAL_TOKEN` 轮换** | 接受，与 arda 切内网同窗轮换 | ✅ 接受，owner 定窗 |
+| **`AUTH_INTERNAL_TOKEN` 轮换** | 接受，与 arda 切内网同窗轮换 | ✅ 接受，owner 定窗；**[2026-07-12 澄清]** 生产密钥尚未实际轮换（仍旧值，arda 现有调用有效），不阻塞——见下方"待 owner 决策" |
 | **`configs/edge` flush 404** | 平台已 staged live vhost 同款 404（prod+beta）；请 arda 源工件同步 | ✅ arda 侧 `configs/edge/*.conf` **已加**（本仓上一轮 fix/boundary-hardening） |
 
 ### ⚠️ 新开放项（平台自查发现，待 arda 确认，§2.1 遗留）
@@ -154,10 +154,10 @@
 
 | # | 项 | 依赖 | 本仓状态 |
 |---|---|---|---|
-| 1 | `PLATFORM_API_URL=http://100.100.197.42:3090`（两栈 etc/.env + 重启 + 再生 `ENV_FILE_BASE64` CI secret）| 内网地址已给 | **待执行** |
+| 1 | `PLATFORM_API_URL=http://100.100.197.42:3090`（两栈 etc/.env + 重启）| 内网地址已给 | ✅ **已执行**（2026-07-12，见 §2d；`ENV_FILE_BASE64` 再生独立于此，见下方"待 owner 决策"）|
 | 2 | C2/C3 出站 host 断言（拒公网 fail-closed）| 与 #1 同车 | **已上线**（`internal-target.ts`，plat-220 §4 自修，兼容 `100.64.0.0/10`）|
 | 3 | `/api/usage/flush` 改内网守卫 + `configs/edge` 同步 404 | 独立 | **已上线**（同上）|
-| 4 | secret 轮换配合 | owner 定窗 | 待 owner |
+| 4 | secret 轮换配合 | owner+平台协调窗口 | **不阻塞**（平台澄清生产密钥尚未轮换、现有调用仍有效，见"待 owner 决策"）|
 | 5 | storage.bytes 快照接 `PUT /usage/gauge`（端点已在产）| 随业务节奏 | 待实现（无阻塞）|
 | 6 | e2e 全链验收 | #1 + 平台 reseed | 待 #1 |
 | 7 | **回复 had_trial 三选一** | 无 | **已回**（回函 05，推荐方案①C2信封加布尔，`docs/70-reply/arda-plat-240-had-trial-reply-2607121733.md`），待平台确认 |
@@ -186,10 +186,10 @@
 
 **遗留发现（未处理，供后续排查）**：beta 服务器上的 `deploy/docker-compose.yml` 长期未随正常 CI 发布刷新（落后到 Postgres 引入之前的版本），而 prod 侧是最新的——`release.yml` 对 beta 栈的部署管线是否存在 rsync/刷新缺口，值得单独排查（不在本次任务范围，未改动 CI 脚本，仅修复了服务器上的实例文件）。
 
-### 待 owner 决策（未执行，风险项，需协调平台同步）
+### 待 owner 决策（2026-07-12 更新——平台侧澄清，纠正此前误判）
 
-- **`AUTH_INTERNAL_TOKEN` 轮换**（平台已接受，同窗轮换）：需与平台侧协调同一时间窗，**未擅自执行**；
-- **`ENV_FILE_BASE64` CI secret 再生**（含两栈完整 `.env`，是 GitHub Actions 部署 secret）：涉及生产凭证，**未擅自执行**，待 owner 确认后操作。
+- **`AUTH_INTERNAL_TOKEN` 轮换**：**arda 现在没有被阻塞**——此前误判"平台已发布上线=已轮换密钥"；平台已澄清：刚发布上线的是 **T2 代码**（`PlatformAuthGuard` 双接受设计，legacy `x-vxture-internal-auth` 路径行为零变化），**不触碰运行时密钥的实际值**；经 owner 向平台核实，生产 `AUTH_INTERNAL_TOKEN`（worker-01 真实值）**尚未轮换，仍是旧值**，arda 现有调用（`PLATFORM_INTERNAL_AUTH_TOKEN`）继续有效。轮换本身**不紧急、不能单边做**（共享密钥，需 owner + 平台协调同一窗口，建议绑定下次运维窗口一起做），当前**不阻塞**其余工作；
+- **`ENV_FILE_BASE64` CI secret 再生**：平台确认与其无关，纯 arda 自己的灾备快照 housekeeping（`release.yml` 仅在 `etc/.env` 不存在时才读取此 secret，当前不影响任何现有连通性）——是否刷新是 arda 自己的决定，安全层已就"整份 `.env` 明文过一遍本地文件"这个具体动作要求过 owner 明确许可，待确认后执行。
 
 ---
 
