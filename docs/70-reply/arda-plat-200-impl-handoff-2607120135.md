@@ -1,7 +1,7 @@
 # arda 实施回传 · 对 vxture 平台的交付状态说明（arda-plat-200-impl-handoff）
 
-> 版本：v1.1（2026-07-07，按平台回函 `arda-handoff-reply-01.md` 对账勘误）
-> 时间标记：**2607120135**（YYMMDDHHMM = 2026-07-12 01:35）
+> 版本：v1.2（2026-07-12，按平台回函 `arda_302_reply-02.md` §1 对账更正 §6 两处过时状态；v1.1 见 2026-07-07 按 `arda-handoff-reply-01.md` 勘误）
+> 时间标记：**2607120135**（YYMMDDHHMM = 2026-07-12 01:35，文件签发时间；内容含 2026-07-12 追加更正）
 > 面向：vxture 平台团队
 > 用途：告知平台 arda 在三通道（C1 OIDC / C2 权益 / C3 指令）及 L0 工具协议上的具体落地方式，
 >       供平台侧对接、联调、验收使用。
@@ -203,16 +203,19 @@ arda 使用独立 Postgres（`arda-db` / `arda-beta-db`），**不读平台库**
 | R2 back-channel logout 路径 | **完成**（代码本已在 `/auth/backchannel-logout`；仅文档勘误）| 无 |
 | R3 上下文 claim 读 access_token + refresh 重取 | **完成**（代码本已正确；仅文档勘误）| 无 |
 | §6 capability 键名（`tier` / `service_endpoint.max`）| **完成**（移除 `data.tier` 回退）| 采纳 `quota.ts` 为 SoT |
-| C2 PlatformEntitlementResolver | **完成**（代码）| **待配置** capability keys + quota_pools（见 `biz-260` §7） |
+| C2 PlatformEntitlementResolver | **完成**（代码）| **已上产**（quota 键 8 个 + counter 两池 + L0 两键，2026-07-07/09 班车；见 `arda_302_reply-02` §1.1，取代下方旧行）|
 | C3 provisioning webhook | **完成** | **完成**（投递机制已上线） |
 | C3 usage consume buffer | **完成**（代码；409 终态+invalidateCache）| **完成**（端点已上线） |
-| R4 storage = gauge 快照 | 过渡态：不接 consume，仅 C2 展示+本地准入（已符合）| **待实施** `PUT /usage/gauge`（product_310 D5）|
-| R5 counter 超额模式 | flush 侧已对齐（409 不重试+invalidateCache）；varda atomic 预扣待触发点 | **待目录配置** counter/gauge metric_kind |
+| R4 storage = gauge 快照 | 过渡态：不接 consume，仅 C2 展示+本地准入；`PUT /usage/gauge` **端点已在产，arda 侧可随时接上报**（尚未接线） | **已实现并上产**（PR #711，2026-07-09；`usage_gauges` 表 + LWW + C2 读侧求和；取代下方旧行）|
+| R5 counter 超额模式 | flush 侧已对齐（409 不重试+invalidateCache）；varda atomic 预扣待触发点 | **已配置**（counter/gauge metric_kind 随 2026-07-07/09 班车上产）|
 | DB migration 0001-0007 | **完成**（worker-02 两库手动 psql）| 无 |
 | `/.well-known/vxture-tools` | **完成**（v1 空实现）| 无 |
-| e2e 全链验收 | R1/R2/R3 就绪，待前置 | 待配置目录（§6）+ 网络连通 |
+| **[2026-07-12 更正]** 网络前置 | `PLATFORM_API_URL` 待切内网（`http://100.100.197.42:3090`，见 `arda_302_reply-02` §3.1）| **已解**：内网 base 已给，webhook 改 tailnet 投递已实施 |
+| e2e 全链验收 | R1/R2/R3 就绪；**只差 `PLATFORM_API_URL` 切内网 + 平台 reseed 运维窗口** | 网络前置已解（见上）|
 
-**e2e 门票（reply-01 §7.4）**：R1/R2/R3 修正 ✅ + secret 三件套到位 ✅ + 平台目录配置（capability 9 键 + counter 三池 + beta 公测 plan）+ worker-02 ↔ auth-bff 内网连通。
+> **[2026-07-12 平台对账更正]**（`arda_302_reply-02` §1）：本表 2026-07-07 首版把 capability keys/quota_pools 标"待配置"、`PUT /usage/gauge` 标"待实施"——**均已过时**：目录配置早在 2026-07-07/09 上产，gauge 端点已于 2026-07-09（PR #711）独立专车上产。e2e 门票现状见下方替换行。
+
+**e2e 门票（2026-07-12 更新，取代 reply-01 §7.4 旧版）**：R1/R2/R3 修正 ✅ + secret 三件套到位 ✅ + 平台目录配置 ✅（已上产） + gauge 端点 ✅（已上产） + 网络前置 ✅（内网 base 已给，见 `arda_302_reply-02` §3.1）——**全链 e2e 只差 `PLATFORM_API_URL` 切内网这一步 + 平台 reseed 运维窗口**。
 
 **e2e 验收路径**：
 1. 登录 → **access_token** 携带 `active_workspace`（R3）
