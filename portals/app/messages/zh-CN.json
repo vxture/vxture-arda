@@ -85,7 +85,8 @@
     "service": "数据服务",
     "etl": "数据开发",
     "apikeys": "API 密钥",
-    "audit": "审计日志"
+    "audit": "审计日志",
+    "sources": "数据源"
   },
   "user": {
     "menu": "用户菜单",
@@ -639,5 +640,60 @@
     "search": "按操作者 / 动作 / 对象筛选",
     "emptyTitle": "暂无审计记录",
     "emptyDesc": "敏感操作与平台指令都会记录在这里。"
+  },
+  "sources": {
+    "eyebrow": "数据集成",
+    "title": "数据源",
+    "description": "登记外部系统以纳入编目。连接凭据入库前经应用层加密，数据库不见明文。",
+    "metrics": {
+      "total": "已登记（/套餐上限）",
+      "connected": "连接正常",
+      "datasets": "产出数据集"
+    },
+    "col": {
+      "name": "数据源",
+      "status": "状态",
+      "datasets": "数据集",
+      "credentials": "凭据",
+      "lastSynced": "最后同步"
+    },
+    "status": {
+      "connected": "已连接",
+      "degraded": "降级",
+      "disconnected": "已断开"
+    },
+    "type": {
+      "file": "文件上传",
+      "postgres": "PostgreSQL",
+      "mysql": "MySQL",
+      "rest": "REST API",
+      "s3": "Amazon S3",
+      "bigquery": "BigQuery",
+      "snowflake": "Snowflake"
+    },
+    "credentialsSealed": "已加密",
+    "neverSynced": "从未同步",
+    "listTitle": "数据源列表",
+    "register": "登记数据源",
+    "registerDesc": "连接凭据加密后存储，此后不再明文展示。",
+    "form": {
+      "name": "名称",
+      "type": "类型",
+      "config": "连接配置（JSON，可选）",
+      "configPlaceholder": "{\"host\": \"...\", \"user\": \"...\", \"password\": \"...\"}",
+      "configHint": "以 AES-256-GCM 加密存储，数据库不见明文。",
+      "cancel": "取消",
+      "submit": "登记"
+    },
+    "error": {
+      "unauthenticated": "会话已过期，请重新登录。",
+      "forbidden": "登记数据源需要工作区管理员角色。",
+      "invalid": "请填写名称并选择有效类型。",
+      "tier": "该连接器类型需要更高订阅档位。",
+      "quota": "数据源数量已达套餐上限，升级可增加额度。",
+      "config": "连接配置必须是合法 JSON。"
+    },
+    "emptyTitle": "暂无数据源",
+    "emptyDesc": "登记第一个数据源，开始编目其中的数据集。"
   }
 }

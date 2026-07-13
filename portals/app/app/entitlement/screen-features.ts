@@ -16,6 +16,7 @@ export const SCREEN_FEATURES: Partial<Record<string, FeatureKey>> = {
   lineage: "arda.governance.lineage",
   security: "arda.governance.policies",
   service: "arda.services.publish_api",
+  sources: "arda.integration.sources_basic",
   apikeys: "arda.admin.api_keys",
   audit: "arda.admin.audit_log",
 };

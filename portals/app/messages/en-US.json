@@ -85,7 +85,8 @@
     "service": "Data Services",
     "etl": "Data Development",
     "apikeys": "API Keys",
-    "audit": "Audit Log"
+    "audit": "Audit Log",
+    "sources": "Data Sources"
   },
   "user": {
     "menu": "User menu",
@@ -639,5 +640,60 @@
     "search": "Filter by actor / action / target",
     "emptyTitle": "No audit entries yet",
     "emptyDesc": "Sensitive operations and platform commands are recorded here."
+  },
+  "sources": {
+    "eyebrow": "Integration",
+    "title": "Data Sources",
+    "description": "Register external systems for cataloging. Credentials are sealed with app-layer encryption before they touch the database.",
+    "metrics": {
+      "total": "Registered (of plan cap)",
+      "connected": "Connected",
+      "datasets": "Datasets sourced"
+    },
+    "col": {
+      "name": "Source",
+      "status": "Status",
+      "datasets": "Datasets",
+      "credentials": "Credentials",
+      "lastSynced": "Last synced"
+    },
+    "status": {
+      "connected": "Connected",
+      "degraded": "Degraded",
+      "disconnected": "Disconnected"
+    },
+    "type": {
+      "file": "File upload",
+      "postgres": "PostgreSQL",
+      "mysql": "MySQL",
+      "rest": "REST API",
+      "s3": "Amazon S3",
+      "bigquery": "BigQuery",
+      "snowflake": "Snowflake"
+    },
+    "credentialsSealed": "Sealed",
+    "neverSynced": "Never",
+    "listTitle": "Sources",
+    "register": "Register source",
+    "registerDesc": "Connection credentials are encrypted before storage and never shown again.",
+    "form": {
+      "name": "Name",
+      "type": "Type",
+      "config": "Connection config (JSON, optional)",
+      "configPlaceholder": "{\"host\": \"...\", \"user\": \"...\", \"password\": \"...\"}",
+      "configHint": "Stored encrypted (AES-256-GCM); the database never sees plaintext.",
+      "cancel": "Cancel",
+      "submit": "Register"
+    },
+    "error": {
+      "unauthenticated": "Session expired - sign in again.",
+      "forbidden": "Registering sources requires a workspace admin role.",
+      "invalid": "Enter a name and pick a valid type.",
+      "tier": "This connector type requires a higher plan.",
+      "quota": "Plan limit for data sources reached - upgrade to add more.",
+      "config": "Connection config must be valid JSON."
+    },
+    "emptyTitle": "No data sources yet",
+    "emptyDesc": "Register your first source to start cataloging its datasets."
   }
 }

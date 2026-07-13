@@ -68,6 +68,7 @@ services:
       # -- Platform API (C2 entitlement + C3 consume) -----------------------
       PLATFORM_API_URL: "${PLATFORM_API_URL:-}"
       PLATFORM_INTERNAL_AUTH_TOKEN: "${PLATFORM_INTERNAL_AUTH_TOKEN:-}"
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:-}"
       # -- Platform provisioning webhook (C3) --------------------------------
       PROVISION_WEBHOOK_SECRET: "${PROVISION_WEBHOOK_SECRET:-}"
       # -- App config --------------------------------------------------------

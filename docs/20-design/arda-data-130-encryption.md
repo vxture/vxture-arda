@@ -46,7 +46,7 @@ model DataSource {
 }
 ```
 
-`connectionConfig` 是**可空 `Json?`**：密文（含算法、iv、密文体）整体序列化进这一个 Json 值，没有旁路列。写路径范式（拟实现，尚未接线，见 §4）：
+`connectionConfig` 是**可空 `Json?`**：密文（含算法、iv、密文体）整体序列化进这一个 Json 值，没有旁路列。写路径范式（**已接线**，2026-07-14：`app/lib/seal.ts` 的 `seal()/unseal()`，`(app)/sources/actions.ts` 注册数据源时调用）：
 
 ```ts
 // integration 写路径范式：connectionConfig 落库前在应用层对称加密，读回后解密。
@@ -255,6 +255,7 @@ const maskingPolicies = await prisma.policy.findMany({
 | `POSTGRES_PASSWORD` | Postgres 口令 | 同上；`.env.example` 占位 `ChangeME` |
 | `OIDC_CLIENT_SECRET` | OIDC RP client secret（prod 用 `arda`、beta 用 `arda-beta`，各自独立） | 平台 secret manager 注入；`.env.example` 留空；从不 commit |
 | `NODE_AUTH_TOKEN` | `@vxture` 私有包读令牌 | `.env` 或 CI secret；`.env.example` 留空 |
+| `DATA_ENCRYPTION_KEY` | `DataSource.connectionConfig` 应用层加密密钥（AES-256-GCM，32 字节 base64，`openssl rand -base64 32` 生成） | `.env`（服务器 `etc/.env`，两栈各自独立值）；`.env.example` 留空；缺失时写路径拒绝落库（绝不明文兜底） |
 
 约束（来自 `CLAUDE.md` 仓库卫生 + `.env.example` 头注 + [`security.md`](../10-specs/security.md)）：
 

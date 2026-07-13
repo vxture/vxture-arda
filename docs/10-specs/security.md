@@ -133,6 +133,7 @@ be the sole enforcement mechanism.
 |---|---|---|
 | `OIDC_CLIENT_SECRET` | `.env` on server at `<ROOT_DIR>/etc/.env` | Provisioned by the platform; never in Git |
 | `NODE_AUTH_TOKEN` | CI secret / `.env` | GitHub Packages read token for `@vxture` scope |
+| `DATA_ENCRYPTION_KEY` | `.env` on server at `<ROOT_DIR>/etc/.env` | AES-256-GCM key (32B base64) sealing `DataSource.connectionConfig`; per-stack value; missing key = write path refuses (no plaintext fallback) |
 | `DEPLOY_SSH_KEY` | GitHub Environment secret | SSH key for CI -> ARDA_DEPLOY_HOST |
 | `ENV_FILE_BASE64` | GitHub Environment secret | Base64-encoded `.env` for bootstrap deploy |
 | `TAILSCALE_OAUTH_*` | GitHub Environment secret | Tailscale OAuth for CI runner ephemeral node |

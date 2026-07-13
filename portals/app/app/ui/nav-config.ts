@@ -42,6 +42,7 @@ export const NAV: NavGroup[] = [
   {
     key: "sharing",
     items: [
+      { key: "sources", route: "/sources", icon: "database" },
       { key: "service", route: "/service", icon: "broadcast" },
       { key: "etl", route: "/etl", icon: "flow-arrow" },
     ],
@@ -71,7 +72,7 @@ export interface Board {
 /** Functional domains shown in the header launcher. */
 export const BOARDS: Board[] = [
   { id: "asset", icon: "stack", home: "dashboard", screens: ["dashboard", "catalog"] },
-  { id: "integrate", icon: "flow-arrow", home: "etl", screens: ["etl"] },
+  { id: "integrate", icon: "flow-arrow", home: "sources", screens: ["sources", "etl"] },
   { id: "govern", icon: "shield-check", home: "standards", screens: ["standards", "quality", "security"] },
   { id: "analyze", icon: "chart-line-up", home: "lineage", screens: ["lineage"] },
   { id: "serve", icon: "broadcast", home: "service", screens: ["service"] },
