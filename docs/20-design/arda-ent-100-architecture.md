@@ -9,11 +9,13 @@
 
 ## 0. SoR 边界（先读）
 
-arda 是数据域**产品端**，权益的唯一 SoT 是 **vxture 平台**。arda：
+arda 是数据域**产品端**，**商业事实**（订阅 status/tier/bundled、配额数值与记账）的唯一 SoT 是 **vxture 平台**。arda：
 
 - **不建权益镜像表**（无 Subscription/Plan/Product 表；见 [`data-100`](arda-data-100-architecture.md) §6 "arda 不落的表"）。
 - **不设计**平台如何解析多 Plan/多 Product 合并、如何路由配额扣减——那是平台内部算法，arda 只消费其结果。
-- **只做两件事**：① 把平台下发的权益翻译成本地门控判断（本文 + [`ent-110`](arda-ent-110-local-implementation.md)）；② 按契约与平台通信（[`ent-120`](arda-ent-120-consumption-contract.md)）。
+- **只做两件事**：① 把平台下发的商业事实翻译成本地门控判断（本文 + [`ent-110`](arda-ent-110-local-implementation.md)）；② 按契约与平台通信（[`ent-120`](arda-ent-120-consumption-contract.md)）。
+
+**【2026-07-13 owner 裁定：能力/配额分权（松耦合定稿）】**在上述边界之上新增一条对称边界——**功能语义的 SoT 是产品**：哪档解锁什么功能 = arda 本地能力矩阵（[`ent-110`](arda-ent-110-local-implementation.md) §2a），平台不配置、不下发功能键（`capabilities`/`features` 已从 C2 契约移除，见 [`ent-120`](arda-ent-120-consumption-contract.md) v2）；**配额**（上限数字 + 消耗池）是销售策略，仍全归平台。一句话：**平台管"买了什么"，产品管"意味着什么"**。商业决策 UI（试用资格/买什么/什么价）归 vxture-console，产品端深链、零推断（防 had_trial 类问题复发的规范条款见 [`ent-120`](arda-ent-120-consumption-contract.md) §4a）。同时定向：token 的 `arda` claim **整体退役**（不只 `arda:subscription` scope）——目标态 token 零商业字段，身份面与商业面彻底分离（回函 06）。
 
 ---
 

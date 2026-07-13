@@ -20,7 +20,7 @@
 - **隔离键**：所有领域实体均带 `workspaceId`，查询强制按其过滤（ADR 原则 #5）。下表省略不再重复。
 - **所有权边界**：下列均为 **arda 自有业务数据**。平台 / IdP 持有、本目录**不建模**的：`Org`、workspace 生命周期、`Subscription`、成员 / 角色 / 席位、计费、SSO / 高级账号安全。
 - **命名规范**：能力键 `arda.<group>.<capability>`（布尔）；配额键 `arda.quota.<name>`（数值）。`group` 映射导航分区：`assets / integration / governance / services / admin`。
-- **能力键归属**：feature-key 的「键」由产品（arda）定义；「每档开放哪些键 + 配额数值」由平台订阅配置下发（ADR §3.4）。arda 不硬编码「档位 → 功能」映射。
+- **能力键归属（2026-07-13 修订）**：feature-key 的「键」与「每档开放哪些键」**均由产品（arda）定义**——本文件的键目录 + [`ent-110`](arda-ent-110-local-implementation.md) §2a 的能力矩阵，全部在 arda 仓内、版本化；平台不配置、不下发功能键（`capabilities` 已从 C2 移除）。**配额数值**（上限 `limits` + 消耗池 `quota_pools`）仍由平台订阅配置下发。~~arda 不硬编码「档位 → 功能」映射~~ 已取代：档位→功能映射就在 arda 的能力矩阵里，改矩阵 = 产品发版。
 - **future 约定**：标 `future` 的实体与 feature-key **保留定义、不删不隐藏**。前端对其入口统一渲染「正在开发中，敬请期待」占位；门控对 `future` 键**视为未开放 → 展示占位，而非报错**。
 
 ---
@@ -108,7 +108,7 @@
 | `arda.admin.audit_log` | v1 | 查看 / 导出审计日志 |
 
 > 已移除：`arda.admin.advanced_security`（SSO / 高级安全属身份层，归平台 / IdP）。
-> 新增（2026-07-02，源自业务架构功能设计 `biz-431`/`biz-432`）：`arda.governance.standards`、`arda.governance.master_data`。键由 arda 定义；每档开放与否由平台订阅配置下发（ADR §3.4）。
+> 新增（2026-07-02，源自业务架构功能设计 `biz-431`/`biz-432`）：`arda.governance.standards`、`arda.governance.master_data`。键由 arda 定义；每档开放与否~~由平台订阅配置下发~~ **由 arda 能力矩阵自持（2026-07-13 修订，见 §1 归属条目）**。
 
 ### 3.2 配额键（数值）
 
@@ -150,5 +150,5 @@
 ## 5. 与 §8 的衔接
 
 - **§8.0–8.2（schema 落地）**：仅为 **v1 实体**（§2 标 v1 / 基础设施）建表与迁移；`future` 实体保留定义、不建表。
-- **§8.4（门控重设计）**：`EntitlementGate` 按「当前 workspace × product=arda」消费平台下发的 features / quota；对 `future` 键展示占位。
+- **§8.4（门控重设计，2026-07-13 修订）**：`EntitlementGate` 按「当前 workspace × product=arda」消费平台下发的商业事实（status/tier/limits/quota_pools），功能键在本地能力矩阵求值；对 `future` 键展示占位。
 - **权益来源**：实时拉取 + 缓存 + 失效通知（ADR §3.5），arda 不建订阅镜像表。

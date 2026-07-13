@@ -1,6 +1,6 @@
 # arda 权益门控 · 消费契约（arda-ent-120-consumption-contract）
 
-> 状态：C2/C3 端点 2026-07-07 已上生产（平台回函 `arda-handoff-reply-01.md` §7.2 确认；本文旧"尚未实现"表述已过时）；arda 侧消费实现见 `plat-200`
+> 状态：**契约 v2（2026-07-13 owner 裁定：松耦合改形）**——`capabilities`（功能键/features）整体退出契约，能力归产品本地档位矩阵；新增时间戳与 `limits` 块；`quota_pools`/consume/invalidate 原样保留。变更提案已发平台（回函 06，`docs/70-reply/`）；**过渡期平台仍下发 `capabilities` 时 arda 直接忽略该字段**，两侧无需同步发版。C2/C3 端点 2026-07-07 已上生产；arda 侧消费实现见 `plat-200`
 > 层：第 2 层 · 消费契约（`ent` 系列，见 [`ent-000`](arda-ent-000-index.md) 索引）
 > 范围：arda 怎么调用平台的权益/计量端点、怎么解读响应体——**只是契约的形状（字段/请求/响应），不是平台内部怎么算出这些字段的**。平台侧的 Org/Workspace/Membership/Plan/Product 建模与权益解析合并算法、瀑布扣减算法，一律不在本文展开，见 [`ent-000`](arda-ent-000-index.md) §0 边界。
 > 上游：`ADR-11-subscription-entitlement-design.md` §11.7（仅摘录契约形状字段）；`ent-100`/`ent-110`（本地消费方视角）
@@ -15,37 +15,47 @@
 
 ## 1. 查询权益：`GET /platform/entitlements`
 
-**形状**：
+**形状（v2，2026-07-13）**——信封只承载**商业事实**（买了什么），不承载功能解释（意味着什么）：
 
 ```
 # 单 product 查询（arda 运行时门控主用，高频，缓存友好）
 GET /platform/entitlements?workspace_id={W}&product=arda
 -> 200 {
     workspace_id, product: "arda",
-    capabilities: {                 # 能力型权益（结构化单值）
-      "data.tier": "pro",
-      "storage.max": "100GB",
-      "member.max": 20,
-      "features": ["...", "..."]    # 功能键数组
-    },
-    quota_pools: [                  # 消耗型权益（数组，可能有多条）
-      { metric: "doc.words", limit: 500000, remaining: 120000, priority: 10 }
+
+    # -- 订阅事实（描述性，产品逐字渲染，零解读）--
+    status: "trialing|active|past_due|expired|cancelled" | null,
+    tier:   "free|starter|pro|business|enterprise" | null,
+    bundled: false,
+    trial_ends_at: "...",            # trialing 时非空（倒计时 UX）
+    current_period_end: "...",       # active/past_due 时非空（宽限/账期 UX）
+    cancel_at_period_end: false,     # 已预约取消（"服务至 X 日"UX）
+    data_retention_until: null,      # expired 时非空：数据保留截止（与平台 wipe 排程同源）
+
+    # -- 上限型销售数字（就高合并后的单值；产品在动作点本地执行）--
+    limits: { "member.max": 20, "dataset.max": 500, "retention.days": 365, ... },
+
+    # -- 消耗型配额池（平台记账 SoT；产品只展示 remaining、经 consume 放行）--
+    quota_pools: [
+      { metric: "ai.credit",     limit: 500,          remaining: 120,          priority: 10 },
+      { metric: "storage.bytes", limit: 107374182400, remaining: 96636764160,  priority: 10 }
     ]
   }
 
-# 批量查询（arda 若同时消费多个 product 的权益，一次拿全）
-GET /platform/entitlements?workspace_id={W}&products=arda,other_product
--> 200 { workspace_id, entitlements: { "arda": {capabilities, quota_pools}, "other_product": {...} } }
+# 批量查询形状同理（entitlements: { "<product>": {...} }），字段以单查询为准。
 ```
 
-**不展开**：`capabilities` 里同一 product 多来源（比如附带 + 单独订阅）怎么合并成这一个值、`quota_pools` 为什么可能有多条池——这是平台的权益解析合并算法，arda 只需要知道**响应体长这样、`capabilities` 是单值、`quota_pools` 是数组**即可消费。
+**v2 相对 v1 的变化**：`capabilities`（含 `features` 功能键数组与功能布尔）**整体移除**——哪档开放什么功能是产品知识，收敛进 arda 本地能力矩阵（[`ent-110`](arda-ent-110-local-implementation.md) §2a），平台不再配置、不再下发任何功能键；上限型数字从 `capabilities` 挪入独立 `limits` 块（它们是定价页销售数字，仍归平台，与消耗型池的两种形状对应 ADR-11 §11.3 的两路解析）；新增四个时间戳/日期字段（描述性事实，准入判据见 §4a）。
+
+**不展开**：`tier`/`limits` 的多来源就高合并、`quota_pools` 为何多条池——平台内部算法，arda 只消费结果。
 
 **arda 侧怎么用这个响应**：
-- `capabilities["data.tier"]` 映射到本地 `Subscription.tier`（见 [`ent-100`](arda-ent-100-architecture.md) §1.4）。
-- `capabilities.features` 决定功能入口是否渲染。
-- `quota_pools` 的 `remaining` 汇总展示"还剩多少额度"；具体扣哪一条池由平台在 `consume` 时决定（见 §2），arda 不需要自己实现瀑布路由逻辑。
+- `status`/`tier`/`bundled` 映射到本地 `Subscription`（入口二元墙看 status；能力门 = status 活跃 AND 本地矩阵 `CAPABILITY_MATRIX[tier]` 含该功能键）。
+- `limits` 在对应动作点本地校验（如登记第 N+1 个 Dataset 前查 `dataset.max`）——数值来自平台，执行在产品。
+- `quota_pools.remaining` 汇总展示"还剩多少"；消耗型放行以 `consume` 响应为准（§2），水位型（storage.bytes）在动作点用自持字节数对 `limit` 校验（账本是产品自己的业务数据）。
+- 时间戳字段直接渲染横幅/倒计时，不做任何策略推断。
 
-**约定**：`?product=` 单个 / `?products=` 逗号分隔批量，二选一；**没有 `?plan=` 入口**——plan 是平台内部的商业打包概念，产品端运行时只认 `product`。
+**约定**：`?product=` 单个 / `?products=` 逗号分隔批量，二选一；**没有 `?plan=` 入口**——plan 是平台内部的商业打包概念，产品端运行时只认 `product`。**过渡兼容**：平台在 v2 落地前仍下发 `capabilities` 的，arda 忽略该字段；缺失新时间戳字段时对应 UX 降级隐藏，不报错。
 
 ---
 
@@ -96,10 +106,20 @@ PUSH invalidate { workspace_id, products: ["arda", ...] }   # 支持批量 produ
 
 ---
 
-## 4. 契约层面的两个硬约定（arda 消费时必须遵守）
+## 4. 契约层面的硬约定（arda 消费时必须遵守）
 
 1. **arda 永远只按自己的 `product` 查询/上报**，不查询、不感知其他 product 的权益或用量——即使批量端点返回了别的 product，arda 也不应据此做业务决策（那属于平台/其它产品的事）。
-2. **arda 不缓存 `quota_pools` 明细做本地扣减判断**——本地只做展示（"还剩多少"），真正的扣减放行判断以 `POST /usage/consume` 的响应（`gated`）为准，避免本地缓存与平台 SoT 不一致导致超额放行。
+2. **arda 不缓存 `quota_pools` 明细做本地扣减判断**——本地只做展示（"还剩多少"），真正的扣减放行判断以 `POST /usage/consume` 的响应（`gated`）为准，避免本地缓存与平台 SoT 不一致导致超额放行。（上限型 `limits` 例外：其账本本就是产品自己的数据，动作点本地校验即为正解，见 §1。）
+
+## 4a. 契约演进规范（2026-07-13 定稿——had_trial 类问题的防复发条款）
+
+契约的新增需求按三条规则**确定性路由**，不逐案谈判：
+
+1. **决策位/资格位禁入信封。** 任何"能不能试用 / 该买什么 / 什么价 / 给不给资格"类字段一律拒绝——商业决策 UI 归 vxture-console（产品端渲染通用入口 + 深链），产品端永远零商业推断。历史案例：`had_trial`（历史布尔 → 产品端推断试用资格）即此类，已废弃。
+2. **描述性事实字段按判据准入。** 判据 = **产品无需理解任何平台策略即可逐字渲染**（状态、日期、剩余量、上限数字）。满足判据的字段可随需求加入信封，属正常演进而非补丁（如 `data_retention_until`）。
+3. **功能语义不过界。** 哪档解锁什么功能 = 产品能力矩阵（产品仓库内、版本化）；tier→配额数值 = 平台销售配置。产品不展示"升到 X 档得 Y 容量"（那是 console 的事），只深链。
+
+**转化深链词表**（产品 → console 的唯一转化出口，保持极小）：`intent = upgrade | renew | addon`，参数 `workspace_id / product / metric? / target_tier?`。console 必须容错未知 intent（降级到订阅管理首页）——故障降级为一次跳转体验损耗，永不成为产品逻辑错误。
 
 ---
 

@@ -46,21 +46,30 @@
 
 ---
 
-## 1. C2 capability keys (platform must include in capabilities map)
+## 1. C2 fields (SUPERSEDED 2026-07-13: capability keys withdrawn; limits stay)
 
-These are read by arda from GET /platform/entitlements capabilities field.
-All keys are flat (no product prefix per P2.1 note).
+> **[2026-07-13 owner ruling: capability/quota split]** The platform no longer
+> configures or delivers ANY capability keys - the `capabilities` map is
+> removed from C2 (ent-120 v2). The former key list below is re-homed:
+>
+> - **Capability booleans/levels -> arda-local capability matrix**
+>   (`varda.enabled`, `varda.readonly`, `sync.frequency`): which tier unlocks
+>   what is product knowledge, versioned in the arda repo (ent-110 §2a).
+>   Platform stops configuring these entirely.
+> - **Numeric caps -> C2 `limits` block** (`member.max`, `dataset.max`,
+>   `datasource.max`, `service_endpoint.max`, `retention.days`): these are
+>   pricing-page sales numbers, still platform-defined per plan and delivered
+>   as a flat `limits` map (max-merged across sources). arda enforces them
+>   locally at action points (its own entity counts) - value from platform,
+>   enforcement in product.
+> - `tier` is a top-level envelope field (status/tier/bundled), not a key.
 
-| Key | Type | Description |
+| Limit (C2 `limits`) | Type | Description |
 |---|---|---|
-| `tier` | string | Subscription tier: free/starter/pro/business/enterprise |
 | `member.max` | int or -1 | Max human workspace members. -1 = unlimited |
 | `dataset.max` | int or -1 | Max registered Datasets |
 | `datasource.max` | int or -1 | Max connected DataSources |
 | `service_endpoint.max` | int or -1 | Max published DataService endpoints |
-| `varda.enabled` | bool | varda agent feature enabled |
-| `varda.readonly` | bool | varda restricted to read DataService calls |
-| `sync.frequency` | string | manual/daily/hourly/realtime |
 | `retention.days` | int or -1 | Data history retention days. -1 = unlimited |
 
 ---

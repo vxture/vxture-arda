@@ -54,7 +54,7 @@ model WorkspaceGrant {
 
 ## 4. 门控与商业化
 
-- 新能力键 `arda.services.cross_workspace_share`（授出动作门控；报平台入 feature 目录）——跨 ws 共享可作为付费档能力。
+- 新能力键 `arda.services.cross_workspace_share`（授出动作门控；入 arda 本地能力矩阵，2026-07-13 起平台不配置功能键）——跨 ws 共享可作为付费档能力（哪档开放由 arda 矩阵定义）。
 - 受益方双闸：**自己 ws 的订阅 features**（能不能用该功能域）AND **grant 的 access**（能不能碰这个资源）。
 
 ## 5. 分阶段

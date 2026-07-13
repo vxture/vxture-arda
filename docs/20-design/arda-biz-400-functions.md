@@ -97,7 +97,7 @@
 | `arda.governance.standards` | 标准（`biz-431`） | 数据标准管理 | 已入目录 |
 | `arda.governance.master_data` | 主数据（`biz-432`） | 主数据/金记录治理 | 已入目录 |
 
-> 说明：**元数据功能（`biz-422`）复用现有 `arda.assets.edit_metadata`/`glossary`/`advanced_search`，不新增键**。键由 arda 定义，每档开放与否由平台订阅配置下发（ADR §3.4）。
+> 说明：**元数据功能（`biz-422`）复用现有 `arda.assets.edit_metadata`/`glossary`/`advanced_search`，不新增键**。键由 arda 定义，每档开放与否~~由平台订阅配置下发~~ **由 arda 能力矩阵自持（2026-07-13 修订，见 [`ent-110`](arda-ent-110-local-implementation.md) §2a）**。
 
 ---
 

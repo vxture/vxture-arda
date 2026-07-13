@@ -47,6 +47,26 @@ export function getEntitlementResolver(): EntitlementResolver {
 
 ---
 
+## 2a. 产品能力矩阵（2026-07-13 定稿——档位功能门控的本地形态）
+
+**归属裁定**：哪档解锁什么功能 = **产品知识**，收敛为 arda 仓库内的版本化配置（**能力矩阵**），平台不配置、不下发任何功能键（[`ent-120`](arda-ent-120-consumption-contract.md) §4a 规则 3；取代 ADR §3.4 旧分工"档位映射由平台下发"）。
+
+```typescript
+// 形态示意（biz-300 阶段 0 实施；键目录见 domain-entities-and-feature-keys.md）
+const CAPABILITY_MATRIX: Record<Tier, readonly FeatureKey[]> = {
+  free: [...], starter: [...], pro: [...], business: [...], enterprise: [...],
+};
+// 能力门 = 入口墙通过（status 活跃）AND 矩阵含键
+canUseFeature(sub, key) = hasProductAccess(sub) && CAPABILITY_MATRIX[sub.tier].includes(key)
+```
+
+- **求值完全本地**（纯函数），平台不可达时随缓存信封继续有效——松耦合的机制保证。
+- 与既有 `tierMeets(tier, min)` 的关系：`tierMeets` 是"矩阵按档位单调递增"这一特例的紧凑写法，继续可用；矩阵是权威表达，二者不得冲突。
+- **配额不在此矩阵**：上限型数字（`limits`）与消耗型池（`quota_pools`）由平台下发，产品只执行/展示（[`ent-120`](arda-ent-120-consumption-contract.md) §1）；能力矩阵只含布尔性功能键。
+- 矩阵变更 = 产品发版（走评审），并同步导出机器可读工件供 console 定价页渲染（单向、静态，不构成运行时耦合）。
+
+---
+
 ## 3. `EnvGuard`：环境路由门禁
 
 `env-guard.tsx` 也渲染在 `AccountGate` 内部，与 `EntitlementGate` 是**并列的两道门**（先经过哪个不影响语义，两者各管一件事）：
@@ -73,7 +93,7 @@ export const MIN_TIER: Tier = (process.env.MIN_TIER as Tier) ?? "pro";
 ```
 
 - `DEFAULT_LANDING`：认证+授权通过后的落地路由。
-- `MIN_TIER`：使用本应用所需的最低档位；低于此档（或订阅非 active）一律展示升级页。两者均可用环境变量覆盖，无需改代码发版——这与 [`ent-100`](arda-ent-100-architecture.md) 里"features 键由产品定义、档位映射由平台配置下发"的分工原则一致：MIN_TIER 是 arda 自己的部署期配置，不依赖平台下发。
+- `MIN_TIER`：使用本应用所需的最低档位；低于此档（或订阅非 active）一律展示升级页。两者均可用环境变量覆盖，无需改代码发版。（2026-07-13 起分工原则更新：**功能键与档位映射全部归产品**（§2a 能力矩阵），平台只下发商业事实——MIN_TIER 作为 arda 自己的部署期配置与此完全一致。）
 
 ---
 

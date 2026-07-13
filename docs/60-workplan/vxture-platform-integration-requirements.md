@@ -127,9 +127,11 @@ ADR §3.1 定稿枚举：
 
 ### 3.3 features / quota 的归属（ADR §3.4）
 
-- **features 的「键」由 arda 定义**：命名空间 `arda.<group>.<capability>`（布尔），配额 `arda.quota.<name>`（数值）。完整目录见 `docs/20-design/domain-entities-and-feature-keys.md`，arda 会提供并维护一份权威键清单交平台配置。
-- **每档开放哪些键 + 配额数值由平台订阅配置下发**。arda **不硬编码「档位 → 功能」映射**（否则改套餐就要发版）。
-- 因此通道 B 必须**逐订阅返回当前生效的 features 列表与 quota 数值**，而不是只返回一个 tier 名让 arda 自己展开。
+> **【本节已取代（2026-07-13，owner 裁定：能力/配额分权）】**下述三条中"平台配置/下发功能键"的表述全部作废，以 [`ent-120`](../20-design/arda-ent-120-consumption-contract.md) v2 与回函 06 为准：**功能键与档位映射全归 arda 本地能力矩阵，平台不配置**；通道 B 只返回商业事实（status/tier/bundled/时间戳）+ 配额（`limits` 上限 + `quota_pools` 消耗池）——**正是"只返回 tier 名让 arda 自己展开"**（当初被否的形态，现为定稿）。
+
+- ~~**features 的「键」由 arda 定义**：……arda 会提供并维护一份权威键清单交平台配置。~~（键仍由 arda 定义，但**不再交平台配置**。）
+- ~~**每档开放哪些键 + 配额数值由平台订阅配置下发**。arda **不硬编码「档位 → 功能」映射**（否则改套餐就要发版）。~~（档位→功能映射改为 arda 能力矩阵自持；配额数值仍平台下发。）
+- ~~因此通道 B 必须**逐订阅返回当前生效的 features 列表与 quota 数值**，而不是只返回一个 tier 名让 arda 自己展开。~~
 
 ### 3.4 鉴权（服务间）
 
@@ -192,7 +194,7 @@ Authorization: <服务间签名>
 3. `arda:subscription` claim 过渡期是否继续下发，何时停发（§2.3）？
 4. 权益只读端点（§3.1）：base URL（prod/beta）、请求/响应字段是否可按本契约提供？
 5. 枚举（§3.2）：是否以 ADR 五档 `tier` 与 `state=...|none` 为准？计费侧若有别名，给映射表。
-6. features/quota（§3.3）：平台订阅配置能否逐档下发「features 键列表 + quota 数值」？arda 提供键目录，平台据此配置。
+6. ~~features/quota（§3.3）：平台订阅配置能否逐档下发「features 键列表 + quota 数值」？arda 提供键目录，平台据此配置。~~ **已撤回（2026-07-13）**：功能键不再需要平台配置（arda 能力矩阵自持）；配额（`limits`/`quota_pools`）仍请平台按套餐配置，见回函 06。
 7. 服务间凭证（§3.4 / §4.3）：形式（API key / 服务 JWT / mTLS）、签名算法、轮换方式、密钥交付方式。
 8. 指令通道（§4）：`invalidate / seed / wipe` 载荷与幂等/签名是否可按本契约实现？`invalidate` 是否承诺每次权益变更必发？
 9. `seedStatus` 标记的下发方式（§5）。

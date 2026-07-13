@@ -185,3 +185,38 @@ bound preserves the billing model.
 primitive"). The default read path and the data-110 force-filter paradigm
 are unchanged: cross-workspace reads go only through a dedicated
 grant-join helper, never by widening the default `workspaceId` filter.
+
+---
+
+## Capability Product-Owned, Quota Platform-Owned (Loose-Coupling Contract)
+
+**Decision (owner ruling, 2026-07-13):** The entitlement contract between the
+platform and products carries only commercial facts: subscription status,
+tier, bundled flag, lifecycle timestamps, numeric limits, and consumable
+quota pools. Capability semantics - which tier unlocks which features - are
+owned entirely by the product as a versioned in-repo capability matrix. The
+platform no longer configures or delivers feature keys; the `capabilities`
+map is removed from the C2 envelope (ent-120 v2). Quota stays fully
+platform-owned: caps (`limits`) and consumable pools (`quota_pools`) are
+sales strategy, workspace-level and cross-product (storage, ai.credit),
+with the platform as the accounting SoT.
+
+**Rationale:** Platform-configured tier-to-feature mappings over-bind the
+two sides: a plan-config change can silently alter product behavior, and
+product logic errors span two systems. Changing what a tier means IS a
+product decision and should ship as a product release. Conversely, quota
+numbers are pricing-page sales strategy shared across products in a
+workspace and must be unified platform-side. Decision bits (trial
+eligibility etc.) are banned from the envelope; conversion UI belongs to
+the console via deep links (ent-120 §4a) - this retires the had_trial
+class of one-off boolean patches. This also supersedes the earlier ADR
+§3.4 rule "features delivered by platform so plan changes need no product
+release": that flexibility was the coupling.
+
+**Consequence:** ent-120 v2 envelope (capabilities removed; limits +
+timestamps added); ADR §3.4 and ADR-11 §11.2/11.3 amended (no features
+union merge platform-side); biz-260 §1 capability-key handoff withdrawn
+(limits table stays); the `arda` token claim is slated for full
+retirement (identity plane carries zero commercial fields). Products
+degrade gracefully during transition by ignoring a still-delivered
+`capabilities` field.

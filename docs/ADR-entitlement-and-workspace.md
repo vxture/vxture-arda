@@ -121,8 +121,9 @@ Subscription {
 **features/quota 的归属划分（重要）**：
 
 - **features 的「键」（有哪些可门控的功能）由产品（arda）定义**——只有产品知道自己有什么功能。
-- **每档开放哪些 features、配额多少，由平台的订阅产品配置**——这是商业/计费决策，随套餐调整。
-- arda 门控时**只消费平台下发的「当前订阅 features 列表 + quota」，不在 arda 硬编码「档位→功能」映射**（否则改套餐就要发版）。
+- ~~**每档开放哪些 features、配额多少，由平台的订阅产品配置**——这是商业/计费决策，随套餐调整。~~
+- ~~arda 门控时**只消费平台下发的「当前订阅 features 列表 + quota」，不在 arda 硬编码「档位→功能」映射**（否则改套餐就要发版）。~~
+  **已取代（2026-07-13，owner 裁定：松耦合分权）**：**能力与配额拆开归属**——「每档开放哪些 features」= 产品特性，**由产品在本仓能力矩阵中完全自定义**（改档位内容 = 产品发版，是所有权归位而非缺陷）；「配额」（上限数字 + 消耗池）= 套餐销售策略，**仍由平台定义与统一管理**（workspace 级、跨产品兼容，如 storage、ai.credit）。平台不再配置/下发任何功能键，C2 契约的 `capabilities` 字段整体移除。权威表述见 [`ent-100`](20-design/arda-ent-100-architecture.md) §0、[`ent-110`](20-design/arda-ent-110-local-implementation.md) §2a、[`ent-120`](20-design/arda-ent-120-consumption-contract.md) v2。
 
 **上下文切换（org / workspace）一律不重新登录**：
 
@@ -249,7 +250,7 @@ expired → 回落 free（不删数据）       │
 1. **引入持久层（服务领域数据）**：Prisma + Postgres 服务（如 `arda-db`），更新 docker-compose、部署栈、`06-check-deploy-contracts.py`（当前仅 app+redis）、per-stack 数据目录与备份。**权益不在此建表。**
 2. **业务数据模型 + workspace 隔离**：领域实体均带 `workspaceId`，强过滤；workspace 本地记录仅用于隔离（镜像平台，不持有生命周期）。
 3. **权益来源改造（无表）**：`EntitlementResolver` 从读 token claim 改为「实时拉取 + Redis 缓存」按 `active_workspace + product=arda` 查平台权益端点；弃用 `arda:subscription` claim；更新集成标准文档。枚举锁定：`state=trial|subscribed|expired|none`，`tier=free|starter|pro|business|enterprise`。
-4. **门控**：`EntitlementGate` **保留二元墙**（`status !== "active"` 一律拒绝，见 §3.4 已推翻的旧表述与决策 A），按「当前 workspace×产品」求值；features 键由 arda 定义、档位映射由平台下发（该部分不变，仅门控放行逻辑不改为按 features/quota 逐项渲染）。
+4. **门控**：`EntitlementGate` **保留二元墙**（`status !== "active"` 一律拒绝，见 §3.4 已推翻的旧表述与决策 A），按「当前 workspace×产品」求值；features 键由 arda 定义，~~档位映射由平台下发~~ **档位映射也归 arda 本地能力矩阵（2026-07-13 取代，见 §3.4 修正注）**。
 5. **同步通道**：实时拉取端点 + 短 TTL 缓存 + 平台 `invalidate(workspaceId,product)` 失效通知（秒级生效）；与指令通道共用。
 6. **平台→arda 指令通道**：服务间签名鉴权 + 幂等 + 审计；承载 seed / wipe / invalidate。
 7. **上下文切换**：org/workspace 切换为应用内动作，重查权益 + 重载业务数据，不重新登录；常态无切换器，多上下文为扩展。
@@ -263,7 +264,7 @@ expired → 回落 free（不删数据）       │
 
 - **同步通道**：实时拉取 + 缓存 + 失效通知；要求**秒级生效**（付费/开通即时可用）。arda 不建权益镜像表。
 - **数据所有权边界**：平台仅订阅/付费/授权/账单；业务数据全在产品端。
-- **features/quota 归属**：features 键由产品定义，档位→功能映射由平台配置下发。
+- **features/quota 归属**：features 键由产品定义，~~档位→功能映射由平台配置下发~~ **档位→功能映射由产品能力矩阵自持；配额（上限+消耗池）由平台定义与统一管理（2026-07-13 取代，见 §3.4 修正注）**。
 - **指令通道鉴权**：服务间签名 + 幂等 + 软删 + 审计，初期从简，AI coding 结合实际确认。
 - **上下文切换**：org/workspace 切换一律应用内重查，不重新登录。
 
