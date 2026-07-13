@@ -7,9 +7,10 @@
  *    them locally.
  *  - Subscription.status is the RAW platform status (SubscriptionStatus) or null
  *    (null = never subscribed). Product-UI access = status in {active, trialing}.
- *  - ArdaState is a SEPARATE axis: a deploy-stack routing hint (trial -> beta),
- *    carried in the token claim and used only by EnvGuard - fully decoupled from
- *    entitlement (which now comes from C2 / SubscriptionStatus).
+ *  - ArdaState/ArdaClaim are LOCAL MOCK-ONLY since the platform retired the
+ *    `arda` token claim (arda_305 cutover, 2026-07-14): production tokens carry
+ *    zero commercial fields; these types survive solely for dev-login /
+ *    MOCK_STATE fallback. EnvGuard (their former consumer) is removed.
  *  - bundled is orthogonal: an agent Plan bundles arda's data base capability.
  */
 
@@ -37,9 +38,10 @@ export function tierMeets(tier: Tier, min: Tier): boolean {
 
 // -- Deploy-stack routing hint (separate axis, NOT entitlement) ---------------
 
-/** Deploy-stack routing hint carried in the token `arda` claim. Used ONLY by
- *  EnvGuard to route a trial user to the beta stack. Decoupled from entitlement:
- *  it does not gate access - that is Subscription.status (from C2). */
+/** Former deploy-stack routing hint from the retired `arda` claim. Survives
+ *  only as the dev-login / MOCK_STATE vocabulary (real tokens no longer carry
+ *  it; EnvGuard is removed). Does not gate access - that is
+ *  Subscription.status (from C2). */
 export type ArdaState = "trial" | "subscribed" | "expired" | "none";
 
 /** The `arda` nested object inside the OIDC access token. `state` is the routing

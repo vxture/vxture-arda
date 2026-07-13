@@ -28,7 +28,7 @@ function normalizeState(s: string): ArdaState | null {
  *    Limitations of this format:
  *      - Cannot distinguish "trial" from "free" (both have subscribed=false).
  *        Until the platform adds a `trial` flag, trial users appear as "free"
- *        and EnvGuard cannot route them to the beta stack automatically.
+ *        (historical note; EnvGuard is retired with the `arda` claim, arda_305).
  *      - `had_trial` is absent; defaults to false.
  *    => Requested platform additions: `trial: boolean`, `had_trial: boolean`.
  *
