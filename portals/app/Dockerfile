@@ -30,9 +30,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_APP_ENV=prod
 ARG NEXT_PUBLIC_PROD_URL=https://arda.vxture.com
 ARG NEXT_PUBLIC_BETA_URL=https://beta-arda.vxture.com
+ARG NEXT_PUBLIC_CONSOLE_URL=https://console.vxture.com
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}
 ENV NEXT_PUBLIC_PROD_URL=${NEXT_PUBLIC_PROD_URL}
 ENV NEXT_PUBLIC_BETA_URL=${NEXT_PUBLIC_BETA_URL}
+ENV NEXT_PUBLIC_CONSOLE_URL=${NEXT_PUBLIC_CONSOLE_URL}
 # Bring the full installed workspace from deps: root + per-workspace
 # node_modules and the @arda symlinks (npm does not hoist @vxture/ioredis/jose
 # to root). Then overlay source; node_modules are dockerignored so they survive.

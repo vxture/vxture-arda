@@ -72,7 +72,7 @@ export function Header({
   onOpenNotifications,
   onToggleAssistant,
   assistantOpen,
-  brandPlan = "pro",
+  brandPlan,
 }: HeaderProps) {
   const { theme, setTheme, density, setDensity } = useTheme();
   const { locale, setLocale } = useLocale();

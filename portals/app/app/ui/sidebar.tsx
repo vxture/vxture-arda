@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "./phosphor-icon";
-import { NAV, NAV_FLAT, BOARDS } from "./nav-config";
+import { NAV, NAV_FLAT, BOARDS, PLAN_TAGS } from "./nav-config";
+import { canUseFeature, minTierFor } from "../entitlement/capability";
+import { SCREEN_FEATURES } from "../entitlement/screen-features";
+import { useSubscription } from "../entitlement/gate";
 
 interface SidebarProps {
   activeKey: string;
@@ -19,6 +22,17 @@ export function Sidebar({ activeKey, onSelect, collapsed, onToggle }: SidebarPro
   const tb = useTranslations("board");
   const ts = useTranslations("shell");
   const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const subscription = useSubscription();
+
+  // Visible-but-locked (owner ruling 2026-07-13): a screen above the current
+  // tier keeps its nav entry and gets the required-tier badge; clicking it
+  // opens the upgrade interstitial (ScreenGate), never hides or redirects.
+  const lockedTierTag = (screenKey: string): string | null => {
+    const feature = SCREEN_FEATURES[screenKey];
+    if (!feature || !subscription || canUseFeature(subscription, feature)) return null;
+    const tier = minTierFor(feature);
+    return tier ? (PLAN_TAGS[tier] ?? tier.toUpperCase()) : null;
+  };
 
   const activeBoard = BOARDS.find((b) => b.screens.includes(activeKey)) ?? BOARDS[0];
   const toggleSection = (g: string) => setClosed((s) => ({ ...s, [g]: !s[g] }));
@@ -51,18 +65,22 @@ export function Sidebar({ activeKey, onSelect, collapsed, onToggle }: SidebarPro
               </button>
               {!isClosed && (
                 <div className="nav-items">
-                  {group.items.map((it) => (
-                    <button
-                      key={it.key}
-                      className={"nav-item" + (activeKey === it.key ? " active" : "")}
-                      onClick={() => onSelect(it.route)}
-                      aria-label={tn(it.key)}
-                      title={tn(it.key)}
-                    >
-                      <PIcon name={it.icon} />
-                      <span className="nav-item-label">{tn(it.key)}</span>
-                    </button>
-                  ))}
+                  {group.items.map((it) => {
+                    const tierTag = lockedTierTag(it.key);
+                    return (
+                      <button
+                        key={it.key}
+                        className={"nav-item" + (activeKey === it.key ? " active" : "")}
+                        onClick={() => onSelect(it.route)}
+                        aria-label={tn(it.key)}
+                        title={tn(it.key)}
+                      >
+                        <PIcon name={it.icon} />
+                        <span className="nav-item-label">{tn(it.key)}</span>
+                        {tierTag && !collapsed && <span className="nav-item-tag">{tierTag}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </section>

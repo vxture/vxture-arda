@@ -45,10 +45,19 @@ GET /platform/entitlements?workspace_id={W}&product=arda
 |---|---|---|
 | 1 | **移除 `capabilities`**（含 `features` 数组与功能布尔） | 哪档解锁什么功能 = 产品知识，arda 以仓内版本化**能力矩阵**自持；平台侧**无需再为 arda 配置任何功能键**（此前 handoff 请平台配置的 capability keys 清单作废，见 §4）。`varda.enabled`/`varda.readonly`/`sync.frequency` 等功能布尔同归 arda 矩阵 |
 | 2 | **上限型数字挪入独立 `limits` 块** | `member.max`/`dataset.max`/`datasource.max`/`service_endpoint.max`/`retention.days`——定价页销售数字，仍由平台按套餐配置、就高合并；产品在动作点本地执行（账本是产品自己的实体计数） |
-| 3 | **新增时间戳/日期字段** | `trial_ends_at`/`current_period_end`/`cancel_at_period_end`（对齐 Stripe 底线，倒计时/宽限/已预约取消 UX）+ `data_retention_until`（expired 态数据保留截止，可二期）。同请评估 `status` 枚举补 `past_due`（欠费宽限）语义 |
+| 3 | **新增时间戳/日期字段** | `trial_ends_at`/`current_period_end`/`cancel_at_period_end`（对齐 Stripe 底线，倒计时/宽限/已预约取消 UX）+ `data_retention_until`（expired 态数据保留截止，可二期）。同请评估 `status` 枚举补 `past_due`（欠费宽限）语义——**涉及 `@vxture/shared` 基础包，见 §1.5** |
 | 4 | **`quota_pools`/consume/gauge/invalidate 零变更** | 池模型、瀑布扣减、幂等、失效通知全部保留 |
 
 **过渡兼容（无需两侧同步发版）**：平台未实施前继续下发 `capabilities` 的，arda 直接忽略；新字段缺失时 arda 对应 UX 降级隐藏。平台可按自己节奏切换。
+
+### 1.5 附录：`past_due` 涉及 `@vxture/shared` 基础包（2026-07-13 补充分析）
+
+`SubscriptionStatus` 值集的 SoT 是 `@vxture/shared`（现为 `["active","trialing","expired","cancelled","suspended"]`）。分析：
+
+1. **`past_due` 与 `suspended` 不可折叠**：`past_due` = 欠费催缴宽限（支付重试中，服务继续 + 警示横幅，Stripe 标准语义）；`suspended` = 主动冻结（服务阻断）。二者门控行为相反（宽限放行 vs 冻结拒绝），必须是独立取值。
+2. **变更路径**：平台在 `@vxture/shared` 的 `SUBSCRIPTION_STATUSES` 增补 `"past_due"` → 发 minor 版本 → 各产品升级依赖并把宽限态纳入放行判定（arda：`hasProductAccess` 增 `past_due` + 警示横幅）→ **平台最后才开始在 C2 下发该值**。
+3. **顺序约束（重要）**：产品消费端先行、平台发值最后。若平台先发值，未升级的产品会把宽限期用户 fail-closed 拒之门外——安全但体验错误。arda 对未知 status 现已容错拒绝，无紧急改动。
+4. 产品端**不得**本地扩展该枚举（分叉权威值集）。v2 其余新字段（时间戳/`limits`）均为信封 DTO，不涉及 shared 值集。
 
 ---
 
