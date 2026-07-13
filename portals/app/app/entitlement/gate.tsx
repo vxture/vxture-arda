@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Button, EmptyState, Icon, Skeleton } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { type Subscription, hasProductAccess } from "./types";
+
+/** The resolved subscription, provided to everything inside the gate so client
+ *  chrome (sidebar badges, header plan tag) can evaluate the capability matrix
+ *  without a second fetch. Null until the gate has passed. */
+const SubscriptionContext = createContext<Subscription | null>(null);
+
+export function useSubscription(): Subscription | null {
+  return useContext(SubscriptionContext);
+}
 
 type GateState =
   | { phase: "loading" }
@@ -71,5 +80,9 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <SubscriptionContext.Provider value={state.phase === "ready" ? state.subscription : null}>
+      {children}
+    </SubscriptionContext.Provider>
+  );
 }

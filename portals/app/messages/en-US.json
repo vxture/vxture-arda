@@ -537,12 +537,36 @@
       "stream": "Streaming"
     },
     "rows": {
-      "p1": { "name": "Customer domain daily merge", "source": "3 sources", "target": "dw_customer_*" },
-      "p2": { "name": "Entity 4-store fusion", "source": "2 sources", "target": "dw_entity_*" },
-      "p3": { "name": "Realtime event ingest", "source": "Kafka", "target": "dw_event_stream" },
-      "p4": { "name": "Document CDC sync", "source": "CDC", "target": "dw_doc_*" },
-      "p5": { "name": "Geo vector tiling", "source": "GIS", "target": "dw_geo_tiles" },
-      "p6": { "name": "IoT sensor cleansing", "source": "IoT gateway", "target": "dw_sensor_*" }
+      "p1": {
+        "name": "Customer domain daily merge",
+        "source": "3 sources",
+        "target": "dw_customer_*"
+      },
+      "p2": {
+        "name": "Entity 4-store fusion",
+        "source": "2 sources",
+        "target": "dw_entity_*"
+      },
+      "p3": {
+        "name": "Realtime event ingest",
+        "source": "Kafka",
+        "target": "dw_event_stream"
+      },
+      "p4": {
+        "name": "Document CDC sync",
+        "source": "CDC",
+        "target": "dw_doc_*"
+      },
+      "p5": {
+        "name": "Geo vector tiling",
+        "source": "GIS",
+        "target": "dw_geo_tiles"
+      },
+      "p6": {
+        "name": "IoT sensor cleansing",
+        "source": "IoT gateway",
+        "target": "dw_sensor_*"
+      }
     }
   },
   "placeholder": {
@@ -555,5 +579,10 @@
     "upgrade": "Upgrade plan",
     "subscribe": "Subscribe",
     "loading": "Verifying subscription..."
+  },
+  "upgradePanel": {
+    "title": "{feature} is a {tier} feature",
+    "description": "Upgrade your workspace subscription to unlock it. Upgrading happens in the vxture console; nothing redirects automatically.",
+    "cta": "Upgrade subscription"
   }
 }

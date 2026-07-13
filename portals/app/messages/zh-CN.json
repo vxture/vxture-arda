@@ -537,12 +537,36 @@
       "stream": "流式"
     },
     "rows": {
-      "p1": { "name": "客户主题域日批汇聚", "source": "3 个数据源", "target": "dw_customer_*" },
-      "p2": { "name": "主体四库关联融合", "source": "2 个数据源", "target": "dw_entity_*" },
-      "p3": { "name": "实时事件接入", "source": "Kafka", "target": "dw_event_stream" },
-      "p4": { "name": "文档增量同步", "source": "CDC", "target": "dw_doc_*" },
-      "p5": { "name": "空间矢量切片", "source": "GIS", "target": "dw_geo_tiles" },
-      "p6": { "name": "IoT 传感清洗", "source": "IoT 网关", "target": "dw_sensor_*" }
+      "p1": {
+        "name": "客户主题域日批汇聚",
+        "source": "3 个数据源",
+        "target": "dw_customer_*"
+      },
+      "p2": {
+        "name": "主体四库关联融合",
+        "source": "2 个数据源",
+        "target": "dw_entity_*"
+      },
+      "p3": {
+        "name": "实时事件接入",
+        "source": "Kafka",
+        "target": "dw_event_stream"
+      },
+      "p4": {
+        "name": "文档增量同步",
+        "source": "CDC",
+        "target": "dw_doc_*"
+      },
+      "p5": {
+        "name": "空间矢量切片",
+        "source": "GIS",
+        "target": "dw_geo_tiles"
+      },
+      "p6": {
+        "name": "IoT 传感清洗",
+        "source": "IoT 网关",
+        "target": "dw_sensor_*"
+      }
     }
   },
   "placeholder": {
@@ -555,5 +579,10 @@
     "upgrade": "升级订阅",
     "subscribe": "订阅",
     "loading": "正在校验订阅..."
+  },
+  "upgradePanel": {
+    "title": "「{feature}」是 {tier} 功能",
+    "description": "升级工作区订阅即可解锁。升级在 vxture 控制台完成，不会自动跳转。",
+    "cta": "升级订阅"
   }
 }

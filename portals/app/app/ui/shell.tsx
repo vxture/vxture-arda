@@ -9,6 +9,7 @@ import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { Assistant, type AssistantMode } from "./assistant";
 import { PIcon, type PIconName } from "./phosphor-icon";
+import { useSubscription } from "../entitlement/gate";
 
 /** Seed notifications (static demo data for Phase 1). */
 const NOTIFS: Array<{ icon: PIconName; tone: string; key: string; route: string }> = [
@@ -34,6 +35,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantMode, setAssistantMode] = useState<AssistantMode>("narrow");
+  // Real subscription from the gate context: the header plan tag shows the
+  // workspace's actual tier (SaaS display ends at business; "ENT" appears only
+  // in private deployments where the license sets tier=enterprise).
+  const subscription = useSubscription();
 
   const toggleAssistantWide = () => {
     setAssistantMode((m) => {
@@ -70,6 +75,7 @@ export function Shell({ children }: { children: ReactNode }) {
             onOpenNotifications={() => setNotifOpen(true)}
             onToggleAssistant={() => setAssistantOpen((o) => !o)}
             assistantOpen={assistantOpen}
+            brandPlan={subscription?.tier ?? undefined}
           />
         </div>
       </header>
