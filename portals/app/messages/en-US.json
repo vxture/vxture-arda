@@ -694,6 +694,21 @@
       "config": "Connection config must be valid JSON."
     },
     "emptyTitle": "No data sources yet",
-    "emptyDesc": "Register your first source to start cataloging its datasets."
+    "emptyDesc": "Register your first source to start cataloging its datasets.",
+    "sync": {
+      "run": "Sync",
+      "running": "Syncing...",
+      "done": "Sync complete: {created} datasets created, {updated} updated.",
+      "skipped": "{n} discovered objects skipped: plan dataset limit reached.",
+      "error": {
+        "unauthenticated": "Session expired - sign in again.",
+        "forbidden": "Syncing requires a workspace admin role.",
+        "not_found": "Source not found.",
+        "tier": "This connector type requires a higher plan.",
+        "unsupported": "No live connector for this source type yet.",
+        "no_config": "This source has no connection config.",
+        "connect": "Connection failed"
+      }
+    }
   }
 }

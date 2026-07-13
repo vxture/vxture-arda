@@ -694,6 +694,21 @@
       "config": "连接配置必须是合法 JSON。"
     },
     "emptyTitle": "暂无数据源",
-    "emptyDesc": "登记第一个数据源，开始编目其中的数据集。"
+    "emptyDesc": "登记第一个数据源，开始编目其中的数据集。",
+    "sync": {
+      "run": "同步",
+      "running": "同步中...",
+      "done": "同步完成：新建 {created} 个数据集，更新 {updated} 个。",
+      "skipped": "{n} 个发现对象被跳过：已达套餐数据集上限。",
+      "error": {
+        "unauthenticated": "会话已过期，请重新登录。",
+        "forbidden": "同步需要工作区管理员角色。",
+        "not_found": "数据源不存在。",
+        "tier": "该连接器类型需要更高订阅档位。",
+        "unsupported": "该类型暂无实时连接器。",
+        "no_config": "该数据源未配置连接信息。",
+        "connect": "连接失败"
+      }
+    }
   }
 }

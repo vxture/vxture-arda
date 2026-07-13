@@ -23,10 +23,10 @@
 
 | 编号 | 断链（环） | 现状 | 接通方案 | 依赖 |
 |---|---|---|---|---|
-| `I-BL1` | 过程：登记→拉元数据→生成 Dataset 执行链缺 | `DataSource` 有表无写入路径；元数据映射未实现 | 建登记 + 连接测试 + 拉元数据 → upsert `Dataset` 的执行链 | `biz-421` |
-| `I-BL2` | 过程：保鲜/周期同步缺 | `refreshFreq` 仅声明，无真实周期同步 | 先支持手动同步；周期化接 scheduling（future） | future |
-| `I-BL3` | 目标：连接凭据加密封装缺 | `connectionConfig` 应用层加密，schema 不强制 | 统一加密读写封装（勿散落手工加解密） | `biz-435` |
-| `I-BL4` | 监管：接入审计未接 | 连接变更/同步失败不落 `AuditLog` | 补写入点 | `biz-451`/admin |
+| `I-BL1` | 过程：登记→拉元数据→生成 Dataset 执行链缺 | ✅ **已接通（2026-07-14）**：`/sources` 登记 + `syncDataSource` 执行链（连接测试→内省→按 `(workspaceId, code)` upsert `Dataset`）；postgres 真连接器（pg_catalog 内省，活库实测），其余类型显式 `unsupported`；出站 net-guard 防 SSRF；`dataset.max` 配额截断显式上报 | `biz-421` |
+| `I-BL2` | 过程：保鲜/周期同步缺 | `refreshFreq` 仅声明，无真实周期同步；**手动同步已可用**（I-BL1 的 sync 按钮） | 周期化接 scheduling（future） | future |
+| `I-BL3` | 目标：连接凭据加密封装缺 | ✅ **已接通（2026-07-14）**：`app/lib/seal.ts`（AES-256-GCM，data-130 §2.1 接线） | `biz-435` |
+| `I-BL4` | 监管：接入审计未接 | ✅ **已接通（2026-07-14）**：`datasource.register` / `datasource.sync`（含配额跳过数）/ `datasource.sync_fail`（含失败原因）均落 `AuditLog` | `biz-451`/admin |
 
 > 本功能"贯通"的关键 = `I-BL1`（登记能真生成资产）。这是价值链起点，断了后面全空。
 
