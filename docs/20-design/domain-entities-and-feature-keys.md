@@ -108,6 +108,8 @@
 | `arda.admin.audit_log` | v1 | 查看 / 导出审计日志 |
 
 > 已移除：`arda.admin.advanced_security`（SSO / 高级安全属身份层，归平台 / IdP）。
+> 新增（2026-07-13，源自 [`data-160`](arda-data-160-cross-workspace-authorization.md)）：`arda.services.cross_workspace_share`。
+> **档位分配的 SoT = `portals/app/app/entitlement/capability.ts`（能力矩阵，2026-07-13 起）**：本表只维护键目录与语义；每档开放哪些键以代码矩阵为准（free 基线 3 键，starter/pro/business 累进，enterprise 差异在配额而非键）。
 > 新增（2026-07-02，源自业务架构功能设计 `biz-431`/`biz-432`）：`arda.governance.standards`、`arda.governance.master_data`。键由 arda 定义；每档开放与否~~由平台订阅配置下发~~ **由 arda 能力矩阵自持（2026-07-13 修订，见 §1 归属条目）**。
 
 ### 3.2 配额键（数值）
