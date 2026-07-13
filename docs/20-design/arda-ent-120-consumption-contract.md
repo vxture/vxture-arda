@@ -1,6 +1,6 @@
 # arda 权益门控 · 消费契约（arda-ent-120-consumption-contract）
 
-> 状态：**契约 v2（2026-07-13 owner 裁定：松耦合改形）**——`capabilities`（功能键/features）整体退出契约，能力归产品本地档位矩阵；新增时间戳与 `limits` 块；`quota_pools`/consume/invalidate 原样保留。变更提案已发平台（回函 06，`docs/70-reply/`）；**过渡期平台仍下发 `capabilities` 时 arda 直接忽略该字段**，两侧无需同步发版。C2/C3 端点 2026-07-07 已上生产；arda 侧消费实现见 `plat-200`
+> 状态：**契约 v2 定稿（2026-07-13 平台裁定 `arda_303_reply-03`：整体采纳并升格为 product_200 全产品契约）**——`capabilities`（功能键/features）整体退出契约，能力归产品本地档位矩阵；新增时间戳与 `limits` 块；`quota_pools`/consume/invalidate 原样保留。status 值域扩为**六值**（`overdue` 取代提案的 past_due，`@vxture/shared@1.4.0` 已发布）；新增**代表订阅规则**与**演进容错通则**（见 §1a/§4a）。平台**一步切换、不做双发**，切换窗口另函通知；arda 消费端已 v1 容错（平台仍发 `capabilities` 时忽略），两侧无需同步发版。C2/C3 端点 2026-07-07 已上生产；arda 侧消费实现见 `plat-200`
 > 层：第 2 层 · 消费契约（`ent` 系列，见 [`ent-000`](arda-ent-000-index.md) 索引）
 > 范围：arda 怎么调用平台的权益/计量端点、怎么解读响应体——**只是契约的形状（字段/请求/响应），不是平台内部怎么算出这些字段的**。平台侧的 Org/Workspace/Membership/Plan/Product 建模与权益解析合并算法、瀑布扣减算法，一律不在本文展开，见 [`ent-000`](arda-ent-000-index.md) §0 边界。
 > 上游：`ADR-11-subscription-entitlement-design.md` §11.7（仅摘录契约形状字段）；`ent-100`/`ent-110`（本地消费方视角）
@@ -23,14 +23,14 @@ GET /platform/entitlements?workspace_id={W}&product=arda
 -> 200 {
     workspace_id, product: "arda",
 
-    # -- 订阅事实（描述性，产品逐字渲染，零解读）--
-    status: "trialing|active|past_due|expired|cancelled" | null,
+    # -- 订阅事实（描述性，产品逐字渲染，零解读；六值 = @vxture/shared@1.4.0）--
+    status: "active|trialing|overdue|suspended|expired|cancelled" | null,
     tier:   "free|starter|pro|business|enterprise" | null,
     bundled: false,
     trial_ends_at: "...",            # trialing 时非空（倒计时 UX）
-    current_period_end: "...",       # active/past_due 时非空（宽限/账期 UX）
+    current_period_end: "...",       # active/overdue 时非空（宽限/账期 UX）
     cancel_at_period_end: false,     # 已预约取消（"服务至 X 日"UX）
-    data_retention_until: null,      # expired 时非空：数据保留截止（与平台 wipe 排程同源）
+    data_retention_until: null,      # expired 时非空 = expired 时刻 + 90 天（arda_303 §1.4，一期实现；语义 = 承诺下限）
 
     # -- 上限型销售数字（就高合并后的单值；产品在动作点本地执行）--
     limits: { "member.max": 20, "dataset.max": 500, "retention.days": 365, ... },
@@ -47,7 +47,11 @@ GET /platform/entitlements?workspace_id={W}&product=arda
 
 **v2 相对 v1 的变化**：`capabilities`（含 `features` 功能键数组与功能布尔）**整体移除**——哪档开放什么功能是产品知识，收敛进 arda 本地能力矩阵（[`ent-110`](arda-ent-110-local-implementation.md) §2a），平台不再配置、不再下发任何功能键；上限型数字从 `capabilities` 挪入独立 `limits` 块（它们是定价页销售数字，仍归平台，与消耗型池的两种形状对应 ADR-11 §11.3 的两路解析）；新增四个时间戳/日期字段（描述性事实，准入判据见 §4a）。
 
-**不展开**：`tier`/`limits` 的多来源就高合并、`quota_pools` 为何多条池——平台内部算法，arda 只消费结果。
+**§1a 代表订阅规则（arda_303 §1.2 + owner 裁定 2026-07-14，消费侧必须遵守）**：**订阅事实块**（status/时间戳）取自平台选定的同一笔**代表订阅**（precedence = `@vxture/shared` 数组顺序 `active > trialing > overdue > suspended > expired > cancelled`，平手取周期结束最晚者）；**`tier` 与配额块**（`limits` 就高、`quota_pools` 累加）保持跨订阅**就高合并**语义。**平台不变量（owner 裁定 2026-07-14）：同一产品不允许并存多笔档位不同的订阅**（升档 = 原单变更，叠单属过度设计）——故 tier 的代表取值与就高恒等价，但语义归属定为合并侧（与 `limits` 同侧，能力语义的输入）。两块语义不同，**产品不得混读**（例如不得用 `status` 推断某条 pool 的来源订阅状态）。
+
+**status 语义（六值，arda_303 §1.3）**：`overdue` = 欠费宽限（扣款失败、催缴中、**权益保留**——门控放行 + 警示横幅）；`suspended` = 运营拦停（阻断）；`expired` = 权益已停（回落）。arda `hasProductAccess` 放行集 = `{active, trialing, overdue}`。支付面落地前平台不产出 `overdue`（预留防契约再动）。
+
+**不展开**：`tier`/`limits` 的多来源就高合并、`quota_pools` 为何多条池、代表订阅怎么选——平台内部算法，arda 只消费结果。
 
 **arda 侧怎么用这个响应**：
 - `status`/`tier`/`bundled` 映射到本地 `Subscription`（入口二元墙看 status；能力门 = status 活跃 AND 本地矩阵 `CAPABILITY_MATRIX[tier]` 含该功能键）。
@@ -119,7 +123,9 @@ PUSH invalidate { workspace_id, products: ["arda", ...] }   # 支持批量 produ
 2. **描述性事实字段按判据准入。** 判据 = **产品无需理解任何平台策略即可逐字渲染**（状态、日期、剩余量、上限数字）。满足判据的字段可随需求加入信封，属正常演进而非补丁（如 `data_retention_until`）。
 3. **功能语义不过界。** 哪档解锁什么功能 = 产品能力矩阵（产品仓库内、版本化）；tier→配额数值 = 平台销售配置。产品不展示"升到 X 档得 Y 容量"（那是 console 的事），只深链。
 
-**转化深链词表**（产品 → console 的唯一转化出口，保持极小）：`intent = upgrade | renew | addon`，参数 `workspace_id / product / metric? / target_tier?`。console 必须容错未知 intent（降级到订阅管理首页）——故障降级为一次跳转体验损耗，永不成为产品逻辑错误。
+**转化深链词表**（产品 → console 的唯一转化出口，保持极小）：`intent = upgrade | renew | addon | seat`（`seat` 为 arda_303 §2.3 预留：席位按产品独立、与该产品主订阅共终 co-term），参数 `workspace_id / product / metric? / target_tier?`。console 已承诺五条未知 intent 容错（arda_303 §2.2：未知降级订阅管理首页且保留上下文 / 无效参数忽略 / 状态感知渲染 / 未知值观测 / intent 只废弃不删除）——故障降级为一次跳转体验损耗，永不成为产品逻辑错误。
+
+4. **演进容错通则（双方义务，arda_303 §1.3，已写入 product_200）**：产品必须容忍信封**新增字段**（未知即忽略/降级隐藏）与 status **新枚举值**（未知即保守渲染 = fail-closed 拒绝 + 不崩溃）。arda 现状达标：未知字段不解析、未知 status 映射 null。**新增消费代码不得破坏这两条路径。**
 
 ---
 

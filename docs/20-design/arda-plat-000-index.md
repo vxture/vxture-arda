@@ -75,7 +75,7 @@
 | 回函 03（原 plat-220）| C1/C2/C3 路径边界与 S2S 内网化；请平台给内网 auth-bff 地址 + webhook 源 | `arda-plat-220-boundary-reply-2607120135.md` | 平台已裁定（`arda_302` §3，内网 base 已给）|
 | 回函 04（原 plat-230，提案）| 跨产品通信 mesh 优化（两类分级 / 会话互验 / tailnet 寻址 / token exchange / 控制数据面分离）| `arda-plat-230-mesh-optimization-reply-2607120135.md` | 平台已采纳，定稿 vxture 仓 `product_230` v1.0 |
 | 回函 05（plat-240）| 对平台回函 `arda_302` §2.1 新开放项的回复：`had_trial` 载体三选一，推荐方案①（C2 信封加布尔）| `arda-plat-240-had-trial-reply-2607121733.md` | **已被回函 06 撤回**（2026-07-13，问题被边界规则整体消解）|
-| 回函 06（新，plat-250）| 权益契约收缩（松耦合定稿）：C2 信封 v2（删 `capabilities`、加 `limits`+时间戳）+ 契约演进边界规则 + `arda` claim 整体退役 + 平台服务边界建议 | `arda-plat-250-loose-coupling-reply-2607132030.md` | 待平台确认 |
+| 回函 06（plat-250）| 权益契约收缩（松耦合定稿）：C2 信封 v2（删 `capabilities`、加 `limits`+时间戳）+ 契约演进边界规则 + `arda` claim 整体退役 + 平台服务边界建议 | `arda-plat-250-loose-coupling-reply-2607132030.md` | **平台已裁定**（`arda_303_reply-03`，2026-07-13：整体采纳并升格全产品契约；`past_due`→`overdue` 六值随 shared@1.4.0 先行发布；架构建议两项全采纳 platform-api 拆分；scope+claim 一车退役与 v2 同窗）|
 
 > 正文中出现的 `plat-200/210/220/230/240` 为**概念标签**（对应上表），文件实体在 `docs/70-reply/`。平台侧回函 `arda_302_reply-02`（vxture 仓 `docs/product/arda/`）对回函 02/03/04 逐项裁定，详见 `arda-plat-300-tracking.md` §2c。
 

@@ -73,9 +73,18 @@ export interface Subscription {
   readonly dataRetentionUntil?: string | null;
 }
 
-/** Product-UI access gate (product_220 §3): an active or trialing subscription. */
+/** Statuses that grant product-UI access. `overdue` (dunning grace, arda_303
+ *  §1.3: payment failed, entitlement RETAINED while the platform retries) is
+ *  included forward-ready: the value only survives envelope validation once
+ *  @vxture/shared ships the six-value set (1.4.0), so this is inert until the
+ *  dependency upgrade lands. `suspended` (ops freeze) and `expired` block.
+ *  Typed as plain strings so the list compiles against both value-set
+ *  versions (evolution-tolerance clause, arda_303 §1.3). */
+const PRODUCT_ACCESS_STATUSES: readonly string[] = ["active", "trialing", "overdue"];
+
+/** Product-UI access gate (product_220 §3 + arda_303 §1.3). */
 export function hasProductAccess(sub: Subscription): boolean {
-  return sub.status === "active" || sub.status === "trialing";
+  return sub.status !== null && PRODUCT_ACCESS_STATUSES.includes(sub.status);
 }
 
 /** Data-access gate (product_220 §3): product-UI access OR bundled. */
