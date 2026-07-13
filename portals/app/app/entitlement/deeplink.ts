@@ -15,7 +15,10 @@ import type { Tier } from "./types";
 
 const CONSOLE_BASE = process.env.NEXT_PUBLIC_CONSOLE_URL ?? "https://console.vxture.com";
 
-export type ConsoleIntent = "upgrade" | "renew" | "addon";
+/** `seat` is reserved (arda_303 §2.3): per-product seat purchase, co-terms
+ *  with the product's main subscription. The console tolerates it as unknown
+ *  until implemented, so emitting it early is safe. */
+export type ConsoleIntent = "upgrade" | "renew" | "addon" | "seat";
 
 export function consoleDeepLink(opts: {
   intent: ConsoleIntent;
