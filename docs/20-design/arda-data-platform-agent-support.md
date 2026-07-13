@@ -26,9 +26,9 @@
 
 **租户模型（隔离前提，详见 [`data-110`](arda-data-110-isolation.md) / [`data-150`](arda-data-150-multiagent-sharing.md)）**
 
-- `workspace` = **硬隔离边界**（`workspaceId` 行级 force-filter，全 schema 不变量）。
+- `org` = **硬隔离边界**（绝不跨）；`workspace` = **默认软隔离边界**（`workspaceId` 行级 force-filter，全 schema 不变量；owner 裁定 2026-07-13）。
 - `agent` 与 `workspace` 是 **N-N**：每个 agent 自身多租户、横跨多个 workspace；每个 workspace 内可有多个 agent，经 arda 在 **workspace 内**互相共享数据。
-- **跨 workspace 永不流动**：没有 share-grant 原语（被设计掉，这是最大简化）。共享只发生在同一 workspace 内的多个 agent 之间。
+- **跨 workspace 默认不流动**：agent 共享面止于同一 workspace 内。跨 workspace 访问仅经同 org 内资源级显式授权（`WorkspaceGrant`，见 [`data-160`](arda-data-160-cross-workspace-authorization.md)），与 agent 共享流正交。
 
 **三段流（概览，全模型见 [`data-150`](arda-data-150-multiagent-sharing.md)）**
 
@@ -109,7 +109,7 @@ model ApiKey {
 **① workspace 隔离（force-filter）**
 
 - 服务端一切查询强制 `where: { workspaceId }` 收口（隔离主约束，见 [`data-110`](arda-data-110-isolation.md)）。取用只能命中请求上下文里的 `workspaceId`。
-- **跨 workspace 永不流动**：无 share-grant 原语；一个 workspace 的服务不可被另一 workspace 的调用方取用。这是隔离的底线，不因 `ownerApp` / `visibility`（§3，属主/可见性轴，非隔离轴）而松动。
+- **跨 workspace 默认不流动**：一个 workspace 的服务默认不可被另一 workspace 的调用方取用；唯一例外 = 同 org 内对该服务的显式 `WorkspaceGrant`（[`data-160`](arda-data-160-cross-workspace-authorization.md)；grant 校验在网关处执行，源 ws 的 Policy 照常施加）。隔离底线不因 `ownerApp` / `visibility`（§3，属主/可见性轴，非隔离轴）而松动。
 
 **② entitlement 校验**
 
@@ -179,7 +179,7 @@ enum AssetScope {
 - **哨兵 workspaceId**：平台行用保留哨兵 `workspaceId = "__platform__"`。`workspaceId` 是**普通索引列、非 FK**，平台行无需先有 `WorkspaceRef` 行即可存在（见 [`data-110`](arda-data-110-isolation.md)）。
 - **只读叠加**：租户读取时叠加 `workspaceId IN (self, "__platform__")` - 既拿到本 workspace 的租户数据，又拿到平台全局参考，且平台行对租户只读。
 - **写权限**：写 `scope=platform` 行需要运营/平台角色，**永不由租户用户**发起。
-- **升格流**：一条数据从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；这是数据进入 `platform` 层的**唯一路径**，跨 workspace 仍永不流动（无 share-grant）。
+- **升格流**：一条数据从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；这是数据进入 `platform` 层的**唯一路径**——跨 workspace 授权（[`data-160`](arda-data-160-cross-workspace-authorization.md)）是点对点访问，不使数据进入平台层。
 
 **辨析：SeedTemplate ≠ Tier-P 全局参考（严禁混淆）**
 

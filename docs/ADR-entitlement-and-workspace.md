@@ -27,6 +27,7 @@
 
 - **Org**：组织容器，聚合成员。不直接持有权益。
 - **Workspace**：隔离容器，是数据隔离的最小单位（隔离键 = `workspaceId`）。常态下 org : workspace = 1 : 1，多 workspace 为特殊场景的扩展，数据模型与门控**必须按 1 : N 设计**。
+  **【2026-07-13 owner 裁定修正】**隔离分两级：**org（tenant）= 硬隔离**（绝不跨）；**workspace = 默认软隔离**——业务数据默认按 `workspaceId` 强过滤，但同 org 内可经显式授权跨 workspace 访问（资源级 `WorkspaceGrant`，见 [`data-160`](20-design/arda-data-160-cross-workspace-authorization.md)）。**订阅权益不受此影响**：权益归属 workspace 并严格隔离，授权访问不携带、不合并权益（门控/配额永远按消费方 active workspace 自己的订阅求值）。
 - **Subscription**：权益/订阅的承载单位，粒度 = **(workspace, product)**。同一 workspace 下不同产品可各自订阅不同档位（如 arda=free、forge=pro、raven=enterprise）。
 
 **核心原则**

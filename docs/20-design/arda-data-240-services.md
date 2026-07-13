@@ -86,7 +86,7 @@ model DataService {
 | `type` | `String` | 必填 | 无 | 服务类型；注释枚举取值 `rest_api | query | export | share`（存 String）。 |
 | `config` | `Json?` | 可选 | 无 | 服务特定参数兜底（查询模板 / 导出格式 / 共享目标等）。 |
 | `status` | `String` | 必填 | `"draft"` | 生命周期状态；取值 `draft | running | review | paused`，默认 `draft`。 |
-| `ownerApp` | `String?` | 可选 | 无 | 发布方 agent 标记：workspace 内发布/持有该服务的 agent/app 身份，用于归属与溯源（非隔离键，隔离仍由 `workspaceId` 兜底）。跨 workspace 永不流动，参见 [`data-150`](arda-data-150-multiagent-sharing.md)。 |
+| `ownerApp` | `String?` | 可选 | 无 | 发布方 agent 标记：workspace 内发布/持有该服务的 agent/app 身份，用于归属与溯源（非隔离键，隔离仍由 `workspaceId` 兜底）。跨 workspace 默认不流动（授权例外见 [`data-160`](arda-data-160-cross-workspace-authorization.md)），参见 [`data-150`](arda-data-150-multiagent-sharing.md)。 |
 | `visibility` | `String` | 必填 | `"workspace"` | 可见性；取值 `workspace`（对 workspace 内所有 agent 共享）| `owner`（仅属主 `ownerApp` 私有），默认 `workspace`（存 String，非 DB 枚举）。多 agent 共享模型见 [`data-150`](arda-data-150-multiagent-sharing.md)。 |
 | `publishedAt` | `DateTime?` | 可选 | 无 | 发布时间；未发布为空。 |
 | `createdAt` | `DateTime` | 必填 | `now()` | 创建时间。 |

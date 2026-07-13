@@ -1,6 +1,6 @@
 # arda 数据架构 · 跨 workspace 授权访问模型（一页纸）（arda-data-160-cross-workspace-authorization）
 
-> 状态：设计提案 v1（待 owner 评审；评审通过后进 biz-300 阶段 0 前置）
+> 状态：定稿 v1（owner 认可五条裁定，2026-07-13；G0 文档对齐已完成，G1 待实施）
 > 层：第 1 层 · 横切架构决策（`data` 系列）
 > 背景：owner 裁定（2026-07-13）——**org（tenant）= 硬隔离；workspace = 默认软隔离，同 org 内可授权跨访问；订阅权益归属 workspace 且严格隔离**。
 > 本文**正式取代** [`data-150`](arda-data-150-multiagent-sharing.md) 决策 D8 的绝对表述（"跨 workspace 永不流动、无 share-grant 原语"）——收敛为：**默认不流动；仅经显式授权流动；授权止于 org 内**。

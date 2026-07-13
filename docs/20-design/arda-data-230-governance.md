@@ -227,7 +227,7 @@ model Standard {
 - `scope`：数据归属层，`AssetScope` 枚举，默认 `workspace`。取值：
   - `workspace`（默认）= 租户本地草稿：由某个 workspace 产出、隔离在该 workspace 内（叠加 `workspaceId` force-filter），只对本 workspace 可见。
   - `platform` = 运营（arda-ops）通过的全局参考数据：如代码集 / 行政区划码表 / 币种码等**单一权威**的参照物，全平台**只读共享**。平台行用保留哨兵 `workspaceId="__platform__"`（`workspaceId` 是普通列非 FK，无需 `WorkspaceRef` 行），租户读经 `workspaceId IN (self, "__platform__")` 叠加取得；写平台行只允许 ops / 平台角色，**永不**由租户用户写。
-  - **升格流**：一条标准从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；跨 workspace 永不流动（无 share-grant 原语），只经此运营升格路径进入 `platform`。详见 [`data-150`](arda-data-150-multiagent-sharing.md)。
+  - **升格流**：一条标准从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；进入 `platform` 层只经此运营升格路径（跨 workspace 授权访问是另一条点对点机制，见 [`data-160`](arda-data-160-cross-workspace-authorization.md)，不使数据进入平台层）。详见 [`data-150`](arda-data-150-multiagent-sharing.md)。
 - `createdAt`：创建时间，默认 `now()`。
 - `updatedAt`：更新时间，`@updatedAt` 自动维护。
 

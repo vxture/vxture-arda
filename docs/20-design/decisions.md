@@ -159,3 +159,29 @@ features.
 `types.ts`, updating `ArdaClaim` JSDoc invariants, and coordinating with
 accounts.vxture.com to emit the new tier value. This is intentional friction
 to avoid ad-hoc tier proliferation.
+
+---
+
+## Two-Level Isolation: Org Hard, Workspace Soft (Grantable)
+
+**Decision (owner ruling, 2026-07-13):** Isolation is two-level across arda
+and all Vxture products. The org (tenant) is the hard isolation boundary:
+no data access ever crosses orgs. The workspace is soft isolation by
+default: business data is force-filtered by `workspaceId`, but cross-
+workspace access within the same org can be granted via an explicit,
+resource-level `WorkspaceGrant` (see `arda-data-160-cross-workspace-
+authorization.md`). Subscription entitlement attaches to the workspace and
+stays strictly isolated: a grant never carries or merges entitlement, and
+gating/quota always evaluate against the consumer's active workspace.
+
+**Rationale:** Real org-internal collaboration needs controlled sharing
+between workspaces (for example, one team consuming another team's
+published data service) without collapsing workspaces into one pool or
+routing bytes through the platform layer. Keeping the grant resource-level
+and org-bounded preserves auditability; keeping entitlement workspace-
+bound preserves the billing model.
+
+**Consequence:** This supersedes data-150 decision D8 ("no share-grant
+primitive"). The default read path and the data-110 force-filter paradigm
+are unchanged: cross-workspace reads go only through a dedicated
+grant-join helper, never by widening the default `workspaceId` filter.

@@ -31,7 +31,7 @@ arda 的持久层**只为领域业务数据存在**，不承载身份 / 订阅 /
 | **租户层** | `scope=workspace` | 租户 / agent 所产的业务数据 | 隔离在 workspace 内；workspace 内跨多个 agent 共享 |
 | **agent 私有** | - | agent 运行态 / 草稿 / 会话 / 向量 / RAG | **完全不进 arda** |
 
-硬隔离边界始终是 `workspaceId`（见 §4）；`AssetScope` 与 `ownerApp` / `visibility` 是**归属与可见性轴**，不替代隔离。跨 workspace 永不流动（无 share-grant 原语）。归属轴、三段共享流（发现 -> 取用 -> 回流升格）与升格流（workspace-draft -> ops-approve -> platform-published）的完整语义见 [`data-150`](arda-data-150-multiagent-sharing.md)。
+隔离主轴始终是 `workspaceId`（见 §4；**org = 硬隔离，workspace = 默认软隔离**，owner 裁定 2026-07-13）；`AssetScope` 与 `ownerApp` / `visibility` 是**归属与可见性轴**，不替代隔离。跨 workspace 默认不流动；唯一例外 = 同 org 内资源级显式授权（`WorkspaceGrant`，见 [`data-160`](arda-data-160-cross-workspace-authorization.md)）。归属轴、三段共享流（发现 -> 取用 -> 回流升格）与升格流（workspace-draft -> ops-approve -> platform-published）的完整语义见 [`data-150`](arda-data-150-multiagent-sharing.md)。
 
 ---
 

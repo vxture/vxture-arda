@@ -9,7 +9,9 @@
 
 ## 1. 主题与约束概述
 
-arda 是单产品数据面：一套 schema、一套 Postgres，按 `workspaceId` 做多租户隔离，而非按环境（beta/prod）拆库（见 [`data-100`](arda-data-100-architecture.md) §1）。因此「隔离」不是某张表的属性，而是贯穿整个持久层的**硬约束**，落在三处：schema 声明层、应用查询层、身份取值链路。本文件把这三处收敛成一份可据以建库、可据以写数据访问代码的工程规范。
+arda 是单产品数据面：一套 schema、一套 Postgres，按 `workspaceId` 做多租户隔离，而非按环境（beta/prod）拆库（见 [`data-100`](arda-data-100-architecture.md) §1）。因此「隔离」不是某张表的属性，而是贯穿整个持久层的**强制工程约束**，落在三处：schema 声明层、应用查询层、身份取值链路。本文件把这三处收敛成一份可据以建库、可据以写数据访问代码的工程规范。
+
+**语义分级（owner 裁定 2026-07-13）**：**org（tenant）= 硬隔离**——任何访问绝不跨 org；**workspace = 默认软隔离**——本文件的 force-filter 范式是**默认路径**（且是唯一的常规路径），同 org 内可经显式授权跨 workspace 访问，但授权路径不改写本文件任何规则：它走独立的 grant-join helper，不扩大默认过滤（见 [`data-160`](arda-data-160-cross-workspace-authorization.md) §3）。权益不随授权流动。
 
 **隔离键**：`workspaceId`，等于平台 / IdP 身份声明中的 `active_workspace`。它是 arda 与平台之间两个耦合契约之一（另一个是 `(workspace, product=arda)` 订阅行，在平台侧，不在本仓）。
 
@@ -210,7 +212,7 @@ where: { workspaceId: { in: [session.workspaceId, "__platform__"] } }
 这条叠加**必须收敛在一个 workspace-scoped 读 helper 里**，不散落到各处 `findMany`。它守住三条边界：
 
 - **只读**：叠加只用于读；任何写路径的 `where` 仍是纯 `{ workspaceId }`，租户永远写不到 `"__platform__"` 行。
-- **只加平台哨兵**：`in` 列表恒为 `[self, "__platform__"]` 两项，绝不出现第三个 workspace - 跨租户仍然零流动（arda 无 share-grant 原语，见 [`data-150`](arda-data-150-multiagent-sharing.md)）。
+- **只加平台哨兵**：`in` 列表恒为 `[self, "__platform__"]` 两项，绝不出现第三个 workspace。跨 workspace 授权访问（[`data-160`](arda-data-160-cross-workspace-authorization.md)）**不经此叠加**——它走独立的 grant-join helper，绝不通过扩大这个 `in` 列表实现。
 - **`"__platform__"` 是普通列值、非 FK**：与 §1 一致，无需先存在 `WorkspaceRef` 行；平台行照常受 `@@unique([workspaceId, code|term])` 约束（在平台命名空间内 code / term 唯一）。
 
 **写入语义**：写 `scope=platform`（`workspaceId="__platform__"`）的行只允许 ops / 平台角色，永不来自租户用户；升格流是 workspace 草稿 -> ops 审核 -> platform 发布（配合 `Standard.status` 的 draft / review / published，治理工程点见 [`data-230`](arda-data-230-governance.md)）。
@@ -436,3 +438,4 @@ model TemplateVersion {
 5. 平台全局参考（`scope=platform`）：行用哨兵 `workspaceId="__platform__"`，租户**只读**叠加 `workspaceId IN (self, "__platform__")` 且必须收敛在单一读 helper；写 platform 行只允许 ops 角色。改动此叠加规则须同步 §2.4 与 SoT 的 `AssetScope` 注释。
 6. `ownerApp` / `DataService.visibility` / `ApiKey.consumerApp` 是 workspace 内软属主 / 可见性 / 消费方轴，**非隔离轴**；新增此类列不得替代或削弱 `workspaceId` force-filter。多 agent 共享语义以 [`data-150`](arda-data-150-multiagent-sharing.md) 为准。
 7. 索引选型的完整清单见 [`data-120`](arda-data-120-indexing.md)；审计 / 幂等键工程见 [`data-140`](arda-data-140-audit.md)；迁移执行与现状差距见 [`data-300`](arda-data-300-migration.md)。
+8. 跨 workspace 授权访问（同 org 内、资源级 `WorkspaceGrant`）的模型与读路径见 [`data-160`](arda-data-160-cross-workspace-authorization.md)；它不修改本文件的默认范式——任何"为跨 ws 放宽默认过滤"的改动都是违规，跨 ws 读取只允许经 data-160 §3 的 grant-join helper。
