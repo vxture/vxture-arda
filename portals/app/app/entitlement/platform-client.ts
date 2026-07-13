@@ -3,7 +3,12 @@
  * GET /platform/entitlements?workspace_id={W}&product=arda
  * Auth: x-vxture-internal-auth header (PLATFORM_INTERNAL_AUTH_TOKEN).
  *
- * Response contract: ent-120 §1 (capabilities/quota_pools structure, ADR-11 §11.7).
+ * Response contract: ent-120 v2 (commercial facts + limits + quota_pools).
+ * Transition (reply-06 §1): tolerates the v1 envelope - top-level fields fall
+ * back to the legacy `capabilities` map for tier/bundled/numeric caps, and a
+ * still-delivered `capabilities.features` is ignored entirely (capability
+ * semantics are product-owned, capability.ts). No lockstep deploy needed.
+ *
  * Cache: caller is responsible for short-TTL caching (see PlatformEntitlementResolver).
  */
 
@@ -21,13 +26,36 @@ interface EntitlementsResponse {
   // Subscription lifecycle is a TOP-LEVEL field (raw platform status), NOT inside
   // capabilities (product_220 / @vxture/shared). null/absent = never subscribed.
   subscription_status?: string | null;
-  capabilities: Record<string, unknown>;
-  quota_pools: Array<{ metric: string; limit: number; remaining: number; priority: number }>;
+  // v2 top-level commercial facts (fall back to `capabilities` while v1 ships).
+  tier?: string | null;
+  bundled?: boolean;
+  trial_ends_at?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end?: boolean;
+  data_retention_until?: string | null;
+  /** v2: numeric sales caps (member.max, dataset.max, ...). */
+  limits?: Record<string, unknown> | null;
+  /** v1 legacy map; ignored except as numeric-cap/tier/bundled fallback. */
+  capabilities?: Record<string, unknown> | null;
+  quota_pools?: Array<{ metric: string; limit: number; remaining: number; priority: number }> | null;
 }
 
 export interface PlatformEntitlementResult {
   subscription: Subscription;
   quota: WorkspaceQuota;
+}
+
+/** Pure envelope parser (exported for verification): v2-first, v1-tolerant. */
+export function parseEntitlementEnvelope(body: EntitlementsResponse): PlatformEntitlementResult {
+  return {
+    subscription: mapToSubscription(body),
+    quota: mapToWorkspaceQuota({
+      limits: body.limits,
+      capabilities: body.capabilities,
+      quota_pools: body.quota_pools,
+      bundled: body.bundled,
+    }),
+  };
 }
 
 export async function fetchPlatformEntitlement(
@@ -53,30 +81,29 @@ export async function fetchPlatformEntitlement(
   }
 
   const body = (await res.json()) as EntitlementsResponse;
-  return {
-    subscription: mapToSubscription(body),
-    quota: mapToWorkspaceQuota(body.capabilities ?? {}, body.quota_pools ?? []),
-  };
+  return parseEntitlementEnvelope(body);
 }
 
 function mapToSubscription(body: EntitlementsResponse): Subscription {
   const caps = body.capabilities ?? {};
 
-  // Platform emits tier as a flat key `tier` (NOT `data.tier`/`{product}.tier`) -
-  // the envelope already carries product (reply-01 §6). tier is one of five or
-  // null (product_220 §1: null = no direct purchase).
-  const rawTier = caps["tier"];
+  // tier: v2 top-level field, else the v1 flat `tier` capability key (the
+  // envelope already carries product, reply-01 §6). One of five or null
+  // (product_220 §1: null = no direct purchase).
+  const rawTier = body.tier !== undefined ? body.tier : caps["tier"];
   const tier: Tier | null =
     typeof rawTier === "string" && (TIER_ORDER as string[]).includes(rawTier)
       ? (rawTier as Tier)
       : null;
 
   // bundled: an agent Plan bundles arda's data base capability (product_220 §3).
-  const bundled = caps["bundled"] === true;
+  const bundled = body.bundled === true || caps["bundled"] === true;
 
   // Raw platform subscription status from the TOP-LEVEL body field, validated
   // against the canonical set (@vxture/shared). Out-of-range/absent -> null
-  // (null = never subscribed).
+  // (null = never subscribed). NOTE: a value the shared package does not know
+  // yet (e.g. past_due before the value-set bump, reply-06 §1.5) lands here as
+  // null -> fail closed; widening requires the @vxture/shared upgrade first.
   const rawStatus = body.subscription_status;
   const status: SubscriptionStatus | null =
     typeof rawStatus === "string" &&
@@ -84,5 +111,13 @@ function mapToSubscription(body: EntitlementsResponse): Subscription {
       ? (rawStatus as SubscriptionStatus)
       : null;
 
-  return { tier, status, bundled };
+  return {
+    tier,
+    status,
+    bundled,
+    trialEndsAt: body.trial_ends_at ?? null,
+    currentPeriodEnd: body.current_period_end ?? null,
+    cancelAtPeriodEnd: body.cancel_at_period_end === true,
+    dataRetentionUntil: body.data_retention_until ?? null,
+  };
 }

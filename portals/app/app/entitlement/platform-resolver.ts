@@ -13,13 +13,13 @@ import type { EntitlementResolver } from "./resolver";
 import type { Subscription } from "./types";
 import type { ArdaClaim } from "./types";
 import type { WorkspaceQuota } from "./quota";
-import { FREE_CAPABILITY_LIMITS, FREE_QUOTA_POOLS } from "./quota";
+import { FREE_PLAN_LIMITS, FREE_QUOTA_POOLS } from "./quota";
 import { fetchPlatformEntitlement } from "./platform-client";
 
 const TTL_MS = 45_000;
 
 const FREE_FALLBACK_QUOTA: WorkspaceQuota = {
-  capabilities: FREE_CAPABILITY_LIMITS,
+  limits: FREE_PLAN_LIMITS,
   bundled: false,
   pools: FREE_QUOTA_POOLS,
 };

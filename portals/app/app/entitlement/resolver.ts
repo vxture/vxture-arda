@@ -1,6 +1,6 @@
 import { type ArdaClaim, type ArdaState, type Subscription, type Tier, subscriptionFromClaim } from "./types";
 import type { WorkspaceQuota } from "./quota";
-import { FREE_CAPABILITY_LIMITS, FREE_QUOTA_POOLS } from "./quota";
+import { FREE_PLAN_LIMITS, FREE_QUOTA_POOLS } from "./quota";
 import { PlatformEntitlementResolver } from "./platform-resolver";
 
 /** Resolve entitlement for a workspace.
@@ -27,7 +27,7 @@ export class MockEntitlementResolver implements EntitlementResolver {
   }
 
   async resolveQuota(): Promise<WorkspaceQuota> {
-    return { capabilities: FREE_CAPABILITY_LIMITS, bundled: false, pools: FREE_QUOTA_POOLS };
+    return { limits: FREE_PLAN_LIMITS, bundled: false, pools: FREE_QUOTA_POOLS };
   }
 
   invalidateCache(_workspaceId: string): void {

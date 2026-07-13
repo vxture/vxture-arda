@@ -61,6 +61,16 @@ export interface Subscription {
   /** True when an agent Plan bundles arda's data base capability (orthogonal to
    *  tier/status). Enables backend/agent data access without a standalone sub. */
   readonly bundled: boolean;
+  // -- Lifecycle timestamps (ent-120 v2, descriptive facts rendered verbatim;
+  //    absent until the platform ships the v2 envelope - UX degrades hidden) --
+  /** ISO date the trial ends (status=trialing). Countdown banner UX. */
+  readonly trialEndsAt?: string | null;
+  /** ISO date the current billing period ends (active / grace UX). */
+  readonly currentPeriodEnd?: string | null;
+  /** Cancellation scheduled: active now, lapses at period end. */
+  readonly cancelAtPeriodEnd?: boolean;
+  /** ISO date expired data is retained until (platform wipe schedule). */
+  readonly dataRetentionUntil?: string | null;
 }
 
 /** Product-UI access gate (product_220 §3): an active or trialing subscription. */

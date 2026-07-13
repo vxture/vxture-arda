@@ -2,11 +2,11 @@
  * GET /api/entitlement/quota
  *
  * Returns the current workspace's full quota picture sourced from the platform
- * C2 entitlement endpoint (capabilities + quota_pools). Used by the admin UI
- * to display storage remaining, api.call remaining, etc.
+ * C2 entitlement endpoint (limits + quota_pools, ent-120 v2). Used by the
+ * admin UI to display storage remaining, api.call remaining, etc.
  *
  * Shares the same 45-second in-memory TTL cache as /api/entitlement.
- * MockEntitlementResolver returns FREE_CAPABILITY_LIMITS + FREE_QUOTA_POOLS.
+ * MockEntitlementResolver returns FREE_PLAN_LIMITS + FREE_QUOTA_POOLS.
  */
 
 import { NextResponse } from "next/server";

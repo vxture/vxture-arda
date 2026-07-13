@@ -1,12 +1,21 @@
 /**
  * Workspace quota types for arda.
  *
- * Sourced from GET /platform/entitlements (C2) response:
- *   capabilities -> CapabilityLimits  (tier caps, checked before create/publish)
- *   quota_pools  -> QuotaPool entries (consumable monthly budgets, reported via C3)
+ * Sourced from GET /platform/entitlements (C2, ent-120 v2):
+ *   limits      -> PlanLimits    (numeric sales caps, enforced locally at
+ *                                 action points; platform-defined per plan)
+ *   quota_pools -> QuotaPool     (consumable budgets; platform accounting SoT,
+ *                                 reported via C3)
+ *
+ * v1 transition (reply-06 §1): until the platform ships the v2 envelope, the
+ * numeric caps arrive inside the legacy `capabilities` map - the parser reads
+ * `limits` first and falls back to `capabilities`. Functional booleans that
+ * used to ride in `capabilities` (varda.enabled / varda.readonly /
+ * sync.frequency) are IGNORED entirely: they are product capability levels
+ * now, derived from tier in capability.ts (owner ruling 2026-07-13).
  *
  * Metric names below are the canonical strings both arda and vxture platform
- * must agree on. See docs/20-design/arda-biz-billing.md for the full spec.
+ * must agree on. See docs/20-design/arda-biz-260-billing.md for the full spec.
  */
 
 // ---- C3 metric name constants ------------------------------------------------
@@ -36,9 +45,9 @@ export const METRICS = {
 
 export type MetricName = (typeof METRICS)[keyof typeof METRICS];
 
-// ---- Capability limits (from C2 capabilities map) ----------------------------
+// ---- Plan limits (from C2 limits block; legacy: capabilities map) ------------
 
-export interface CapabilityLimits {
+export interface PlanLimits {
   /** Max human members in workspace. Null = unlimited (enterprise). */
   memberMax: number | null;
   /** Max registered Datasets. Null = unlimited. */
@@ -47,12 +56,6 @@ export interface CapabilityLimits {
   datasourceMax: number | null;
   /** Max published DataService endpoints. 0 = not available on this tier. */
   serviceEndpointMax: number | null;
-  /** varda agent access enabled on this tier. */
-  vardaEnabled: boolean;
-  /** varda is restricted to read-only DataService calls (pro tier). */
-  vardaReadonly: boolean;
-  /** Sync frequency allowed: manual | daily | hourly | realtime */
-  syncFrequency: "manual" | "daily" | "hourly" | "realtime";
   /** Data retention days. Null = unlimited (enterprise). */
   retentionDays: number | null;
 }
@@ -72,7 +75,7 @@ export interface QuotaPool {
 // ---- WorkspaceQuota: full picture for one workspace -------------------------
 
 export interface WorkspaceQuota {
-  capabilities: CapabilityLimits;
+  limits: PlanLimits;
   /** Orthogonal source flag (product_220 §3): an agent Plan bundles arda's data
    *  base capability. Enables data access without a standalone subscription. */
   bundled: boolean;
@@ -88,14 +91,11 @@ export interface WorkspaceQuota {
 
 // ---- Defaults (used by MockResolver and as safe fallback) -------------------
 
-export const FREE_CAPABILITY_LIMITS: CapabilityLimits = {
+export const FREE_PLAN_LIMITS: PlanLimits = {
   memberMax: 1,
   datasetMax: 50,
   datasourceMax: 2,
   serviceEndpointMax: 0,
-  vardaEnabled: false,
-  vardaReadonly: false,
-  syncFrequency: "manual",
   retentionDays: 30,
 };
 
@@ -137,37 +137,41 @@ function parsePool(
   };
 }
 
-export function mapToWorkspaceQuota(
-  capabilities: Record<string, unknown>,
-  quota_pools: Array<{ metric: string; limit: number; remaining: number; priority: number }>,
-): WorkspaceQuota {
+export function mapToWorkspaceQuota(raw: {
+  /** v2 limits block (preferred). */
+  limits?: Record<string, unknown> | null;
+  /** v1 legacy capabilities map (numeric-cap fallback only; functional
+   *  booleans in it are ignored - tier-derived in capability.ts). */
+  capabilities?: Record<string, unknown> | null;
+  quota_pools?: Array<{ metric: string; limit: number; remaining: number; priority: number }> | null;
+  bundled?: boolean;
+}): WorkspaceQuota {
+  const v2 = raw.limits ?? {};
+  const legacy = raw.capabilities ?? {};
+  const pools = raw.quota_pools ?? [];
+
   const num = (key: string, fallback: number | null): number | null => {
-    const v = capabilities[key];
+    // v2 limits block wins; legacy capabilities map is transition fallback.
+    const v = v2[key] !== undefined ? v2[key] : legacy[key];
     if (v === null || v === undefined) return fallback;
     if (v === -1 || v === "unlimited") return null;
     return typeof v === "number" ? v : fallback;
   };
 
-  const caps: CapabilityLimits = {
-    memberMax: num("member.max", 1),
-    datasetMax: num("dataset.max", 50),
-    datasourceMax: num("datasource.max", 2),
-    serviceEndpointMax: num("service_endpoint.max", 0),
-    vardaEnabled: Boolean(capabilities["varda.enabled"]),
-    vardaReadonly: Boolean(capabilities["varda.readonly"]),
-    syncFrequency:
-      (capabilities["sync.frequency"] as CapabilityLimits["syncFrequency"]) ?? "manual",
-    retentionDays: num("retention.days", 30),
-  };
-
   return {
-    capabilities: caps,
-    bundled: capabilities["bundled"] === true,
+    limits: {
+      memberMax: num("member.max", 1),
+      datasetMax: num("dataset.max", 50),
+      datasourceMax: num("datasource.max", 2),
+      serviceEndpointMax: num("service_endpoint.max", 0),
+      retentionDays: num("retention.days", 30),
+    },
+    bundled: raw.bundled === true || legacy["bundled"] === true,
     pools: {
-      storageBytes: parsePool(quota_pools, METRICS.STORAGE_BYTES),
-      apiCall: parsePool(quota_pools, METRICS.SERVICE_API_CALL),
-      qualityCheckRun: parsePool(quota_pools, METRICS.QUALITY_CHECK_RUN),
-      aiCredit: parsePool(quota_pools, METRICS.AI_CREDIT),
+      storageBytes: parsePool(pools, METRICS.STORAGE_BYTES),
+      apiCall: parsePool(pools, METRICS.SERVICE_API_CALL),
+      qualityCheckRun: parsePool(pools, METRICS.QUALITY_CHECK_RUN),
+      aiCredit: parsePool(pools, METRICS.AI_CREDIT),
     },
   };
 }
