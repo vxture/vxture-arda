@@ -395,6 +395,19 @@
       "internal": "Internal",
       "sensitive": "Sensitive",
       "core": "Core"
+    },
+    "run": {
+      "running": "Running...",
+      "done": "Checks complete: {ran} ran - {passed} pass / {warned} warn / {failed} fail.",
+      "skipped": "{n} rules skipped (dataset has no live-connector source).",
+      "error": {
+        "unauthenticated": "Session expired - sign in again.",
+        "forbidden": "Running checks requires a workspace admin role.",
+        "tier": "Quality rules require a higher plan.",
+        "quota": "Monthly check quota exhausted - upgrade or buy more.",
+        "no_rules": "No enabled rules to run.",
+        "connect": "Source connection failed."
+      }
     }
   },
   "lineage": {
@@ -498,6 +511,16 @@
     "stat": {
       "calls": "Calls today",
       "subs": "Subs"
+    },
+    "publishAction": "Publish",
+    "publishDone": "Service published.",
+    "publishWarn": "({n} quality warnings recorded in the audit log.)",
+    "publishBlocked": "Publish blocked by the quality gate - critical failing checks: {blockers}",
+    "publishError": {
+      "unauthenticated": "Session expired - sign in again.",
+      "forbidden": "Publishing requires a workspace admin role.",
+      "not_found": "Service not found.",
+      "tier": "Publishing services requires a higher plan."
     }
   },
   "etl": {

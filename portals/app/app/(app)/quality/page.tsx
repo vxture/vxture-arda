@@ -1,4 +1,5 @@
 import { getSession } from "../../auth/lib/session";
+import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getQuality } from "./data";
 import { QualityList } from "./quality-list";
 
@@ -11,5 +12,5 @@ export default async function QualityPage() {
   const data = session
     ? await getQuality(session.workspaceId)
     : { rules: [], metrics: { score: 0, rules: 0, issues: 0, pending: 0 } };
-  return <QualityList rules={data.rules} metrics={data.metrics} />;
+  return <QualityList rules={data.rules} metrics={data.metrics} isAdmin={isWorkspaceAdmin(session?.roles)} />;
 }
