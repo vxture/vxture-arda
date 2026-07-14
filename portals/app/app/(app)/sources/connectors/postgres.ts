@@ -218,3 +218,66 @@ postgresConnector.checkQuality = async function checkQuality(config, checks) {
     await client.end();
   }
 };
+
+// ---- Governed row egress with masking pushdown (Sec-BL1) ----------------------
+
+const ROW_LIMIT_MAX = 100;
+
+/** SQL expression for a masking strategy. `col` is a pre-validated, quoted
+ *  identifier - masked values are computed IN the source, so clear values of
+ *  masked columns never cross the wire. */
+function maskExpr(col: string, strategy: string): string {
+  switch (strategy) {
+    case "hash":
+      return `md5(${col}::text)`;
+    case "partial":
+      return `case when ${col} is null then null else left(${col}::text, 2) || '***' end`;
+    case "redact":
+    default:
+      return `'***'`;
+  }
+}
+
+postgresConnector.fetchGovernedRows = async function fetchGovernedRows(config, location, masked, limit) {
+  const rel = relation(location);
+  if (!rel) {
+    const err = new Error(`bad location: ${location}`);
+    (err as { reason?: string }).reason = "bad_location";
+    throw err;
+  }
+  const capped = Math.max(1, Math.min(limit, ROW_LIMIT_MAX));
+  const [schemaName, tableName] = location.split(".");
+
+  const client = await connect(config);
+  try {
+    const colRes = await client.query<{ column_name: string }>(
+      `select column_name from information_schema.columns
+        where table_schema = $1 and table_name = $2
+        order by ordinal_position limit 200`,
+      [schemaName, tableName],
+    );
+    const columns = colRes.rows.map((r) => r.column_name).filter((c) => IDENT.test(c));
+    if (columns.length === 0) {
+      const err = new Error("relation has no readable columns");
+      (err as { reason?: string }).reason = "missing_relation";
+      throw err;
+    }
+
+    const maskByName = new Map(masked.map((m) => [m.name, m.strategy]));
+    const maskedApplied: string[] = [];
+    const selectList = columns
+      .map((c) => {
+        const quoted = `"${c}"`;
+        const strategy = maskByName.get(c);
+        if (!strategy) return quoted;
+        maskedApplied.push(c);
+        return `${maskExpr(quoted, strategy)} as ${quoted}`;
+      })
+      .join(", ");
+
+    const res = await client.query(`select ${selectList} from ${rel} limit ${capped}`);
+    return { columns, maskedColumns: maskedApplied, rows: res.rows };
+  } finally {
+    await client.end();
+  }
+};

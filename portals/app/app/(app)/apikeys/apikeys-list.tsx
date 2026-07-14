@@ -4,7 +4,15 @@ import { useMemo, useState, useTransition } from "react";
 import {
   Button,
   DataTable,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
+  Input,
+  Label,
   MetricGrid,
   PageHeader,
   StatusBadge,
@@ -13,7 +21,7 @@ import {
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
-import { revokeApiKey } from "./actions";
+import { createApiKey, revokeApiKey, type CreateKeyResult } from "./actions";
 import type { ApiKeyMetrics, ApiKeyView } from "./data";
 
 function fmtDate(iso: string | null, never: string): string {
@@ -24,6 +32,29 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
   const t = useTranslations("apikeys");
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [mintedToken, setMintedToken] = useState<string | null>(null);
+  const [createErr, setCreateErr] = useState<string | null>(null);
+
+  const mint = () => {
+    setCreateErr(null);
+    startTransition(async () => {
+      const res: CreateKeyResult = await createApiKey({ name: newName });
+      if (res.ok) {
+        setMintedToken(res.token);
+        setNewName("");
+      } else {
+        setCreateErr(t("create.error." + res.error));
+      }
+    });
+  };
+
+  const closeCreate = () => {
+    setCreateOpen(false);
+    setMintedToken(null);
+    setCreateErr(null);
+  };
 
   const revoke = (id: string) => {
     setBusyId(id);
@@ -91,7 +122,16 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
 
   return (
     <div className="screen">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
+      <PageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <PIcon name="plus" /> {t("create.button")}
+          </Button>
+        }
+      />
 
       <MetricGrid items={metricItems} />
 
@@ -112,6 +152,60 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
           <DataTable columns={columns} rows={keys} rowKey={(k) => k.id} />
         </div>
       )}
+
+      <Dialog open={createOpen} onOpenChange={(o) => (o ? setCreateOpen(true) : closeCreate())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("create.title")}</DialogTitle>
+            <DialogDescription>{t("create.desc")}</DialogDescription>
+          </DialogHeader>
+
+          {mintedToken ? (
+            <div className="form-stack">
+              <Label>{t("create.tokenLabel")}</Label>
+              <code
+                className="mono"
+                style={{
+                  display: "block",
+                  padding: "8px 10px",
+                  borderRadius: "var(--vx-radius-md)",
+                  background: "var(--vx-color-surface-muted)",
+                  wordBreak: "break-all",
+                  userSelect: "all",
+                }}
+              >
+                {mintedToken}
+              </code>
+              <p className="dim" style={{ fontSize: 12 }}>
+                {t("create.tokenOnce")}
+              </p>
+            </div>
+          ) : (
+            <div className="form-stack">
+              <div>
+                <Label htmlFor="key-name">{t("create.name")}</Label>
+                <Input id="key-name" value={newName} maxLength={120} onChange={(e) => setNewName(e.target.value)} />
+              </div>
+              {createErr && <p style={{ color: "var(--vx-color-danger-600)", fontSize: 13 }}>{createErr}</p>}
+            </div>
+          )}
+
+          <DialogFooter>
+            {mintedToken ? (
+              <Button onClick={closeCreate}>{t("create.done")}</Button>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={closeCreate}>
+                  {t("create.cancel")}
+                </Button>
+                <Button disabled={pending || !newName.trim()} onClick={mint}>
+                  {t("create.submit")}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

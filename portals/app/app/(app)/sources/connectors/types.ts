@@ -31,6 +31,15 @@ export interface SourceConnector {
    *  cannot run checks (explicit unsupported, no pretending). Throws on
    *  connection failure; per-check errors come back in the outcome. */
   checkQuality?(config: unknown, checks: QualityCheckSpec[]): Promise<QualityCheckOutcome[]>;
+  /** Fetch governed rows with masking PUSHED DOWN into the source query
+   *  (Sec-BL1). Optional; limit is clamped by the implementation. Throws on
+   *  connection failure. */
+  fetchGovernedRows?(
+    config: unknown,
+    location: string,
+    masked: MaskedColumn[],
+    limit: number,
+  ): Promise<GovernedRowsResult>;
 }
 
 // ---- Quality check execution (Q-BL1) -----------------------------------------
@@ -57,4 +66,23 @@ export interface QualityCheckOutcome {
   total: number;
   /** Set when the check could not run (bad config, missing column...). */
   error?: string;
+}
+
+// ---- Governed row egress (Sec-BL1/BL2 + Svc-BL1) -----------------------------
+// The gateway serves LIVE rows through arda as a pass-through proxy: masking is
+// pushed down into the source query (masked columns never leave the source in
+// clear), nothing is persisted in arda (data-150: bytes may transit, never rest).
+
+export interface MaskedColumn {
+  /** Validated column name. */
+  name: string;
+  /** redact | hash | partial */
+  strategy: string;
+}
+
+export interface GovernedRowsResult {
+  columns: string[];
+  /** Which of the returned columns were masked (client transparency). */
+  maskedColumns: string[];
+  rows: Array<Record<string, unknown>>;
 }
