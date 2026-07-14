@@ -26,7 +26,7 @@ import { PIcon, type PIconName } from "../../../ui/phosphor-icon";
 import { Radar } from "../../../ui/charts";
 import { QUALITY_DIMS } from "../../dashboard/seed";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone, type AssetLevel } from "../seed";
-import type { CatalogAssetView } from "../data";
+import type { AssetProfile } from "../data";
 
 function domainIcon(domain: string | null): PIconName {
   return (domain && DOMAINS[domain]?.icon) || "stack";
@@ -77,7 +77,7 @@ export function AssetMissing() {
   );
 }
 
-export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
+export function AssetDetail({ asset }: { asset: AssetProfile }) {
   const t = useTranslations("catalog");
   const router = useRouter();
   const [tab, setTab] = useState("schema");
@@ -149,7 +149,7 @@ export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
           </div>
         </div>
         <div className="ph-actions" style={{ display: "flex", gap: "var(--vx-space-xs)" }}>
-          <Button variant="secondary" onClick={() => router.push("/lineage")}>
+          <Button variant="secondary" onClick={() => router.push(`/lineage?dataset=${asset.id}`)}>
             <PIcon name="tree-structure" /> {t("viewLineage")}
           </Button>
           <Button>
@@ -212,6 +212,21 @@ export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
                     <StatusBadge tone={qualityTone(asset.quality)}>{asset.quality.toFixed(1)}</StatusBadge>
                   )}
                 </div>
+                {asset.qualityDetail.total > 0 ? (
+                  <p className="form-hint">
+                    {t("qualitySummary", {
+                      total: String(asset.qualityDetail.total),
+                      pass: String(asset.qualityDetail.pass),
+                      warn: String(asset.qualityDetail.warn),
+                      fail: String(asset.qualityDetail.fail),
+                      last: asset.qualityDetail.lastRunAt
+                        ? new Date(asset.qualityDetail.lastRunAt).toLocaleString()
+                        : "-",
+                    })}
+                  </p>
+                ) : (
+                  <p className="form-hint">{t("qualityNever")}</p>
+                )}
                 <div className="dq-body">
                   <Radar data={QUALITY_DIMS.map((d) => ({ name: t("dim." + d.key), score: d.score }))} size={220} />
                   <div className="dq-list">
@@ -233,8 +248,15 @@ export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
               <div className="con-card">
                 <div className="empty-inline">
                   <PIcon name="tree-structure" />
-                  <p>{t("lineageHint")}</p>
-                  <Button onClick={() => router.push("/lineage")}>{t("openLineage")}</Button>
+                  <p>
+                    {t("lineageCounts", {
+                      up: String(asset.lineage.upstream),
+                      down: String(asset.lineage.downstream),
+                      services: String(asset.lineage.services.length),
+                    })}
+                    {asset.lineage.services.length > 0 && " " + asset.lineage.services.join(", ")}
+                  </p>
+                  <Button onClick={() => router.push(`/lineage?dataset=${asset.id}`)}>{t("openLineage")}</Button>
                 </div>
               </div>
             </TabsContent>
@@ -315,7 +337,18 @@ export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
               </div>
               <div>
                 <dt>{t("info.storage")}</dt>
-                <dd className="mono dim">dw://{asset.code}</dd>
+                <dd className="mono dim">
+                  {asset.storage.bytes}
+                  {asset.storage.sharePct != null && ` (${asset.storage.sharePct}%)`}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("info.source")}</dt>
+                <dd>
+                  {asset.source
+                    ? `${asset.source.name}${asset.source.lastSyncedAt ? " · " + new Date(asset.source.lastSyncedAt).toLocaleDateString() : ""}`
+                    : "-"}
+                </dd>
               </div>
               <div>
                 <dt>{t("info.level")}</dt>
@@ -328,13 +361,16 @@ export function AssetDetail({ asset }: { asset: CatalogAssetView }) {
           <div className="con-card">
             <div className="con-card-heading">{t("tags")}</div>
             <div className="tag-list">
-              {[asset.domain ? t("domain." + asset.domain) : null, asset.refreshFreq ? t("freq." + asset.refreshFreq) : null, t("tagGoverned"), t("tagHighUse")]
-                .filter((x): x is string => !!x)
-                .map((tg) => (
-                  <span className="tag" key={tg}>
-                    {tg}
-                  </span>
-                ))}
+              {(asset.tags.length > 0
+                ? asset.tags
+                : [asset.domain ? t("domain." + asset.domain) : null, asset.refreshFreq ? t("freq." + asset.refreshFreq) : null].filter(
+                    (x): x is string => !!x,
+                  )
+              ).map((tg) => (
+                <span className="tag" key={tg}>
+                  {tg}
+                </span>
+              ))}
             </div>
           </div>
         </div>

@@ -26,7 +26,7 @@ import { PIcon } from "../../ui/phosphor-icon";
 import { canUseFeature, minTierFor } from "../../entitlement/capability";
 import { useSubscription } from "../../entitlement/gate";
 import { PLAN_TAGS } from "../../ui/nav-config";
-import { registerDataSource, syncDataSource, type RegisterSourceResult, type SyncSourceResult } from "./actions";
+import { registerDataSource, syncDataSource, unbindDataSource, type RegisterSourceResult, type SyncSourceResult, type UnbindSourceResult } from "./actions";
 import { SOURCE_TYPES } from "./source-types";
 import type { DataSourceView, SourcesMetrics } from "./data";
 
@@ -56,6 +56,22 @@ export function SourcesList({
   const [pending, startTransition] = useTransition();
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [unbindTarget, setUnbindTarget] = useState<DataSourceView | null>(null);
+
+  const unbind = () => {
+    if (!unbindTarget) return;
+    const id = unbindTarget.id;
+    setUnbindTarget(null);
+    setSyncMsg(null);
+    startTransition(async () => {
+      const res: UnbindSourceResult = await unbindDataSource(id);
+      setSyncMsg(
+        res.ok
+          ? { tone: "ok", text: t("unbind.done", { n: String(res.datasetsOrphaned) }) }
+          : { tone: "err", text: t("unbind.error." + res.error) },
+      );
+    });
+  };
 
   const atCap = metrics.max !== null && metrics.total >= metrics.max;
 
@@ -141,9 +157,14 @@ export function SourcesList({
       align: "right",
       cell: (s) =>
         isAdmin ? (
-          <Button variant="secondary" size="sm" disabled={syncingId !== null} onClick={() => sync(s.id)}>
-            <PIcon name="arrows-clockwise" /> {syncingId === s.id ? t("sync.running") : t("sync.run")}
-          </Button>
+          <span style={{ display: "inline-flex", gap: 6 }}>
+            <Button variant="secondary" size="sm" disabled={syncingId !== null} onClick={() => sync(s.id)}>
+              <PIcon name="arrows-clockwise" /> {syncingId === s.id ? t("sync.running") : t("sync.run")}
+            </Button>
+            <Button variant="secondary" size="sm" disabled={pending} onClick={() => setUnbindTarget(s)}>
+              <PIcon name="lock-key-open" /> {t("unbind.button")}
+            </Button>
+          </span>
         ) : null,
     },
   ];
@@ -194,6 +215,25 @@ export function SourcesList({
           <DataTable columns={columns} rows={sources} rowKey={(s) => s.id} />
         </div>
       )}
+
+      <Dialog open={unbindTarget !== null} onOpenChange={(o) => !o && setUnbindTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("unbind.title")}</DialogTitle>
+            <DialogDescription>
+              {unbindTarget && t("unbind.confirm", { name: unbindTarget.name, n: String(unbindTarget.datasetCount) })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setUnbindTarget(null)}>
+              {t("form.cancel")}
+            </Button>
+            <Button disabled={pending} onClick={unbind}>
+              {t("unbind.button")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

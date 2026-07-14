@@ -311,11 +311,15 @@
       "domain": "Domain",
       "freq": "Refresh",
       "storage": "Storage",
-      "level": "Classification"
+      "level": "Classification",
+      "source": "Source"
     },
     "tags": "Tags",
     "tagGoverned": "Governed",
-    "tagHighUse": "High usage"
+    "tagHighUse": "High usage",
+    "qualitySummary": "{total} rules checked - {pass} pass / {warn} warn / {fail} fail. Last run: {last}.",
+    "qualityNever": "No quality checks have run against this asset yet.",
+    "lineageCounts": "{up} upstream, {down} downstream datasets; feeds {services} services."
   },
   "standards": {
     "eyebrow": "Asset Governance",
@@ -777,6 +781,17 @@
         "unsupported": "No live connector for this source type yet.",
         "no_config": "This source has no connection config.",
         "connect": "Connection failed"
+      }
+    },
+    "unbind": {
+      "button": "Unbind",
+      "title": "Unbind data source",
+      "confirm": "Unbind \"{name}\"? The connection and its sealed credentials are destroyed permanently. {n} cataloged datasets are KEPT (they become source-less) - governance state is never destroyed by disconnecting.",
+      "done": "Source unbound. {n} datasets kept (now source-less).",
+      "error": {
+        "unauthenticated": "Session expired - sign in again.",
+        "forbidden": "Unbinding requires a workspace admin role.",
+        "not_found": "Source not found."
       }
     }
   },

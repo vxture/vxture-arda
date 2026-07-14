@@ -244,3 +244,45 @@ export async function syncDataSource(sourceId: string): Promise<SyncSourceResult
     skippedByQuota: plan.skippedByQuota,
   };
 }
+
+export type UnbindSourceResult =
+  | { ok: true; datasetsOrphaned: number }
+  | { ok: false; error: "unauthenticated" | "forbidden" | "not_found" };
+
+/**
+ * Unbind a data source (arda_000 3 lifecycle: register -> active -> UNBIND).
+ * Destroys the connection - the row is deleted, so sealed credentials are
+ * gone for good. Datasets sourced from it are PRESERVED and orphaned
+ * (Dataset.dataSourceId -> SetNull by schema): governance state (rules,
+ * lineage, service bindings) must not be destroyed by disconnecting a
+ * source. The unbind is audited with the orphan count; the cascading-
+ * revocation upstream signal (invalidate channel) rides the sharing phase.
+ */
+export async function unbindDataSource(sourceId: string): Promise<UnbindSourceResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "unauthenticated" };
+  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
+
+  const source = await prisma.dataSource.findFirst({
+    where: { workspaceId: session.workspaceId, id: sourceId },
+    include: { _count: { select: { datasets: true } } },
+  });
+  if (!source) return { ok: false, error: "not_found" };
+
+  await prisma.$transaction([
+    prisma.dataSource.delete({ where: { id: source.id } }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: "datasource.unbind",
+        target: source.id,
+        metadata: { name: source.name, type: source.type, datasetsOrphaned: source._count.datasets },
+      },
+    }),
+  ]);
+
+  revalidatePath("/sources");
+  revalidatePath("/catalog");
+  return { ok: true, datasetsOrphaned: source._count.datasets };
+}
