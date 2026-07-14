@@ -8,6 +8,9 @@ import type { FeatureKey } from "../../entitlement/capability";
  * type picker UI (premium options carry the tier badge).
  */
 export const SOURCE_TYPES = [
+  // Internal agent-db (arda_000 2.2 type-1, v1 priority): an L3 product's
+  // business database (vxturebiz_{product}_{env}); postgres under the hood.
+  { type: "agent_db", premium: false },
   { type: "file", premium: false },
   { type: "postgres", premium: false },
   { type: "mysql", premium: false },

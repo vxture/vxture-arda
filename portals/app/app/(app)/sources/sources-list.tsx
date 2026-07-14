@@ -50,6 +50,7 @@ export function SourcesList({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("postgres");
+  const [productCode, setProductCode] = useState("");
   const [config, setConfig] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -84,10 +85,11 @@ export function SourcesList({
   const submit = () => {
     setError(null);
     startTransition(async () => {
-      const res: RegisterSourceResult = await registerDataSource({ name, type, connectionJson: config });
+      const res: RegisterSourceResult = await registerDataSource({ name, type, productCode, connectionJson: config });
       if (res.ok) {
         setOpen(false);
         setName("");
+        setProductCode("");
         setConfig("");
       } else {
         setError(t("error." + res.error));
@@ -216,6 +218,21 @@ export function SourcesList({
                 ))}
               </NativeSelect>
             </div>
+            {type === "agent_db" && (
+              <div>
+                <Label htmlFor="src-product">{t("form.productCode")}</Label>
+                <Input
+                  id="src-product"
+                  value={productCode}
+                  maxLength={40}
+                  placeholder="umbra"
+                  onChange={(e) => setProductCode(e.target.value)}
+                />
+                <p className="dim" style={{ fontSize: 12, marginTop: 4 }}>
+                  {t("form.productCodeHint")}
+                </p>
+              </div>
+            )}
             <div>
               <Label htmlFor="src-config">{t("form.config")}</Label>
               <Textarea

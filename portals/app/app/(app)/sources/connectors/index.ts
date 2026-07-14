@@ -8,6 +8,8 @@ import type { SourceConnector } from "./types";
  */
 const CONNECTORS: Partial<Record<string, SourceConnector>> = {
   postgres: postgresConnector,
+  // Internal agent-db sources are postgres (vxturebiz_{product}_{env}).
+  agent_db: postgresConnector,
 };
 
 export function getConnector(type: string): SourceConnector | null {
