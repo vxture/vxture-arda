@@ -11,6 +11,7 @@ import type { FeatureKey } from "./capability";
 
 export const SCREEN_FEATURES: Partial<Record<string, FeatureKey>> = {
   catalog: "arda.assets.catalog",
+  glossary: "arda.assets.glossary",
   standards: "arda.governance.standards",
   quality: "arda.governance.quality_rules",
   lineage: "arda.governance.lineage",

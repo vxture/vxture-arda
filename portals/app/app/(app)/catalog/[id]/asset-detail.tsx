@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Breadcrumb,
@@ -27,6 +27,7 @@ import { Radar } from "../../../ui/charts";
 import { QUALITY_DIMS } from "../../dashboard/seed";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone, type AssetLevel } from "../seed";
 import type { AssetProfile } from "../data";
+import { attachTag, detachTag } from "../actions";
 
 function domainIcon(domain: string | null): PIconName {
   return (domain && DOMAINS[domain]?.icon) || "stack";
@@ -77,10 +78,26 @@ export function AssetMissing() {
   );
 }
 
-export function AssetDetail({ asset }: { asset: AssetProfile }) {
+export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; isAdmin?: boolean }) {
   const t = useTranslations("catalog");
   const router = useRouter();
   const [tab, setTab] = useState("schema");
+  const [newTag, setNewTag] = useState("");
+  const [tagPending, startTagTransition] = useTransition();
+
+  const addTag = () => {
+    const name = newTag.trim();
+    if (!name) return;
+    startTagTransition(async () => {
+      await attachTag(asset.id, name);
+      setNewTag("");
+    });
+  };
+  const removeTag = (tagId: string) => {
+    startTagTransition(async () => {
+      await detachTag(asset.id, tagId);
+    });
+  };
 
   const color = domainColor(asset.domain);
   const tint = `color-mix(in srgb, ${color} 14%, transparent)`;
@@ -361,17 +378,37 @@ export function AssetDetail({ asset }: { asset: AssetProfile }) {
           <div className="con-card">
             <div className="con-card-heading">{t("tags")}</div>
             <div className="tag-list">
-              {(asset.tags.length > 0
-                ? asset.tags
-                : [asset.domain ? t("domain." + asset.domain) : null, asset.refreshFreq ? t("freq." + asset.refreshFreq) : null].filter(
-                    (x): x is string => !!x,
-                  )
-              ).map((tg) => (
-                <span className="tag" key={tg}>
-                  {tg}
+              {asset.tags.map((tg) => (
+                <span className="tag" key={tg.id}>
+                  {tg.name}
+                  {isAdmin && (
+                    <button
+                      aria-label={t("removeTag", { name: tg.name })}
+                      disabled={tagPending}
+                      onClick={() => removeTag(tg.id)}
+                      style={{ border: 0, background: "none", cursor: "pointer", padding: 0, marginLeft: 4, color: "inherit" }}
+                    >
+                      <PIcon name="x" />
+                    </button>
+                  )}
                 </span>
               ))}
+              {asset.tags.length === 0 && !isAdmin && <span className="dim">-</span>}
             </div>
+            {isAdmin && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <Input
+                  value={newTag}
+                  maxLength={60}
+                  placeholder={t("addTagPh")}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addTag()}
+                />
+                <Button size="sm" disabled={tagPending || !newTag.trim()} onClick={addTag}>
+                  <PIcon name="plus" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -86,7 +86,8 @@
     "etl": "Data Development",
     "apikeys": "API Keys",
     "audit": "Audit Log",
-    "sources": "Data Sources"
+    "sources": "Data Sources",
+    "glossary": "Glossary"
   },
   "user": {
     "menu": "User menu",
@@ -319,7 +320,9 @@
     "tagHighUse": "High usage",
     "qualitySummary": "{total} rules checked - {pass} pass / {warn} warn / {fail} fail. Last run: {last}.",
     "qualityNever": "No quality checks have run against this asset yet.",
-    "lineageCounts": "{up} upstream, {down} downstream datasets; feeds {services} services."
+    "lineageCounts": "{up} upstream, {down} downstream datasets; feeds {services} services.",
+    "addTagPh": "Add tag...",
+    "removeTag": "Remove tag {name}"
   },
   "standards": {
     "eyebrow": "Asset Governance",
@@ -799,5 +802,39 @@
     "title": "This workspace has been scheduled for deletion",
     "description": "The platform has marked this workspace for removal. Its data is no longer accessible.",
     "descriptionUntil": "The platform has marked this workspace for removal. Data is retained until {date}; re-activating the workspace on the platform before then restores access."
+  },
+  "glossary": {
+    "eyebrow": "Assets",
+    "title": "Business Glossary",
+    "description": "Shared vocabulary for your data: workspace terms you curate plus the platform reference glossary (read-only).",
+    "col": {
+      "term": "Term",
+      "definition": "Definition",
+      "scope": "Scope",
+      "steward": "Steward"
+    },
+    "scope": {
+      "workspace": "Workspace",
+      "platform": "Platform"
+    },
+    "newTerm": "New term",
+    "newTermDesc": "Terms are workspace-local; platform reference terms are curated by ops.",
+    "form": {
+      "term": "Term",
+      "definition": "Definition",
+      "cancel": "Cancel",
+      "submit": "Create"
+    },
+    "listTitle": "Terms",
+    "search": "Search terms",
+    "emptyTitle": "No glossary terms yet",
+    "emptyDesc": "Create the first term to build your shared vocabulary.",
+    "error": {
+      "unauthenticated": "Session expired - sign in again.",
+      "forbidden": "Creating terms requires a workspace admin role.",
+      "tier": "The glossary requires a higher plan.",
+      "invalid": "Enter a term and definition.",
+      "duplicate": "This term already exists."
+    }
   }
 }

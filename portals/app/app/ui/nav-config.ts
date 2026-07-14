@@ -33,6 +33,7 @@ export const NAV: NavGroup[] = [
     key: "assets",
     items: [
       { key: "catalog", route: "/catalog", icon: "stack" },
+      { key: "glossary", route: "/glossary", icon: "book-open" },
       { key: "standards", route: "/standards", icon: "ruler" },
       { key: "quality", route: "/quality", icon: "seal-check" },
       { key: "lineage", route: "/lineage", icon: "tree-structure" },
@@ -71,7 +72,7 @@ export interface Board {
 
 /** Functional domains shown in the header launcher. */
 export const BOARDS: Board[] = [
-  { id: "asset", icon: "stack", home: "dashboard", screens: ["dashboard", "catalog"] },
+  { id: "asset", icon: "stack", home: "dashboard", screens: ["dashboard", "catalog", "glossary"] },
   { id: "integrate", icon: "flow-arrow", home: "sources", screens: ["sources", "etl"] },
   { id: "govern", icon: "shield-check", home: "standards", screens: ["standards", "quality", "security"] },
   { id: "analyze", icon: "chart-line-up", home: "lineage", screens: ["lineage"] },
