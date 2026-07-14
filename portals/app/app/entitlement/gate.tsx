@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { Button, EmptyState, Icon, Skeleton } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { type Subscription, hasProductAccess } from "./types";
+import { consoleDeepLink } from "./deeplink";
 
 /** The resolved subscription, provided to everything inside the gate so client
  *  chrome (sidebar badges, header plan tag) can evaluate the capability matrix
@@ -62,6 +63,12 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
     state.phase === "ready" && hasProductAccess(state.subscription);
 
   if (!active) {
+    // CTA branches on the subscription fact (arda_200 2.3): never-subscribed
+    // (null) -> subscribe; expired/cancelled/suspended -> renew. The console
+    // landing is state-aware either way; the link fires only on explicit
+    // click (owner ruling: no auto-redirect), new tab, noopener.
+    const status = state.phase === "ready" ? state.subscription.status : null;
+    const lapsed = status === "expired" || status === "cancelled" || status === "suspended";
     return (
       <div className="entitlement-pending">
         <EmptyState
@@ -69,9 +76,13 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
           description={t("description")}
           action={
             <Button asChild variant="default">
-              <a href="https://vxture.com/legal/terms" rel="noreferrer">
+              <a
+                href={consoleDeepLink({ intent: lapsed ? "renew" : "upgrade" })}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Icon name="sparkles" size="sm" />
-                {t("upgrade")}
+                {lapsed ? t("renew") : t("subscribe")}
               </a>
             </Button>
           }

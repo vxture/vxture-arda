@@ -633,7 +633,8 @@
     "description": "你的工作区当前没有有效的 Arda 订阅。升级后即可使用数据资产工作台。",
     "upgrade": "升级订阅",
     "subscribe": "订阅",
-    "loading": "正在校验订阅..."
+    "loading": "正在校验订阅...",
+    "renew": "续订"
   },
   "upgradePanel": {
     "title": "「{feature}」是 {tier} 功能",

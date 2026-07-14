@@ -633,7 +633,8 @@
     "description": "Your workspace does not have an active Arda subscription. Upgrade to access the data assets workspace.",
     "upgrade": "Upgrade plan",
     "subscribe": "Subscribe",
-    "loading": "Verifying subscription..."
+    "loading": "Verifying subscription...",
+    "renew": "Renew subscription"
   },
   "upgradePanel": {
     "title": "{feature} is a {tier} feature",
