@@ -1,5 +1,6 @@
 import { prisma } from "../lib/db";
 import { RETENTION_DAYS } from "../lib/workspace-state";
+import { reportStorageGauge } from "../usage/lib/gauge";
 
 /**
  * Hard-delete sweep (Lc-BL2 second half): physically clears business data for
@@ -60,6 +61,11 @@ export async function sweepWipedWorkspaces(now: Date = new Date()): Promise<Swee
         },
       });
     });
+  }
+
+  // Hard deletes drop each workspace's watermark to zero - tell the platform.
+  for (const ws of due) {
+    await reportStorageGauge(ws.id);
   }
 
   return { workspaces: due.length, rowsDeleted };
