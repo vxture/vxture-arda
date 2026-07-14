@@ -86,7 +86,8 @@
     "etl": "数据开发",
     "apikeys": "API 密钥",
     "audit": "审计日志",
-    "sources": "数据源"
+    "sources": "数据源",
+    "glossary": "业务术语"
   },
   "user": {
     "menu": "用户菜单",
@@ -319,7 +320,9 @@
     "tagHighUse": "高频调用",
     "qualitySummary": "已检查 {total} 条规则——通过 {pass} / 预警 {warn} / 失败 {fail}。最近运行：{last}。",
     "qualityNever": "该资产尚未运行过质量检查。",
-    "lineageCounts": "上游 {up} 个、下游 {down} 个数据集；供给 {services} 个服务。"
+    "lineageCounts": "上游 {up} 个、下游 {down} 个数据集；供给 {services} 个服务。",
+    "addTagPh": "添加标签...",
+    "removeTag": "移除标签 {name}"
   },
   "standards": {
     "eyebrow": "资产治理",
@@ -799,5 +802,39 @@
     "title": "该工作区已进入删除流程",
     "description": "平台已将该工作区标记删除，其数据不再可访问。",
     "descriptionUntil": "平台已将该工作区标记删除。数据保留至 {date}，在此之前经平台重新开通可恢复访问。"
+  },
+  "glossary": {
+    "eyebrow": "数据资产",
+    "title": "业务术语表",
+    "description": "数据的共同语言：工作区自有术语 + 平台参考术语（只读）。",
+    "col": {
+      "term": "术语",
+      "definition": "定义",
+      "scope": "归属",
+      "steward": "负责人"
+    },
+    "scope": {
+      "workspace": "工作区",
+      "platform": "平台"
+    },
+    "newTerm": "新建术语",
+    "newTermDesc": "术语归属本工作区；平台参考术语由运营策展。",
+    "form": {
+      "term": "术语",
+      "definition": "定义",
+      "cancel": "取消",
+      "submit": "创建"
+    },
+    "listTitle": "术语列表",
+    "search": "搜索术语",
+    "emptyTitle": "暂无术语",
+    "emptyDesc": "创建第一条术语，开始沉淀共同语言。",
+    "error": {
+      "unauthenticated": "会话已过期，请重新登录。",
+      "forbidden": "创建术语需要工作区管理员角色。",
+      "tier": "术语表需要更高订阅档位。",
+      "invalid": "请填写术语与定义。",
+      "duplicate": "该术语已存在。"
+    }
   }
 }

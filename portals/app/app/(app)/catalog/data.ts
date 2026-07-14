@@ -118,7 +118,7 @@ export interface AssetProfile extends CatalogAssetView {
   lineage: { upstream: number; downstream: number; services: string[] };
   source: { name: string; type: string; lastSyncedAt: string | null } | null;
   storage: { bytes: string; sharePct: number | null };
-  tags: string[];
+  tags: Array<{ id: string; name: string }>;
 }
 
 function formatBytes(n: bigint | null): string {
@@ -135,7 +135,7 @@ export async function getAssetProfile(workspaceId: string, id: string): Promise<
     where: { workspaceId, id },
     include: {
       source: { select: { name: true, type: true, lastSyncedAt: true } },
-      tags: { include: { tag: { select: { name: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true } } } },
       qualityRules: {
         where: { enabled: true },
         select: { results: { orderBy: { runAt: "desc" }, take: 1, select: { status: true, score: true, runAt: true } } },
@@ -185,6 +185,6 @@ export async function getAssetProfile(workspaceId: string, id: string): Promise<
       bytes: formatBytes(row.sizeBytes),
       sharePct: row.sizeBytes != null && total > 0 ? Math.round((Number(row.sizeBytes) / total) * 1000) / 10 : null,
     },
-    tags: row.tags.map((t) => t.tag.name),
+    tags: row.tags.map((t) => ({ id: t.tag.id, name: t.tag.name })),
   };
 }

@@ -1,4 +1,5 @@
 import { getSession } from "../../../auth/lib/session";
+import { isWorkspaceAdmin } from "../../../entitlement/roles";
 import { getAssetProfile } from "../data";
 import { AssetDetail, AssetMissing } from "./asset-detail";
 
@@ -11,5 +12,5 @@ export default async function AssetDetailPage({ params }: { params: Promise<{ id
   const session = await getSession();
   const asset = session ? await getAssetProfile(session.workspaceId, id) : null;
   if (!asset) return <AssetMissing />;
-  return <AssetDetail asset={asset} />;
+  return <AssetDetail asset={asset} isAdmin={isWorkspaceAdmin(session?.roles)} />;
 }
