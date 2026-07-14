@@ -76,6 +76,9 @@ model Dataset {
   // isolation axis - workspaceId is). Lets multiple agents in one workspace share
   // via arda while keeping "who produced this" first-class.
   ownerApp      String?
+  // M-BL1 (biz-432): authoritative golden-record mark for master-data
+  // governance; lightweight v1 - matching/merge engines stay future.
+  goldenRecord  Boolean     @default(false)
   classification AssetLevel @default(internal)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -87,6 +90,7 @@ model Dataset {
   lineageOut     LineageEdge[]   @relation("LineageUpstream")
   lineageIn      LineageEdge[]   @relation("LineageDownstream")
   services       DataServiceDataset[]
+  standards      DatasetStandard[]
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
@@ -229,6 +233,7 @@ model Standard {
   scope       AssetScope @default(workspace)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  datasets    DatasetStandard[]
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
@@ -274,6 +279,23 @@ model DataService {
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
+}
+
+/// S-BL1 (biz-431): dataset-level standard-compliance association. Column-level
+/// compliance rides the future Field model. workspaceId is a denormalized carry
+/// column (data-110 3.2); platform-scope standards may be referenced by any
+/// workspace (read-only overlay).
+model DatasetStandard {
+  datasetId   String
+  standardId  String
+  workspaceId String
+
+  dataset  Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  standard Standard @relation(fields: [standardId], references: [id], onDelete: Cascade)
+
+  @@id([datasetId, standardId])
+  @@index([workspaceId])
+  @@index([standardId])
 }
 
 model DataServiceDataset {

@@ -119,6 +119,10 @@ export interface AssetProfile extends CatalogAssetView {
   source: { name: string; type: string; lastSyncedAt: string | null } | null;
   storage: { bytes: string; sharePct: number | null };
   tags: Array<{ id: string; name: string }>;
+  goldenRecord: boolean;
+  standards: Array<{ id: string; name: string; code: string }>;
+  /** Standards available to link (workspace + platform overlay). */
+  linkableStandards: Array<{ id: string; name: string }>;
 }
 
 function formatBytes(n: bigint | null): string {
@@ -141,14 +145,21 @@ export async function getAssetProfile(workspaceId: string, id: string): Promise<
         select: { results: { orderBy: { runAt: "desc" }, take: 1, select: { status: true, score: true, runAt: true } } },
       },
       services: { include: { service: { select: { name: true } } } },
+      standards: { include: { standard: { select: { id: true, name: true, code: true } } } },
     },
   });
   if (!row) return null;
 
-  const [upstream, downstream, totalAgg] = await Promise.all([
+  const [upstream, downstream, totalAgg, linkable] = await Promise.all([
     prisma.lineageEdge.count({ where: { workspaceId, downstreamDatasetId: id } }),
     prisma.lineageEdge.count({ where: { workspaceId, upstreamDatasetId: id } }),
     prisma.dataset.aggregate({ where: { workspaceId }, _sum: { sizeBytes: true } }),
+    prisma.standard.findMany({
+      where: { workspaceId: { in: [workspaceId, "__platform__"] } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+      take: 200,
+    }),
   ]);
 
   let sum = 0;
@@ -186,5 +197,8 @@ export async function getAssetProfile(workspaceId: string, id: string): Promise<
       sharePct: row.sizeBytes != null && total > 0 ? Math.round((Number(row.sizeBytes) / total) * 1000) / 10 : null,
     },
     tags: row.tags.map((t) => ({ id: t.tag.id, name: t.tag.name })),
+    goldenRecord: row.goldenRecord,
+    standards: row.standards.map((l) => l.standard),
+    linkableStandards: linkable,
   };
 }
