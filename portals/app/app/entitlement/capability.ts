@@ -80,28 +80,36 @@ const STARTER_FEATURES = [
   "arda.governance.quality_rules",
 ] as const satisfies readonly FeatureKey[];
 
+// Tier philosophy (owner ruling 2026-07-14, platform-wide): pro = ALL product
+// features except multi-user/collaboration ones; business = pro + seats, where
+// the seat difference is a MANAGEMENT difference, not a business-function
+// difference. Keeps per-tier feature config simple by design.
 const PRO_FEATURES = [
   ...STARTER_FEATURES,
   "arda.assets.bulk_ops",
   "arda.integration.sources_premium",
   "arda.governance.standards",
+  "arda.governance.master_data",
   "arda.governance.policies",
   "arda.governance.lineage",
   "arda.services.publish_api",
+  "arda.services.data_products",
   "arda.admin.api_keys",
+  "arda.admin.audit_log",
 ] as const satisfies readonly FeatureKey[];
 
 const BUSINESS_FEATURES = [
   ...PRO_FEATURES,
-  "arda.governance.master_data",
-  "arda.services.data_products",
+  // The ONLY business-exclusive key: cross-workspace sharing is inherently a
+  // multi-workspace/collaboration capability (org plan). Everything else in
+  // business is seats + management, expressed via limits, not feature keys.
   "arda.services.cross_workspace_share",
-  "arda.admin.audit_log",
 ] as const satisfies readonly FeatureKey[];
 
 const ENTERPRISE_FEATURES = [
   ...BUSINESS_FEATURES,
-  // enterprise currently differs in limits/quotas and support, not keys
+  // enterprise = private-deployment edition: same keys as business by
+  // construction; differences live in limits/support/licensing
 ] as const satisfies readonly FeatureKey[];
 
 export const CAPABILITY_MATRIX: Record<Tier, readonly FeatureKey[]> = {

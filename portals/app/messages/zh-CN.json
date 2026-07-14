@@ -734,7 +734,8 @@
       "rest": "REST API",
       "s3": "Amazon S3",
       "bigquery": "BigQuery",
-      "snowflake": "Snowflake"
+      "snowflake": "Snowflake",
+      "agent_db": "内部 agent 库"
     },
     "credentialsSealed": "已加密",
     "neverSynced": "从未同步",
@@ -748,7 +749,9 @@
       "configPlaceholder": "{\"host\": \"...\", \"user\": \"...\", \"password\": \"...\"}",
       "configHint": "以 AES-256-GCM 加密存储，数据库不见明文。",
       "cancel": "取消",
-      "submit": "登记"
+      "submit": "登记",
+      "productCode": "归属产品码",
+      "productCodeHint": "该业务库所属的 L3 产品（目录四元组：org / workspace / product / datasource）。"
     },
     "error": {
       "unauthenticated": "会话已过期，请重新登录。",

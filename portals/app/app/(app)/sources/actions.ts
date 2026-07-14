@@ -15,6 +15,9 @@ import type { Prisma } from "../../../generated/prisma/client";
 export interface RegisterSourceInput {
   name: string;
   type: string;
+  /** Owning product_code for internal agent-db sources (catalog quad,
+   *  arda_000 2.1); defaults to "arda" for external/customer sources. */
+  productCode?: string;
   /** Raw connection JSON string from the form; sealed before persistence. */
   connectionJson?: string;
 }
@@ -64,9 +67,17 @@ export async function registerDataSource(input: RegisterSourceInput): Promise<Re
   }
 
   const created = await prisma.$transaction(async (tx) => {
+    const productCode =
+      input.type === "agent_db" && input.productCode?.trim()
+        ? input.productCode.trim().toLowerCase().slice(0, 40)
+        : "arda";
     const row = await tx.dataSource.create({
       data: {
         workspaceId: session.workspaceId,
+        // Catalog quad (org, ws, product, ds): org from the session's
+        // active_org - never from the client.
+        orgId: session.tenantId,
+        productCode,
         name,
         type: input.type,
         connectionConfig: sealedConfig,

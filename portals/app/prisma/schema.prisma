@@ -138,8 +138,15 @@ model GlossaryTerm {
 model DataSource {
   id              String    @id @default(cuid())
   workspaceId     String
+  // Catalog quad (arda_000 2.1): every DataSource is registered under
+  // (org, ws, product, datasource). orgId = absolute isolation boundary
+  // (platform active_org); productCode = the product owning the source
+  // ("arda" for external/customer sources; the L3 product_code for internal
+  // agent-db sources, e.g. "umbra"). Plain columns, no FKs (data-110 1).
+  orgId           String?
+  productCode     String    @default("arda")
   name            String
-  type            String // postgres | s3 | bigquery | rest | file | ...
+  type            String // agent_db | postgres | mysql | rest | file | s3 | bigquery | snowflake
   connectionConfig Json?   // encrypted at the app layer before persistence
   status          String    @default("connected")
   lastSyncedAt    DateTime?
@@ -148,6 +155,7 @@ model DataSource {
   datasets Dataset[]
 
   @@index([workspaceId])
+  @@index([orgId])
 }
 
 // ------------------------------------------------------------- governance ----

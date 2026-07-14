@@ -23,8 +23,9 @@ import { assertInternalTarget } from "../lib/internal-target";
 interface EntitlementsResponse {
   workspace_id: string;
   product: string;
-  // Subscription lifecycle is a TOP-LEVEL field (raw platform status), NOT inside
-  // capabilities (product_220 / @vxture/shared). null/absent = never subscribed.
+  /** v2 field name (arda_200 v2.0 2.2: renamed from subscription_status). */
+  status?: string | null;
+  // v1 legacy name, kept as fallback. null/absent = never subscribed.
   subscription_status?: string | null;
   // v2 top-level commercial facts (fall back to `capabilities` while v1 ships).
   tier?: string | null;
@@ -104,7 +105,7 @@ function mapToSubscription(body: EntitlementsResponse): Subscription {
   // (null = never subscribed). NOTE: a value the shared package does not know
   // yet (e.g. past_due before the value-set bump, reply-06 §1.5) lands here as
   // null -> fail closed; widening requires the @vxture/shared upgrade first.
-  const rawStatus = body.subscription_status;
+  const rawStatus = body.status !== undefined ? body.status : body.subscription_status;
   const status: SubscriptionStatus | null =
     typeof rawStatus === "string" &&
     (SUBSCRIPTION_STATUSES as readonly string[]).includes(rawStatus)

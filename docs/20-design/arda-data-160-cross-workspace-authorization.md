@@ -1,69 +1,64 @@
-# arda 数据架构 · 跨 workspace 授权访问模型（一页纸）（arda-data-160-cross-workspace-authorization）
+# arda 数据架构 · 跨 workspace 授权访问模型（arda-data-160-cross-workspace-authorization）
 
-> 状态：定稿 v1（owner 认可五条裁定，2026-07-13；G0 文档对齐已完成，G1 待实施）
+> 状态：**定稿 v2（2026-07-14 owner 裁定：SoT 对齐平台 sharing 域）**——v1 的"arda 本地 `WorkspaceGrant` 表作 SoR"（原裁定 §1#5）**作废**：平台 `product_110_sharing-isolation`（owner 2026-07-06 拍板，早于本文件 v1）已确立**所有 grant 的单一 SoT = 平台控制面 `sharing` 域**（`sharing.grants` 等三表已建库，`GET /platform/sharing/visible-set` 已上产）。arda 侧收敛为**入口求值方 + 可见集消费方**，不建授权表、不做第二真相源。
 > 层：第 1 层 · 横切架构决策（`data` 系列）
-> 背景：owner 裁定（2026-07-13）——**org（tenant）= 硬隔离；workspace = 默认软隔离，同 org 内可授权跨访问；订阅权益归属 workspace 且严格隔离**。
-> 本文**正式取代** [`data-150`](arda-data-150-multiagent-sharing.md) 决策 D8 的绝对表述（"跨 workspace 永不流动、无 share-grant 原语"）——收敛为：**默认不流动；仅经显式授权流动；授权止于 org 内**。
-> 上游：[`data-110`](arda-data-110-isolation.md)（隔离范式）、[`data-150`](arda-data-150-multiagent-sharing.md)（共享三段流）、ADR-11 §11.1a（WorkspaceMembership）
+> 背景裁定不变（owner 2026-07-13）：**org（tenant）= 硬隔离；workspace = 默认软隔离，同 org 内可授权跨访问；订阅权益归属 workspace 且严格隔离**。
+> 本文仍取代 [`data-150`](arda-data-150-multiagent-sharing.md) 决策 D8 的绝对表述——收敛为：**默认不流动；仅经显式授权流动；授权止于 org 内**。
+> 上游：vxture 仓 `product_110_sharing-isolation.md` §8（SharingGrant 模型/命中谓词/管理权，**权威**）、`product_200` §3.3（可见集通道）、[`data-110`](arda-data-110-isolation.md)（隔离范式）、arda_000 §3（v1 切片不含跨 WS 共享）
 
 ---
 
-## 1. 五条裁定（模型骨架）
+## 1. 五条裁定（v2 修订后）
 
-| # | 决策点 | 裁定 | 理由 |
-|---|---|---|---|
-| 1 | 硬边界 | **org**。任何 grant 的授出方与受益方 workspace 必须同 org，跨 org 一律拒绝 | owner 裁定；org = tenant 墙 |
-| 2 | 授予单位 | **workspace -> workspace**（非 user 级）。受益方 workspace 的成员经其 WorkspaceMembership 间接受益 | 与隔离/权益主轴一致，避免 user 级授权矩阵爆炸 |
-| 3 | 粒度 | **资源级**（单个 `DataService` / `Dataset`），不做整 workspace 全量授权 | 整 ws 授权 = 事实上合并两个 ws，风险大、不可审计 |
-| 4 | 权益 | **权益不随授权流动**。门控与配额永远按 active workspace 自己的 `(workspace, product)` 订阅求值；跨 ws 消费的 quota 记在**消费方** workspace | owner 裁定：订阅权益属于 workspace 并隔离 |
-| 5 | 载体（SoR） | **arda 本地表 `WorkspaceGrant`**。业务数据的授权 = 业务数据域 = arda SoR；平台不感知、不新增契约 | 守住 SoR 边界（平台只管订阅/身份/workspace 生命周期） |
+| # | 决策点 | 裁定 |
+|---|---|---|
+| 1 | 硬边界 | **org**。grant 双方必须同 org，跨 org 一律无通路（平台侧 `tenant_id` FK 硬约束；唯一合法跨 org 形态 = P 级平台资产走 entitlement，不走 grant） |
+| 2 | 授予单位 | 平台 SharingGrant 的 grantee 三型：**workspace / product / org_all**（arda 场景最常用 = workspace；此前"WorkspaceGrant"即 grantee_type=workspace 的子集，命名弃用以免误认独立机制） |
+| 3 | 粒度与 scope | **资源级**（数据集），scope 值域**钉死 `read`**（写永远只属属主，product_110 §8.2）。整 workspace 授权 = grantee 命中所有资源的多行 grant，不引入通配粒度 |
+| 4 | 权益 | **权益不随授权流动**：联合求值 = 命中 grant **∧** 调用方 workspace 对**执行点产品（arda）**持有效 entitlement（product_110 §8.3，公式写死不得放宽）；quota 记账记在消费方 |
+| 5 | **载体（SoT）** | ~~arda 本地 `WorkspaceGrant` 表~~ **作废**。**单一 SoT = 平台控制面 `sharing` 域**（`sharing.grants` / `visible_set_current` / `visible_set_refresh`）。arda 不建表、不缓存授权判断的独立副本——只做**入口强制求值**与**可见集短 TTL 消费** |
 
-## 2. 数据模型（schema 草案）
+## 2. arda 侧落地形态（求值/消费方）
 
-```prisma
-model WorkspaceGrant {
-  id                 String    @id @default(cuid())
-  workspaceId        String    // 授出方(源) workspace —— 行归属源 ws，沿用 data-110 隔离范式
-  granteeWorkspaceId String    // 受益方 workspace（服务端校验与源同 org）
-  resourceType       String    // data_service | dataset
-  resourceId         String
-  access             String    @default("read")   // 起步仅 read；write = future
-  grantedBy          String    // 授权人 userId（源 ws 的 admin）
-  expiresAt          DateTime?
-  revokedAt          DateTime? // 软删/撤销，不物理删（审计留痕）
+### 2.1 读路径（不变的部分）
 
-  createdAt          DateTime  @default(now())
+**data-110 默认 force-filter 范式零改动**：常规查询仍是 `where: { workspaceId }`，跨 ws 可见性不通过扩大默认过滤实现。跨 ws 访问走**独立入口**：
 
-  @@unique([workspaceId, granteeWorkspaceId, resourceType, resourceId])
-  @@index([workspaceId])
-  @@index([granteeWorkspaceId, resourceType])
-}
+```
+消费方入口（"共享给我的"视图 / 对外网关 / 未来 agent 工具面）
+  1) GET /platform/sharing/visible-set?workspace_id={caller_ws}&product=arda   # 鉴权同 C2/C3
+     → 命中的资源引用集（短 TTL 缓存，复用 C2 缓存模式）
+  2) 按可见集的 resource_ref 二次取源行（服务端，单一 helper 收敛）
+  3) 入口强制联合求值：grant 命中 ∧ entitlement_active(caller_ws, arda)   # §8.3 公式，召回层过滤
 ```
 
-- **同 org 校验**：创建时经 `WorkspaceRef.orgId` 比对两侧；镜像行缺失则**保守拒绝**（等平台 provisioning 补齐）。
-- **授权人**：源 workspace 的 `WorkspaceMembership.role=admin`；org owner/admin 可撤销本 org 内任意 grant。
+- **召回层强制，不做生成后裁剪**（product_110 §8.5 / product_210 §5）；
+- 源 workspace 的分级/脱敏 `Policy` 照常执行（Sec-BL1/BL2 出口不变量对被授方同样生效）；
+- `grant.invalidated` 事件（webhook 已接收、v1 存档）→ 共享面实装时清可见集缓存 re-scope。
 
-## 3. 读路径语义（对 data-110 范式的最小冲击）
+### 2.2 写路径（授予/撤销）
 
-**默认查询完全不变**（软隔离 = 默认仍强制 `where: { workspaceId }`；`__platform__` 叠加照旧）。跨 ws 访问不扩大默认 IN 列表，而是走**独立的 grant join 入口**：
+**授权的建立与撤销发生在平台 SoT**，arda 不落授权行：
 
-- 消费方 UI 新增"共享给我的"视图：`WorkspaceGrant.findMany({ where: { granteeWorkspaceId: self, revokedAt: null } })` -> 按 `(resourceType, resourceId)` 二次取源行。
-- 该二次取值收敛在**单一 helper**（同 `__platform__` 叠加的收敛原则），普通数据访问代码永远看不到别的 workspaceId。
+- 管理权语义（product_110 §8.7）：**workspace 发起 + org 管理员可审计与一键回收**；属主 workspace 随时撤销自己的 grant；
+- arda 产品内的"共享"入口 = 触发平台面（console 或平台 sharing API）完成授予，形态随共享面实装时与平台确认——arda 只提供入口与上下文，不写授权数据；
+- 审计：授予/撤销的权威审计在平台 `sharing` 域；arda 侧在**取用时**落 `service.access` 类访问审计（已实现）。
 
-**安全不变量**：源 workspace 的分级/脱敏 `Policy` 照常执行（消费方拿到的是过滤后的视图）；`AuditLog` **双写**（源 ws 记"被谁取用"、消费方 ws 记"取用了什么"）；grant 可撤销、可过期。
+### 2.3 时序
 
-## 4. 门控与商业化
+**arda v1 明确不含跨 WS 共享**（arda_000 §3 / product_310 剩项 P4.4"入口 grant 求值随共享面"）。本文件为共享面实装时的执行依据；当前不产生编码工作。能力键 `arda.services.cross_workspace_share` 保留（届时门控 arda 内的共享入口 UI）。
 
-- 新能力键 `arda.services.cross_workspace_share`（授出动作门控；入 arda 本地能力矩阵，2026-07-13 起平台不配置功能键）——跨 ws 共享可作为付费档能力（哪档开放由 arda 矩阵定义）。
-- 受益方双闸：**自己 ws 的订阅 features**（能不能用该功能域）AND **grant 的 access**（能不能碰这个资源）。
+## 3. 门控与商业化（不变）
 
-## 5. 分阶段
+- `arda.services.cross_workspace_share` 入 arda 能力矩阵（business 档——多用户/协作类差异，见 tier 裁定 2026-07-14）；
+- 被授方双闸 = 自己 ws 的订阅（执行点产品 entitlement，§1#4）AND grant 命中。
 
-| 阶段 | 内容 |
-|---|---|
-| G0 | 本页评审定稿；`data-150` D8 / `data-110` / `biz-100` §3.1 / ADR 隔离表述同步修订 |
-| G1 | `WorkspaceGrant` 表 + `DataService` 级授予/撤销 + 消费方"共享给我的服务"入口 + 双写审计 |
-| G2 | `Dataset` 级只读目录发现（跨 ws 资产可被编目发现） |
-| future | `access=write`、整 workspace 级授权（均需真实需求驱动，不提前建） |
+## 4. 与 v1 的差异记录（防回退）
 
-> **对 biz-300 阶段 0 的影响**：门控地基的查询过滤器**不需要**为 grant 改写（默认路径不变），可与 G1 并行；唯一前置是本页 §1 的五条裁定先定稿。
+| 项 | v1（2026-07-13） | v2（2026-07-14，现行） | 变更原因 |
+|---|---|---|---|
+| SoT | arda 本地 `WorkspaceGrant` 表 | 平台 `sharing` 域三表 | product_110 单一真相源原则（grant 横贯数据/知识/能力，联合求值两操作数需同源）；平台表已建库上产 |
+| 读路径 | 本地 grant-join helper | 平台可见集 API + 入口联合求值 | 同上；公式 §8.3 平台写死防分叉 |
+| 授予界面 | arda 侧授予/撤销 + 本地审计 | 平台面（console/API）授予；arda 只做入口与访问审计 | 授权写路径必须落 SoT |
+| grantee | 仅 workspace→workspace | workspace / product / org_all 三型（arda 常用 workspace） | 平台模型是超集，避免功能缺口 |
+| 实施时点 | G1 立即建表 | 随共享面（P4.4），v1 无编码工作 | arda_000 v1 切片明确排除 |

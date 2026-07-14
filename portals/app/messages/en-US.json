@@ -734,7 +734,8 @@
       "rest": "REST API",
       "s3": "Amazon S3",
       "bigquery": "BigQuery",
-      "snowflake": "Snowflake"
+      "snowflake": "Snowflake",
+      "agent_db": "Internal agent DB"
     },
     "credentialsSealed": "Sealed",
     "neverSynced": "Never",
@@ -748,7 +749,9 @@
       "configPlaceholder": "{\"host\": \"...\", \"user\": \"...\", \"password\": \"...\"}",
       "configHint": "Stored encrypted (AES-256-GCM); the database never sees plaintext.",
       "cancel": "Cancel",
-      "submit": "Register"
+      "submit": "Register",
+      "productCode": "Owning product code",
+      "productCodeHint": "The L3 product whose business database this is (catalog quad: org / workspace / product / datasource)."
     },
     "error": {
       "unauthenticated": "Session expired - sign in again.",
