@@ -138,14 +138,38 @@
       "compliance": "Classification Compliance",
       "complianceTrend": "+0.4% MoM"
     },
+    "section": {
+      "metricsTitle": "Core Metrics",
+      "metricsSub": "Key numbers for the last 30 days",
+      "modulesTitle": "Platform Modules",
+      "modulesSub": "A whole-platform view - open any module for full detail",
+      "insightsTitle": "Asset Insights",
+      "insightsSub": "Growth trend, team contribution, domain and quality breakdown",
+      "detailTitle": "Asset Detail",
+      "detailSub": "Ranked assets and open governance items"
+    },
+    "module": {
+      "sources": "Data Sources",
+      "sourcesSub": "{connected} connected",
+      "standards": "Data Standards",
+      "standardsSub": "{published} published",
+      "lineage": "Data Lineage",
+      "lineageSub": "edges tracked",
+      "service": "Data Services",
+      "serviceSub": "{running} running",
+      "security": "Data Security",
+      "securitySub": "active API keys"
+    },
     "growthTitle": "Data Asset Growth",
     "growthSub": "Tables ingested over the last 6 months",
     "growthLegend": "Tables",
     "teamsTitle": "Contribution by Team",
     "teamsSub": "By tables ingested - Top 6",
     "domainTitle": "Domain Distribution",
+    "domainSub": "{count} domains tracked",
     "domainCaption": "tables",
     "qualityTitle": "Overall Data Quality",
+    "qualitySub": "6-dimension quality scan, updated daily",
     "qualityRating": "Excellent",
     "dim": {
       "completeness": "Completeness",
@@ -189,6 +213,7 @@
       "web": "Web"
     },
     "alertsTitle": "Governance Alerts",
+    "alertsSub": "{count} items need review",
     "alertsCount": "4 pending",
     "alert": {
       "a1Title": "Pipeline JOB-1006 failed",

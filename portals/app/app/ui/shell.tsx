@@ -54,8 +54,7 @@ export function Shell({ children, isAdmin = false }: { children: ReactNode; isAd
 
   const activeKey = useMemo(() => (pathname ?? "/").split("/").filter(Boolean)[0] ?? "dashboard", [pathname]);
 
-  const rootClass =
-    "app-page" + (assistantOpen ? " vela-open vela-" + assistantMode : "");
+  const rootClass = "app" + (assistantOpen ? " vela-open vela-" + assistantMode : "");
 
   return (
     <div id="arda-page-root" className={rootClass}>

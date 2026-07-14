@@ -4,72 +4,39 @@
  * on --vx-* tokens. Do not add colors, fonts, or component looks here - extend
  * the DS package instead.
  *
- * Shell structure (.app / .app-body / .sidebar / .content-scroll) is a values-
- * exact port of the vxture admin/console shared shell (DS `shell-template.css`
- * - the CSS bundle itself is not yet published in the @vxture/design-system
- * range arda depends on, so the structure below is copied verbatim from that
- * source rather than imported; every dimension it uses, however, is read live
- * off DS custom properties already shipped in 1.3.2 - --vx-shell-header-height,
- * --vx-shell-sidebar-width, --vx-shell-sidebar-collapsed-width - so this stays
- * pixel-identical to admin/console without a DS version bump). Header chrome
- * lives in ui/console.css; this file only owns the outer frame.
+ * Shell structure (.app / .app-body / .sidebar / .content-scroll / header /
+ * user panel) comes from `@vxture/design-system/styles/shell-template.css`
+ * (imported in app/layout.tsx, after the DS base packs and before this file
+ * so this file's overrides win) - the real vxture admin/console shell, not a
+ * hand copy. This file only owns arda's deliberate deltas from that shell:
+ * the content-inner inset (no max-width, full viewport - owner ruling) and a
+ * few arda-only wrappers (app-section, app-footer, entitlement-pending) that
+ * have no template equivalent. ui/console.css carries the same rule: it only
+ * defines classes the template doesn't (or SVG-icon compatibility shims,
+ * since arda renders Phosphor icons as React SVGs, not the template's icon
+ * font) - never a redeclaration of a class the import already provides.
  */
 
 @import "./ui/console.css";
 
 :root {
-  /* Fixed header height - consumed straight from the DS shell tokens (already
-     shipped in @vxture/design-system 1.3.2's tokens-colors-shell.css), not
-     re-declared by hand. */
+  /* Fixed header height - read straight from the shell-template import. */
   --arda-header-height: var(--vx-shell-header-height);
-  /* Left section-nav column width, expanded / collapsed - same DS tokens the
-     admin/console shells consume. */
-  --arda-sidebar-width: var(--vx-shell-sidebar-width);
-  --arda-sidebar-width-collapsed: var(--vx-shell-sidebar-collapsed-width);
   /* Content track: full-bleed by design (owner ruling) - admin/console cap
-     this at 1480px, arda deliberately does not: business console screens
-     (tables, graphs) benefit from the full viewport width. */
+     this at 1480px via clamp(); arda deliberately does not: business console
+     screens (tables, graphs) benefit from the full viewport width. */
   --arda-shell-max-width: none;
   /* Content-inner inset. Left/right and top map onto DS default-density
      tokens exactly (space-3xl=48px, space-xl=24px); bottom is a taller safe
-     area so the last row never sits flush with the viewport edge. */
+     area so the last row never sits flush with the viewport edge. Overrides
+     the template's own clamp()-based padding. */
   --arda-content-x: var(--vx-space-3xl);
   --arda-content-top: var(--vx-space-xl);
   --arda-content-bottom: var(--vx-space-4xl);
 }
 
-/* Outer frame: fixed to the viewport height with internal scroll, matching
-   the admin shell (`.app { height:100vh; overflow:hidden }`). The header sits
-   in normal flow (not fixed) - only .content-scroll scrolls. */
-.app-page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background: var(--vx-color-page);
-}
-
-/* Body: sidebar + content-scroll, sharing the remaining height below the
-   header (verbatim: DS `.app-body { flex:1; display:flex; min-height:0;
-   overflow:hidden }`). */
-.app-body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Content column: the only scrolling region in the shell. */
-.content-scroll {
-  flex: 1;
-  overflow-y: auto;
-  min-width: 0;
-  scroll-behavior: smooth;
-}
-
 .content-inner {
   max-width: var(--arda-shell-max-width);
-  margin: 0 auto;
   padding: var(--arda-content-top) var(--arda-content-x) var(--arda-content-bottom);
 }
 
@@ -106,7 +73,7 @@
   margin: 0 auto;
 }
 
-/* Narrow viewports: sidebar becomes a static (non-persistent-rail) column. */
+/* Narrow viewports: tighten the content inset. */
 @media (max-width: 880px) {
   :root {
     --arda-content-x: var(--vx-space-lg);

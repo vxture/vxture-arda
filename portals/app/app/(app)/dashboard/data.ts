@@ -25,6 +25,17 @@ export interface DashTopAsset {
   level: AssetLevel;
 }
 
+export interface DashboardModuleCounts {
+  sourcesTotal: number;
+  sourcesConnected: number;
+  standardsTotal: number;
+  standardsPublished: number;
+  lineageEdges: number;
+  servicesTotal: number;
+  servicesRunning: number;
+  apiKeysActive: number;
+}
+
 export interface DashboardData {
   total: number;
   volume: string;
@@ -33,6 +44,7 @@ export interface DashboardData {
   domainDonut: { key: string; value: number; color: string }[];
   teamBars: { key: string; value: number; color: string }[];
   topAssets: DashTopAsset[];
+  modules: DashboardModuleCounts;
 }
 
 function formatCount(n: number): string {
@@ -43,7 +55,22 @@ function formatCount(n: number): string {
 }
 
 export async function getDashboard(workspaceId: string): Promise<DashboardData> {
-  const [total, volumeAgg, byDomain, byTeam, top, qAvg] = await Promise.all([
+  const [
+    total,
+    volumeAgg,
+    byDomain,
+    byTeam,
+    top,
+    qAvg,
+    sourcesTotal,
+    sourcesConnected,
+    standardsTotal,
+    standardsPublished,
+    lineageEdges,
+    servicesTotal,
+    servicesRunning,
+    apiKeysActive,
+  ] = await Promise.all([
     prisma.dataset.count({ where: { workspaceId } }),
     prisma.dataset.aggregate({ where: { workspaceId }, _sum: { rowCountEst: true } }),
     prisma.dataset.groupBy({ by: ["domain"], where: { workspaceId }, _count: { _all: true } }),
@@ -55,6 +82,14 @@ export async function getDashboard(workspaceId: string): Promise<DashboardData> 
       select: { id: true, name: true, code: true, domain: true, classification: true },
     }),
     prisma.qualityResult.aggregate({ where: { workspaceId }, _avg: { score: true } }),
+    prisma.dataSource.count({ where: { workspaceId } }),
+    prisma.dataSource.count({ where: { workspaceId, status: "connected" } }),
+    prisma.standard.count({ where: { workspaceId } }),
+    prisma.standard.count({ where: { workspaceId, status: "published" } }),
+    prisma.lineageEdge.count({ where: { workspaceId } }),
+    prisma.dataService.count({ where: { workspaceId } }),
+    prisma.dataService.count({ where: { workspaceId, status: "running" } }),
+    prisma.apiKey.count({ where: { workspaceId, revoked: false } }),
   ]);
 
   const domainDonut = byDomain
@@ -81,5 +116,15 @@ export async function getDashboard(workspaceId: string): Promise<DashboardData> 
       domain: d.domain,
       level: d.classification as AssetLevel,
     })),
+    modules: {
+      sourcesTotal,
+      sourcesConnected,
+      standardsTotal,
+      standardsPublished,
+      lineageEdges,
+      servicesTotal,
+      servicesRunning,
+      apiKeysActive,
+    },
   };
 }

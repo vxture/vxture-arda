@@ -1,120 +1,65 @@
 /* ===== Arda console chrome + dashboard =====
  * Layout-only composition on DS --vx-* tokens. No colors, fonts, or DS-owned
- * component looks here (DS Button/MetricGrid/DataTable/PageHeader cover those).
- * Class names deliberately avoid the DS-owned set (card/btn/badge/metric-card).
+ * component looks here (DS Button/DataTable/EmptyState cover those).
+ *
+ * The shell chrome (.vxh header, .sidebar/.nav-*, .vxh-panel user popover,
+ * .ph/.tpl-head page-header, .card/.metric-* content cards, and everything
+ * else defined in the vxture admin/console shared shell) is NOT redeclared
+ * here - it comes straight from `@vxture/design-system/styles/shell-
+ * template.css`, imported in app/layout.tsx after the DS base packs and
+ * before app/globals.css (which only overrides the one deliberate delta:
+ * content-inner has no max-width, see globals.css). This file adds only:
+ *   1) SVG-icon compatibility shims - the template assumes an icon FONT
+ *      (`<i class="ph ph-x">`), arda renders Phosphor icons as React SVGs
+ *      (`<PIcon>` -> `@phosphor-icons/react`), so every template rule that
+ *      targets a bare `i` descendant needs an `svg` twin.
+ *   2) Genuine arda-only additions with no template equivalent
+ *      (.vxh-brand-tag subscription-tier badge, .nav-item-tag locked-tier
+ *      badge, .con-card* page-content cards - kept under an arda-local name
+ *      so they never collide with a real DS <Card> instance elsewhere).
+ * Do not add a rule here that duplicates a selector shell-template.css
+ * already defines - check the import first.
  */
 
-/* ---------------------------------------------------------------- header ---
- * Values-exact port of the vxture admin/console shared shell header (DS
- * `shell-template/app.css` .vxh block). Every dimension below is copied
- * verbatim from that source; every token it references (--vx-admin-shell-*,
- * --vx-shell-*, --vx-color-shell-*, --font-cjk/--font-brand/--font-number)
- * already ships in @vxture/design-system 1.3.2. The two admin-only tokens
- * arda's DS range does not yet have (--vx-icon-size-sm/md, --vx-type-body-lg-
- * size) fall back to their DS 2.0 literal values inline so this still tracks
- * automatically once arda's DS dependency is bumped.
- */
-.vxh {
-  --vxh-glass: color-mix(in srgb, var(--vx-color-white) 90%, transparent);
-  --vxh-shadow: 0 3px 4px color-mix(in srgb, var(--vx-color-gray-900) 6%, transparent);
-  --vxh-surface-soft: var(--vx-color-surface-soft);
-  --vxh-divider: var(--vx-color-shell-divider, color-mix(in srgb, var(--vx-color-brand-950) 12%, transparent));
-  --vxh-brand-soft: var(--vx-color-primary-soft);
-  --vxh-brand-strong: var(--vx-color-brand-700);
-  --vxh-ctrl: 2rem;
-  position: relative;
+/* ---- SVG-icon compatibility (template targets `i`, arda renders `svg`) --- */
+.nav-item i,
+.nav-item svg {
+  width: calc(var(--vx-shell-sidebar-collapsed-width) - 2 * var(--vx-space-md));
+  height: var(--vx-admin-shell-icon-size, 1rem);
   flex-shrink: 0;
-  height: var(--vx-shell-header-height);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 460px) auto;
-  align-items: center;
-  gap: 24px;
-  padding: 0 20px;
-  background: var(--vxh-glass);
-  box-shadow: var(--vxh-shadow);
-  backdrop-filter: blur(24px) saturate(168%);
-  -webkit-backdrop-filter: blur(24px) saturate(168%);
-  z-index: var(--vx-z-command);
+  color: var(--vx-color-text-muted);
+  transition: color 150ms;
 }
-.dark .vxh {
-  --vxh-glass: color-mix(in srgb, var(--vx-color-shell-bg) 90%, transparent);
-  --vxh-shadow: 0 3px 16px color-mix(in srgb, var(--vx-color-black) 42%, transparent);
-  --vxh-surface-soft: color-mix(in srgb, var(--vx-color-gray-900) 70%, transparent);
-  --vxh-divider: color-mix(in srgb, var(--vx-color-gray-400) 18%, transparent);
-  --vxh-brand-soft: var(--vx-color-primary-soft);
-  --vxh-brand-strong: var(--vx-color-brand-300);
+.nav-item:hover i,
+.nav-item:hover svg,
+.nav-item.active i,
+.nav-item.active svg {
+  color: inherit;
 }
-.vxh-left {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  white-space: nowrap;
-}
-.vxh-pop-anchor {
-  position: relative;
-}
-
-/* icon buttons */
-.vxh-icon {
-  position: relative;
-  width: var(--vxh-ctrl);
-  height: var(--vxh-ctrl);
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--vx-radius-xl);
-  background: transparent;
-  color: var(--vx-color-shell-icon);
-  cursor: pointer;
+.vxh-search svg {
+  color: var(--vx-color-text-muted);
   font-size: var(--vx-icon-size-sm, 1rem);
-  text-decoration: none;
-  transition: background 160ms ease, color 160ms ease;
+  flex-shrink: 0;
 }
-.vxh-icon:hover,
-.vxh-icon.is-active {
-  background: var(--vxh-brand-soft);
-  color: var(--vxh-brand-strong);
+.vxh-verify svg {
+  font-size: var(--vx-admin-shell-caption-size);
 }
-.vxh-icon:focus-visible {
-  outline: 0;
-  box-shadow: var(--vx-shadow-focus-ring);
+.vxh-lvslot svg {
+  font-size: 17px;
 }
-.vxh-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--vx-radius-full);
-  background: var(--vx-color-danger);
-  color: var(--vx-color-white);
-  font: 700 0.5625rem var(--font-number);
-  line-height: 1;
-  border: 1.5px solid var(--vxh-glass);
+.vxh-acct-row > svg:first-child {
+  font-size: var(--vx-icon-size-sm, 1rem);
+  color: var(--vx-color-text-muted);
+}
+.vxh-menu-item svg {
+  font-size: var(--vx-icon-size-sm, 1rem);
+  color: var(--vx-color-text-muted);
+}
+.vxh-menu-item.danger svg {
+  color: var(--vx-color-danger-600);
 }
 
-/* brand */
-.vxh-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--vx-space-md);
-  min-height: var(--vxh-ctrl);
-  text-decoration: none;
-}
-.vxh-brand-name {
-  font-family: var(--font-brand);
-  font-size: var(--vx-type-body-lg-size, 1.125rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--vx-color-text-strong);
-}
+/* ---- arda-only: subscription-tier badge on the brand mark ---- */
 .vxh-brand-tag {
   font-size: 0.625rem;
   font-weight: 700;
@@ -142,601 +87,7 @@
   color: var(--vx-color-warning-700);
 }
 
-/* divider + active functional-domain label */
-.vxh-divider {
-  width: 1px;
-  height: 24px;
-  flex: 0 0 1px;
-  background: var(--vxh-divider);
-}
-.vxh-active-menu {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: var(--vx-radius-lg);
-  color: var(--vx-color-text-disabled);
-  font: 500 var(--vx-admin-shell-body-size) var(--font-cjk);
-  pointer-events: none;
-  flex-wrap: nowrap;
-  overflow: hidden;
-}
-.vxh-active-menu span {
-  white-space: nowrap;
-}
-
-/* search */
-.vxh-search {
-  justify-self: stretch;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  height: 36px;
-  padding: 0 13px;
-  border-radius: 999px;
-  background: var(--vxh-surface-soft);
-  border: 1px solid color-mix(in srgb, var(--vx-color-border) 80%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--vx-color-white) 65%, transparent);
-  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
-}
-.vxh-search:hover {
-  border-color: color-mix(in srgb, var(--vx-color-primary) 40%, transparent);
-}
-.vxh-search:focus-within {
-  border-color: color-mix(in srgb, var(--vx-color-primary) 56%, transparent);
-  box-shadow: var(--vx-shadow-focus-ring);
-}
-.vxh-search svg {
-  color: var(--vx-color-text-muted);
-  font-size: var(--vx-icon-size-sm, 1rem);
-  flex-shrink: 0;
-}
-.vxh-search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font: var(--vx-admin-shell-item-size) var(--font-cjk);
-  color: var(--vx-color-text-primary);
-}
-.vxh-search kbd {
-  font: var(--vx-admin-shell-tag-size) var(--font-mono);
-  padding: 2px 6px;
-  border-radius: var(--vx-radius-md);
-  background: color-mix(in srgb, var(--vx-color-brand-950) 6%, transparent);
-  color: var(--vx-color-text-muted);
-}
-
-/* actions */
-.vxh-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-}
-.vxh-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0;
-  border-radius: var(--vx-radius-full);
-  background: transparent;
-  transition: background 180ms ease;
-}
-.vxh-group:hover,
-.vxh-group:focus-within {
-  background: color-mix(in srgb, var(--vx-color-brand-950) 6%, transparent);
-}
-
-/* user button */
-.vxh-user {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: var(--vxh-ctrl);
-  padding: 0 6px 0 4px;
-  border-radius: var(--vx-radius-full);
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  position: relative;
-}
-.vxh-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--vx-radius-full);
-  background: var(--vx-color-brand-600);
-  color: var(--vx-color-white);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
-}
-.vxh-avatar.xl {
-  width: 44px;
-  height: 44px;
-  font-size: 18px;
-}
-
-/* popovers (launcher / user) - base .vxh-panel/.vxh-user-panel geometry lives
-   with the user-panel internals below (canonical DS user-panel.css slice). */
-.vxh-launcher-panel {
-  left: 0;
-  width: 340px;
-  padding: var(--vx-space-xl);
-}
-.vxh-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-}
-
-/* launcher boards */
-.vxh-board-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-xs);
-}
-.vxh-board {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-md);
-  padding: var(--vx-space-md) var(--vx-space-lg);
-  border-radius: var(--vx-radius-xl);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  color: var(--vx-color-text-strong);
-  transition: background 140ms;
-}
-.vxh-board:hover {
-  background: var(--vxh-brand-soft);
-}
-.vxh-board.is-active {
-  background: var(--vxh-brand-soft);
-}
-.vxh-board-ico {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 40px;
-  border-radius: var(--vx-radius-xl);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--vx-icon-size-md, 1.25rem);
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-primary);
-}
-.vxh-board.is-active .vxh-board-ico {
-  background: var(--vx-color-primary);
-  color: var(--vx-color-white);
-}
-.vxh-board-copy {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.vxh-board-copy strong {
-  font: 700 var(--vx-admin-shell-body-size) var(--font-cjk);
-  color: var(--vx-color-text-strong);
-}
-.vxh-board-copy span {
-  font: 400 var(--vx-admin-shell-caption-size) var(--font-cjk);
-  color: var(--vx-color-text-muted);
-}
-.vxh-board-check {
-  margin-left: auto;
-  color: var(--vx-color-primary);
-  font-size: var(--vx-icon-size-sm, 1rem);
-}
-
-/* user panel internals - values-exact port of DS `shell-template/user-panel.css`
- * (the same canonical slice admin's TemplateHeader and the vxture website
- * header both consume). Arda's simplified 3-slot level row keeps its own
- * content (role / tier / next-tier, vs. admin's 5-slot gamification ladder)
- * but reuses the identical geometry and tokens. */
-.vxh-panel {
-  position: absolute;
-  top: calc(100% + 12px);
-  z-index: 60;
-  background: var(--vx-color-surface);
-  border: 1px solid var(--vx-color-border-muted);
-  border-radius: var(--vx-radius-lg);
-  box-shadow: var(--vx-shadow-xl);
-  padding: 12px;
-}
-.vxh-user-panel {
-  right: 0;
-  width: 300px;
-}
-.vxh-user-head {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-md);
-  padding: 8px 8px 14px;
-}
-.vxh-user-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.vxh-user-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 700 var(--vx-type-body-size, 1rem) var(--font-cjk);
-  color: var(--vx-color-text-strong);
-}
-.vxh-verify {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 7px;
-  border-radius: var(--vx-radius-full);
-  background: var(--vx-color-success-surface);
-  color: var(--vx-color-success-700);
-  font: 600 var(--vx-admin-shell-tag-size) var(--font-cjk);
-}
-.vxh-verify svg {
-  font-size: var(--vx-admin-shell-caption-size);
-}
-.vxh-user-contacts {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: 5px;
-  min-width: 0;
-}
-.vxh-user-contact {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: 400 var(--vx-admin-shell-caption-size) var(--font-mono);
-  color: var(--vx-color-text-muted);
-}
-.vxh-level-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 10px 10px;
-}
-.vxh-level-lead {
-  font-size: var(--vx-icon-size-sm, 1rem);
-  color: var(--vx-color-text-muted);
-  flex-shrink: 0;
-}
-.vxh-lvslots {
-  display: inline-flex;
-  gap: 14px;
-  margin-left: 30px;
-}
-.vxh-lvslot {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--vx-radius-full);
-  display: inline-grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--vx-color-text-primary) 5%, transparent);
-  color: color-mix(in srgb, var(--vx-color-text-disabled) 60%, transparent);
-  transition: transform 140ms;
-}
-.vxh-lvslot svg {
-  font-size: 17px;
-}
-.vxh-lvslot.is-earned {
-  background: var(--vx-color-primary-soft);
-  color: var(--vx-color-primary);
-}
-.vxh-acct-div {
-  height: 1px;
-  background: var(--vx-color-border-muted);
-  margin: 10px 0;
-}
-.vxh-acct-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px;
-  border: 0;
-  background: transparent;
-  border-radius: var(--vx-radius-lg);
-  cursor: pointer;
-  text-align: left;
-  font: 500 var(--vx-admin-shell-item-size) var(--font-cjk);
-  color: var(--vx-color-text-primary);
-  transition: background 140ms;
-  text-decoration: none;
-}
-.vxh-acct-row > svg:first-child {
-  font-size: var(--vx-icon-size-sm, 1rem);
-  color: var(--vx-color-text-muted);
-}
-.vxh-acct-row:hover {
-  background: var(--vx-color-surface-muted);
-}
-.vxh-acct-go {
-  margin-left: auto;
-  color: var(--vx-color-text-disabled);
-  font-size: var(--vx-icon-size-sm, 1rem);
-}
-.vxh-user-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.vxh-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 10px;
-  border: 0;
-  background: transparent;
-  border-radius: var(--vx-radius-lg);
-  cursor: pointer;
-  text-align: left;
-  font: 500 var(--vx-admin-shell-item-size) var(--font-cjk);
-  color: var(--vx-color-text-primary);
-  transition: background 140ms;
-}
-.vxh-menu-item svg {
-  font-size: var(--vx-icon-size-sm, 1rem);
-  color: var(--vx-color-text-muted);
-}
-.vxh-menu-item:hover {
-  background: var(--vx-color-surface-muted);
-}
-.vxh-menu-item.danger {
-  color: var(--vx-color-danger-600);
-}
-.vxh-menu-item.danger svg {
-  color: var(--vx-color-danger-600);
-}
-.vxh-menu-item.danger:hover {
-  background: var(--vx-color-danger-surface);
-}
-.vxh-menu-item:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-@media (max-width: 1024px) {
-  .vxh {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 14px;
-  }
-  .vxh-search kbd {
-    display: none;
-  }
-}
-
-/* --------------------------------------------------------------- sidebar ---
- * Values-exact port of the vxture admin/console shared shell sidebar (DS
- * `shell-template/app.css` .sidebar block): same DS width/rail/nav-item
- * tokens (--vx-shell-sidebar-*, --vx-admin-shell-*), same 380ms drawer-style
- * collapse curve (icon rail pinned, label fades/collapses).
- */
-.sidebar {
-  width: var(--arda-sidebar-width);
-  flex-shrink: 0;
-  min-width: 0;
-  background: transparent;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: var(--vx-space-md) 0 var(--vx-space-lg);
-  transition: width 380ms cubic-bezier(0.32, 0.72, 0, 1);
-  will-change: width;
-}
-.sidebar.is-collapsed {
-  width: var(--arda-sidebar-width-collapsed);
-}
-.nav-item-label {
-  display: inline-block;
-  white-space: nowrap;
-  overflow: hidden;
-  max-width: 180px;
-  opacity: 1;
-  transition: max-width 380ms cubic-bezier(0.32, 0.72, 0, 1), opacity 220ms ease 90ms;
-}
-.sidebar.is-collapsed .nav-item-label {
-  max-width: 0;
-  opacity: 0;
-  transition: max-width 340ms cubic-bezier(0.32, 0.72, 0, 1), opacity 140ms ease;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .nav-item-label,
-  .nav-item {
-    transition: none;
-  }
-}
-
-/* nav-header (rail): toggle button / domain label / collapse-all */
-.side-rail {
-  display: grid;
-  grid-template-columns: var(--vx-admin-shell-rail-size) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  min-height: var(--vx-admin-shell-rail-size);
-  padding: 0 var(--vx-space-md);
-  margin-bottom: var(--vx-space-sm);
-}
-.sidebar.is-collapsed .side-rail {
-  grid-template-columns: 1fr;
-  justify-items: center;
-  padding: 0;
-}
-.rail-toggle {
-  width: var(--vx-admin-shell-rail-size);
-  height: var(--vx-admin-shell-rail-size);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--vx-admin-shell-control-radius);
-  background: transparent;
-  color: var(--vx-color-shell-icon);
-  cursor: pointer;
-  font-size: var(--vx-shell-sidebar-icon-size);
-  transition: color 150ms;
-}
-.rail-toggle:hover {
-  background: transparent;
-  color: var(--vx-color-brand-700);
-}
-.side-domain {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-cjk);
-  font-size: var(--vx-admin-shell-title-size);
-  font-weight: 760;
-  color: var(--vx-color-brand-950);
-  padding-left: var(--vx-space-xs);
-}
-.side-collapse-all {
-  width: var(--vx-admin-shell-compact-icon-box-size);
-  height: var(--vx-admin-shell-compact-icon-box-size);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: end;
-  border: 0;
-  background: transparent;
-  color: var(--vx-color-text-muted);
-  cursor: pointer;
-  font-size: 15px;
-  opacity: 0;
-  transition: opacity 160ms ease, color 160ms ease;
-}
-.side-rail:hover .side-collapse-all,
-.side-rail:focus-within .side-collapse-all {
-  opacity: 1;
-}
-.side-collapse-all:hover {
-  color: var(--vx-color-brand-700);
-}
-
-/* nav body */
-.rail-toggle,
-.side-collapse-all,
-.nav-section-trigger,
-.nav-item {
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.rail-toggle:focus-visible,
-.side-collapse-all:focus-visible,
-.nav-section-trigger:focus-visible,
-.nav-item:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-.side-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-xl);
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 var(--vx-space-md);
-  scrollbar-width: none;
-}
-.side-nav::-webkit-scrollbar {
-  width: 0;
-}
-.nav-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-md);
-}
-.nav-section-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  min-height: var(--vx-admin-shell-compact-icon-box-size);
-  height: var(--vx-admin-shell-compact-icon-box-size);
-  padding: 0 var(--vx-space-md);
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  color: var(--vx-color-text-muted);
-  transition: color 150ms;
-}
-.nav-section-trigger:hover {
-  color: var(--vx-color-brand-700);
-}
-.nav-section-title {
-  font: 500 var(--vx-admin-shell-caption-size) var(--font-cjk);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-.nav-section-caret {
-  font-size: var(--vx-admin-shell-caption-size);
-  opacity: 0.7;
-}
-.nav-items {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-sm);
-}
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  min-height: var(--vx-admin-shell-nav-item-height);
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: var(--vx-admin-shell-item-radius);
-  font: var(--vx-shell-item-weight, 560) var(--vx-admin-shell-body-size) var(--font-cjk);
-  color: var(--vx-color-text-secondary);
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  transition: background 200ms ease, color 200ms ease;
-}
-/* Fixed icon rail: box width = collapsed-state content width, so the icon's
-   center never shifts between expanded/collapsed. */
-.nav-item i,
-.nav-item svg {
-  width: calc(var(--arda-sidebar-width-collapsed) - 2 * var(--vx-space-md));
-  height: var(--vx-admin-shell-icon-size, 1rem);
-  flex-shrink: 0;
-  color: var(--vx-color-text-muted);
-  transition: color 150ms;
-}
-.nav-item:hover i,
-.nav-item:hover svg,
-.nav-item.active i,
-.nav-item.active svg {
-  color: inherit;
-}
-.nav-item:hover {
-  background: color-mix(in srgb, var(--vx-color-brand-600) 4%, transparent);
-  color: var(--vx-color-brand-600);
-}
-.nav-item.active {
-  background: color-mix(in srgb, var(--vx-color-brand-600) 7%, transparent);
-  color: var(--vx-color-brand-600);
-  font-weight: 600;
-}
-/* Required-tier badge on a locked (visible-but-locked) nav entry. */
+/* ---- arda-only: required-tier badge on a locked (visible-but-locked) nav entry ---- */
 .nav-item-tag {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -747,98 +98,281 @@
   color: var(--vx-color-ai-foreground);
   flex-shrink: 0;
 }
-.sidebar.is-collapsed .nav-item {
-  justify-content: center;
-}
 
-.side-foot-card {
-  margin: var(--vx-space-lg) var(--vx-space-md) 0;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--vx-color-success-surface) 80%, var(--vx-color-surface)), var(--vx-color-surface));
-  border: 1px solid var(--vx-color-border-muted);
-  border-radius: var(--vx-radius-lg);
-  padding: 13px;
+/* ------------------------------------------------------------- dashboard ---
+ * `.screen`/`.dash`/`.dash-cols`/`.dash-main`/`.dash-side` (grid wrappers)
+ * come straight from the shell-template import. Everything else below is
+ * hand-ported from the REAL, actually-shipped admin overview pattern - not
+ * the unused "Claude Design" shell-template mockup (`.card`/`.metric-card`/
+ * `.tpl-block` are defined in that asset but zero admin/console pages
+ * actually render them; grepped and confirmed). The real pattern, read
+ * straight from vxture admin's own home page (`app/(admin)/page.tsx`,
+ * `admin-overview-*.css`) and its `platform-layout-cards-actions.css`
+ * (already active via the DS import - `.vx-page-section`/`.vx-metric-card`/
+ * `.vx-section-card` share this exact recipe):
+ *   - content cards are a translucent "glass" surface (color-mix over white,
+ *     NOT solid var(--vx-color-surface)) with NO box-shadow, not the mockup's
+ *     hard white card + shadow-sm
+ *   - top-line KPI cards ("pulse" cards) carry a 2px colored TOP border as
+ *     the tone accent, tone-colored value text, and small tone-tinted tag
+ *     pills - no icon, no colored icon badge (that was arda's own invention)
+ *   - section/page headings are icon + title + description, where the icon
+ *     is bare (color only, no background box) and sized via font-size, not
+ *     boxed the way arda's very first pass did
+ * `.ov-heading*` and `.stat-*` are new arda-local classes for this; `.con-
+ * card*` keeps its DS-token values but switches to the real glass-card
+ * recipe (was shell-template's hard-card look). Loosened spacing (24px beat,
+ * owner feedback - admin's own rhythm read as cramped) still applies on top.
+ */
+.screen,
+.dash {
+  gap: var(--vx-space-xl);
 }
-.sfc-top {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font: 600 12px var(--font-cjk);
-  color: var(--vx-color-text-primary);
-}
-.sfc-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--vx-color-surface-muted);
-  margin: 9px 0 6px;
-  overflow: hidden;
-}
-.sfc-bar span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--vx-color-success-500);
-}
-.sfc-meta {
-  font: 500 11px var(--font-cjk);
-  color: var(--vx-color-text-muted);
-}
-
-/* ------------------------------------------------------------- dashboard --- */
-.screen {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-lg);
-}
-.dash-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: var(--vx-space-lg);
-}
+.dash-cols,
 .dash-main,
-.dash-side {
+.dash-side,
+.stat-grid,
+.ov-section {
+  gap: var(--vx-space-xl);
+}
+
+/* section / page heading: bare tone icon + title + description */
+.ov-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vx-space-lg);
+}
+.ov-heading-ico {
+  flex-shrink: 0;
+  color: var(--vx-color-primary);
+  font-size: 1.5rem;
+  margin-top: 2px;
+}
+.ov-heading.is-page .ov-heading-ico {
+  font-size: 2rem;
+  margin-top: 0;
+}
+.ov-heading-copy {
   display: flex;
   flex-direction: column;
-  gap: var(--vx-space-lg);
+  gap: 4px;
   min-width: 0;
 }
-@media (max-width: 1080px) {
-  .dash-cols {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.ov-heading-copy h1,
+.ov-heading-copy h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-weight: 740;
+  color: var(--vx-color-text-strong);
+}
+.ov-heading-copy h1 {
+  font-size: var(--vx-admin-page-title-size, 1.25rem);
+}
+.ov-heading-copy h2 {
+  font-size: var(--vx-admin-section-title-size, 1rem);
+  color: var(--vx-color-brand-950);
+}
+.ov-heading-copy p {
+  margin: 0;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-body-size, 0.875rem);
+  line-height: 1.55;
+}
+.ov-heading-action {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* console card (NOT a DS card name; thin token-only surface) */
+/* KPI "pulse" cards - real admin-overview-pulse recipe */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1180px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.stat-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--vx-space-sm);
+  padding: var(--vx-space-xl);
+  border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
+  border-top: 2px solid var(--stat-tone);
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: color-mix(in srgb, var(--vx-color-white) 68%, transparent);
+}
+.stat-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-caption-size, 0.75rem);
+  font-weight: 700;
+}
+.stat-card-value {
+  overflow: hidden;
+  color: var(--stat-tone);
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 760;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stat-card-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.stat-card-tags em {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--stat-tone-soft);
+  color: var(--stat-tone);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.stat-tone--blue {
+  --stat-tone: var(--vx-color-primary);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-primary) 8%, transparent);
+}
+.stat-tone--green {
+  --stat-tone: var(--vx-color-success-600);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-success-600) 8%, transparent);
+}
+.stat-tone--amber {
+  --stat-tone: var(--vx-color-warning-600);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-warning-600) 8%, transparent);
+}
+.stat-tone--rose {
+  --stat-tone: var(--vx-color-danger);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-danger) 8%, transparent);
+}
+
+/* console card (arda alias for the real DS glass-card recipe - see file header) */
 .con-card {
-  background: var(--vx-color-surface);
+  background: color-mix(in srgb, var(--vx-color-white) 92%, transparent);
   border: 1px solid var(--vx-color-border);
-  border-radius: var(--vx-radius-xl);
-  padding: var(--vx-space-lg);
-  box-shadow: var(--vx-shadow-sm);
+  border-radius: var(--vx-shell-panel-radius);
+  padding: var(--vx-space-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--vx-space-md);
+  gap: var(--vx-space-xl);
 }
 .con-card.no-pad {
   padding: 0;
+  overflow: hidden;
+  gap: 0;
 }
 .con-card-hd {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--vx-space-sm);
+  gap: 12px;
 }
 .con-card-hd.pad {
-  padding: var(--vx-space-lg) var(--vx-space-lg) 0;
+  padding: var(--vx-space-xl);
+  border-bottom: 1px solid var(--vx-color-border-muted);
 }
 .con-card-heading {
-  font-weight: 700;
+  font: 700 16px var(--font-brand);
+  letter-spacing: -0.01em;
   color: var(--vx-color-text-strong);
-  font-size: 15px;
 }
 .con-card-sub {
   font-size: 12px;
   color: var(--vx-color-text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
+}
+.dark .con-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 92%, transparent);
+}
+.dark .stat-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 68%, transparent);
+}
+
+/* platform-module quick-link cards - hand-ported from admin's real
+   .admin-overview-card (icon + title/value + description, links out to the
+   owning page - the "whole platform" summary; full detail lives on that
+   page, not here). */
+.ov-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--vx-space-lg);
+}
+.ov-link-card {
+  min-height: 96px;
+  display: flex;
+  gap: var(--vx-space-md);
+  padding: var(--vx-space-lg);
+  border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: color-mix(in srgb, var(--vx-color-white) 72%, transparent);
+  color: var(--vx-color-text-secondary);
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.ov-link-card:hover {
+  border-color: color-mix(in srgb, var(--vx-color-primary) 32%, transparent);
+  transform: translateY(-2px);
+}
+.dark .ov-link-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 72%, transparent);
+}
+.ov-link-card-ico {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: var(--vx-color-primary-soft);
+  color: var(--vx-color-primary);
+  font-size: 20px;
+}
+.ov-link-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-meta-size, 0.8125rem);
+  line-height: 1.55;
+}
+.ov-link-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vx-space-md);
+}
+.ov-link-card-top strong {
+  color: var(--vx-color-brand-950);
+  font-size: var(--vx-admin-card-title-size, 0.94rem);
+  font-family: var(--font-number);
+}
+.ov-link-card-top small {
+  color: var(--vx-color-primary);
+  font-size: var(--vx-admin-caption-size, 0.75rem);
+  font-weight: 800;
 }
 
 /* pills / tags (not DS-owned names) */
@@ -1738,11 +1272,14 @@
   opacity: 0.86;
 }
 
-/* page makes room for the docked panel (narrow/wide); full overlays */
-.app-page.vela-open.vela-narrow {
+/* page makes room for the docked panel (narrow/wide); full overlays.
+   Arda-specific: the imported shell-template docks .assistant as a flex
+   sibling inside .app-body instead, but arda renders it as a fixed overlay
+   outside .app-body (see shell.tsx) - out of scope to restructure today. */
+.app.vela-open.vela-narrow {
   padding-right: 380px;
 }
-.app-page.vela-open.vela-wide {
+.app.vela-open.vela-wide {
   padding-right: 560px;
 }
 
@@ -1976,8 +1513,8 @@
 }
 
 @media (max-width: 960px) {
-  .app-page.vela-open.vela-narrow,
-  .app-page.vela-open.vela-wide {
+  .app.vela-open.vela-narrow,
+  .app.vela-open.vela-wide {
     padding-right: 0;
   }
   .assistant,

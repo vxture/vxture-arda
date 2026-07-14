@@ -138,14 +138,38 @@
       "compliance": "分级分类合规率",
       "complianceTrend": "环比 +0.4%"
     },
+    "section": {
+      "metricsTitle": "核心指标",
+      "metricsSub": "近 30 天关键数据概览",
+      "modulesTitle": "平台模块",
+      "modulesSub": "全数据平台视角总览 · 点击进入各模块查看详情",
+      "insightsTitle": "资产洞察",
+      "insightsSub": "增长趋势、团队贡献、主题域与质量分布",
+      "detailTitle": "资产明细",
+      "detailSub": "资产排行与待处理治理事项"
+    },
+    "module": {
+      "sources": "数据源",
+      "sourcesSub": "{connected} 个已连接",
+      "standards": "数据标准",
+      "standardsSub": "{published} 个已发布",
+      "lineage": "数据血缘",
+      "lineageSub": "条血缘链路",
+      "service": "数据服务",
+      "serviceSub": "{running} 个运行中",
+      "security": "数据安全",
+      "securitySub": "个有效 API 密钥"
+    },
     "growthTitle": "数据资产增长趋势",
     "growthSub": "近 6 个月已归集数据表数量",
     "growthLegend": "数据表",
     "teamsTitle": "各团队数据贡献",
     "teamsSub": "按归集数据表数量排名 · TOP 6",
     "domainTitle": "主题域分布",
+    "domainSub": "共覆盖 {count} 个主题域",
     "domainCaption": "数据表",
     "qualityTitle": "数据质量总分",
+    "qualitySub": "6 个质量维度综合评估 · 每日更新",
     "qualityRating": "优秀",
     "dim": {
       "completeness": "完整性",
@@ -189,6 +213,7 @@
       "web": "网络"
     },
     "alertsTitle": "治理告警",
+    "alertsSub": "{count} 项待处理",
     "alertsCount": "4 待处理",
     "alert": {
       "a1Title": "JOB-1006 数据清洗失败",
