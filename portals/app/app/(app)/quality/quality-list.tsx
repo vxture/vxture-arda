@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import {
   DataTable,
   MetricGrid,
@@ -13,6 +14,7 @@ import { useTranslations } from "@arda/shared/i18n";
 import { PIcon, type PIconName } from "../../ui/phosphor-icon";
 import { AreaChart, Radar } from "../../ui/charts";
 import { LEVEL_TONE, passColor, QUALITY_DIMS, SCORE_TREND } from "./seed";
+import { runWorkspaceChecks, type RunChecksResult } from "./actions";
 import type { QualityMetrics, QualityRuleView, Trend } from "./data";
 
 const TREND_META: Record<Trend, { icon: PIconName; color: string }> = {
@@ -27,8 +29,38 @@ function compact(n: number): string {
   return String(n);
 }
 
-export function QualityList({ rules, metrics }: { rules: QualityRuleView[]; metrics: QualityMetrics }) {
+export function QualityList({
+  rules,
+  metrics,
+  isAdmin = false,
+}: {
+  rules: QualityRuleView[];
+  metrics: QualityMetrics;
+  isAdmin?: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [runMsg, setRunMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const t = useTranslations("quality");
+
+  const runChecks = () => {
+    setRunMsg(null);
+    startTransition(async () => {
+      const res: RunChecksResult = await runWorkspaceChecks();
+      if (res.ok) {
+        setRunMsg({
+          tone: res.failed > 0 ? "err" : "ok",
+          text: t("run.done", {
+            ran: String(res.ran),
+            passed: String(res.passed),
+            warned: String(res.warned),
+            failed: String(res.failed),
+          }) + (res.skipped > 0 ? " " + t("run.skipped", { n: String(res.skipped) }) : ""),
+        });
+      } else {
+        setRunMsg({ tone: "err", text: t("run.error." + res.error) });
+      }
+    });
+  };
 
   const metricItems: MetricGridItem[] = [
     { id: "score", label: t("metrics.score"), value: metrics.score ? metrics.score.toFixed(1) : "-", tone: "positive" },
@@ -89,14 +121,28 @@ export function QualityList({ rules, metrics }: { rules: QualityRuleView[]; metr
             <Button variant="secondary">
               <PIcon name="funnel" /> {t("rules")}
             </Button>
-            <Button>
-              <PIcon name="play" /> {t("runAudit")}
-            </Button>
+            {isAdmin && (
+              <Button disabled={pending} onClick={runChecks}>
+                <PIcon name="play" /> {pending ? t("run.running") : t("runAudit")}
+              </Button>
+            )}
           </>
         }
       />
 
       <MetricGrid items={metricItems} />
+
+      {runMsg && (
+        <p
+          role="status"
+          style={{
+            fontSize: 13,
+            color: runMsg.tone === "ok" ? "var(--vx-color-success-600)" : "var(--vx-color-danger-600)",
+          }}
+        >
+          {runMsg.text}
+        </p>
+      )}
 
       <div className="dash-cols">
         <div className="con-card">

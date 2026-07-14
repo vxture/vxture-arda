@@ -1,13 +1,40 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { Button, EmptyState, MetricGrid, PageHeader, StatusBadge, type MetricGridItem } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
 import { DOMAINS, LEVEL_TONE, METHOD_COLOR, STATUS_META } from "./seed";
+import { publishDataService, type PublishServiceResult } from "./actions";
 import type { ServiceView } from "./data";
 
-export function ServiceList({ services }: { services: ServiceView[] }) {
+export function ServiceList({ services, isAdmin = false }: { services: ServiceView[]; isAdmin?: boolean }) {
   const t = useTranslations("service");
+  const [pending, startTransition] = useTransition();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  const publish = (id: string) => {
+    setBusyId(id);
+    setMsg(null);
+    startTransition(async () => {
+      const res: PublishServiceResult = await publishDataService(id);
+      setBusyId(null);
+      if (res.ok) {
+        setMsg({
+          tone: "ok",
+          text:
+            t("publishDone") +
+            (res.warnings.length > 0 ? " " + t("publishWarn", { n: String(res.warnings.length) }) : ""),
+        });
+      } else if (res.error === "quality") {
+        const names = (res.blockers ?? []).map((b) => `${b.datasetName}: ${b.ruleName}`).join("; ");
+        setMsg({ tone: "err", text: t("publishBlocked", { blockers: names }) });
+      } else {
+        setMsg({ tone: "err", text: t("publishError." + res.error) });
+      }
+    });
+  };
 
   const running = services.filter((s) => s.status === "running").length;
   const metrics: MetricGridItem[] = [
@@ -36,6 +63,18 @@ export function ServiceList({ services }: { services: ServiceView[] }) {
       />
 
       <MetricGrid items={metrics} />
+
+      {msg && (
+        <p
+          role="status"
+          style={{
+            fontSize: 13,
+            color: msg.tone === "ok" ? "var(--vx-color-success-600)" : "var(--vx-color-danger-600)",
+          }}
+        >
+          {msg.text}
+        </p>
+      )}
 
       {services.length === 0 ? (
         <EmptyState
@@ -72,6 +111,13 @@ export function ServiceList({ services }: { services: ServiceView[] }) {
                   )}
                   <StatusBadge tone={LEVEL_TONE[s.level]}>{t("level." + s.level)}</StatusBadge>
                 </div>
+                {isAdmin && s.status === "draft" && (
+                  <div style={{ marginTop: 8 }}>
+                    <Button size="sm" disabled={pending && busyId === s.id} onClick={() => publish(s.id)}>
+                      <PIcon name="broadcast" /> {t("publishAction")}
+                    </Button>
+                  </div>
+                )}
                 <div className="sc-stats">
                   <div>
                     <span className="scs-val dim">-</span>

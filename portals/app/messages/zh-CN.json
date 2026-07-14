@@ -395,6 +395,19 @@
       "internal": "内部",
       "sensitive": "敏感",
       "core": "核心"
+    },
+    "run": {
+      "running": "质检运行中...",
+      "done": "质检完成：共 {ran} 条——通过 {passed} / 预警 {warned} / 失败 {failed}。",
+      "skipped": "{n} 条规则被跳过（数据集无可连接的数据源）。",
+      "error": {
+        "unauthenticated": "会话已过期，请重新登录。",
+        "forbidden": "运行质检需要工作区管理员角色。",
+        "tier": "质量规则需要更高订阅档位。",
+        "quota": "本月质检额度已用完，升级或加购后可继续。",
+        "no_rules": "没有已启用的规则可运行。",
+        "connect": "数据源连接失败。"
+      }
     }
   },
   "lineage": {
@@ -498,6 +511,16 @@
     "stat": {
       "calls": "今日调用",
       "subs": "订阅"
+    },
+    "publishAction": "发布",
+    "publishDone": "服务已发布。",
+    "publishWarn": "（{n} 条质量预警已记入审计日志。）",
+    "publishBlocked": "发布被质量门拦截——严重级失败检查：{blockers}",
+    "publishError": {
+      "unauthenticated": "会话已过期，请重新登录。",
+      "forbidden": "发布服务需要工作区管理员角色。",
+      "not_found": "服务不存在。",
+      "tier": "发布服务需要更高订阅档位。"
     }
   },
   "etl": {

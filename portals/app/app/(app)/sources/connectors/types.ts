@@ -27,4 +27,34 @@ export interface SourceConnector {
   test(config: unknown): Promise<ConnectionTestResult>;
   /** Introspect metadata. Throws on connection failure (caller audits sync.fail). */
   pullMetadata(config: unknown): Promise<DiscoveredDataset[]>;
+  /** Execute quality checks in-source (pushdown). Optional: types without it
+   *  cannot run checks (explicit unsupported, no pretending). Throws on
+   *  connection failure; per-check errors come back in the outcome. */
+  checkQuality?(config: unknown, checks: QualityCheckSpec[]): Promise<QualityCheckOutcome[]>;
+}
+
+// ---- Quality check execution (Q-BL1) -----------------------------------------
+// Checks run IN the source (pushdown SQL): arda never pulls rows, only the
+// aggregate outcome comes back (broker principle, data-150 D6).
+
+export interface QualityCheckSpec {
+  ruleId: string;
+  /** not_null | unique | range | freshness | row_count */
+  type: string;
+  /** "schema.table" (Dataset.location). */
+  location: string;
+  /** Parsed rule config (column names pre-validated by the caller). */
+  config: Record<string, unknown>;
+}
+
+export interface QualityCheckOutcome {
+  ruleId: string;
+  /** Rows violating the rule (or 1 for boolean checks like freshness). */
+  issues: number;
+  /** Pass rate percent 0-100 where computable; null for boolean checks. */
+  score: number | null;
+  /** Rows examined (0 = empty relation; boolean checks report 0). */
+  total: number;
+  /** Set when the check could not run (bad config, missing column...). */
+  error?: string;
 }
