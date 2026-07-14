@@ -642,7 +642,23 @@
     "revoke": "吊销",
     "listTitle": "密钥列表",
     "emptyTitle": "暂无 API 密钥",
-    "emptyDesc": "发布数据服务供外部消费时将在此签发密钥。"
+    "emptyDesc": "发布数据服务供外部消费时将在此签发密钥。",
+    "create": {
+      "button": "新建密钥",
+      "title": "创建 API 密钥",
+      "desc": "密钥用于外部调用方访问已发布的数据服务。",
+      "name": "密钥名称",
+      "cancel": "取消",
+      "submit": "创建",
+      "done": "完成",
+      "tokenLabel": "你的新 API 密钥",
+      "tokenOnce": "请立即复制——系统只存哈希，此后不再展示明文。",
+      "error": {
+        "unauthenticated": "会话已过期，请重新登录。",
+        "forbidden": "创建密钥需要工作区管理员角色。",
+        "invalid": "请输入有效的密钥名称。"
+      }
+    }
   },
   "audit": {
     "eyebrow": "管理",

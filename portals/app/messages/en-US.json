@@ -642,7 +642,23 @@
     "revoke": "Revoke",
     "listTitle": "Keys",
     "emptyTitle": "No API keys yet",
-    "emptyDesc": "Keys are minted when you publish a data service for external consumption."
+    "emptyDesc": "Keys are minted when you publish a data service for external consumption.",
+    "create": {
+      "button": "New key",
+      "title": "Create API key",
+      "desc": "The key authenticates external callers of your published data services.",
+      "name": "Key name",
+      "cancel": "Cancel",
+      "submit": "Create",
+      "done": "Done",
+      "tokenLabel": "Your new API key",
+      "tokenOnce": "Copy it now - only a hash is stored and it will never be shown again.",
+      "error": {
+        "unauthenticated": "Session expired - sign in again.",
+        "forbidden": "Creating keys requires a workspace admin role.",
+        "invalid": "Enter a valid key name."
+      }
+    }
   },
   "audit": {
     "eyebrow": "Administration",
