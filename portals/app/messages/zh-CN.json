@@ -322,7 +322,12 @@
     "qualityNever": "该资产尚未运行过质量检查。",
     "lineageCounts": "上游 {up} 个、下游 {down} 个数据集；供给 {services} 个服务。",
     "addTagPh": "添加标签...",
-    "removeTag": "移除标签 {name}"
+    "removeTag": "移除标签 {name}",
+    "golden": "金记录",
+    "goldenMark": "标记金记录",
+    "goldenUnmark": "取消金记录",
+    "standardsCard": "标准符合性",
+    "removeStandard": "解除标准 {name}"
   },
   "standards": {
     "eyebrow": "资产治理",

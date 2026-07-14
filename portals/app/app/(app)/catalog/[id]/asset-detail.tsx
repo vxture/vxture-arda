@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Breadcrumb,
+  NativeSelect,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
@@ -27,7 +28,7 @@ import { Radar } from "../../../ui/charts";
 import { QUALITY_DIMS } from "../../dashboard/seed";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone, type AssetLevel } from "../seed";
 import type { AssetProfile } from "../data";
-import { attachTag, detachTag } from "../actions";
+import { attachStandard, attachTag, detachStandard, detachTag, setGoldenRecord } from "../actions";
 
 function domainIcon(domain: string | null): PIconName {
   return (domain && DOMAINS[domain]?.icon) || "stack";
@@ -98,6 +99,19 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
       await detachTag(asset.id, tagId);
     });
   };
+  const [stdSel, setStdSel] = useState("");
+  const linkStd = () => {
+    if (!stdSel) return;
+    startTagTransition(async () => {
+      await attachStandard(asset.id, stdSel);
+      setStdSel("");
+    });
+  };
+  const toggleGolden = () => {
+    startTagTransition(async () => {
+      await setGoldenRecord(asset.id, !asset.goldenRecord);
+    });
+  };
 
   const color = domainColor(asset.domain);
   const tint = `color-mix(in srgb, ${color} 14%, transparent)`;
@@ -159,6 +173,11 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
             </span>
             {asset.name}
             <StatusBadge tone={LEVEL_TONE[asset.level]}>{t("level." + asset.level)}</StatusBadge>
+            {asset.goldenRecord && (
+              <StatusBadge tone="warning">
+                <PIcon name="crown-simple" /> {t("golden")}
+              </StatusBadge>
+            )}
           </h1>
           {asset.description && <p className="con-card-sub">{asset.description}</p>}
           <div className="detail-codeline">
@@ -169,6 +188,11 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
           <Button variant="secondary" onClick={() => router.push(`/lineage?dataset=${asset.id}`)}>
             <PIcon name="tree-structure" /> {t("viewLineage")}
           </Button>
+          {isAdmin && (
+            <Button variant="secondary" disabled={tagPending} onClick={toggleGolden}>
+              <PIcon name="crown-simple" /> {asset.goldenRecord ? t("goldenUnmark") : t("goldenMark")}
+            </Button>
+          )}
           <Button>
             <PIcon name="check" /> {t("requestAccess")}
           </Button>
@@ -405,6 +429,48 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
                   onKeyDown={(e) => e.key === "Enter" && addTag()}
                 />
                 <Button size="sm" disabled={tagPending || !newTag.trim()} onClick={addTag}>
+                  <PIcon name="plus" />
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="con-card">
+            <div className="con-card-heading">{t("standardsCard")}</div>
+            <div className="tag-list">
+              {asset.standards.map((st) => (
+                <span className="tag" key={st.id}>
+                  {st.name}
+                  {isAdmin && (
+                    <button
+                      aria-label={t("removeStandard", { name: st.name })}
+                      disabled={tagPending}
+                      onClick={() =>
+                        startTagTransition(async () => {
+                          await detachStandard(asset.id, st.id);
+                        })
+                      }
+                      style={{ border: 0, background: "none", cursor: "pointer", padding: 0, marginLeft: 4, color: "inherit" }}
+                    >
+                      <PIcon name="x" />
+                    </button>
+                  )}
+                </span>
+              ))}
+              {asset.standards.length === 0 && <span className="dim">-</span>}
+            </div>
+            {isAdmin && asset.linkableStandards.length > 0 && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <NativeSelect value={stdSel} onChange={(e) => setStdSel(e.target.value)} aria-label={t("standardsCard")}>
+                  <option value="">-</option>
+                  {asset.linkableStandards
+                    .filter((o) => !asset.standards.some((st) => st.id === o.id))
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                </NativeSelect>
+                <Button size="sm" disabled={tagPending || !stdSel} onClick={linkStd}>
                   <PIcon name="plus" />
                 </Button>
               </div>

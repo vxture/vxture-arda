@@ -322,7 +322,12 @@
     "qualityNever": "No quality checks have run against this asset yet.",
     "lineageCounts": "{up} upstream, {down} downstream datasets; feeds {services} services.",
     "addTagPh": "Add tag...",
-    "removeTag": "Remove tag {name}"
+    "removeTag": "Remove tag {name}",
+    "golden": "Golden record",
+    "goldenMark": "Mark golden",
+    "goldenUnmark": "Unmark golden",
+    "standardsCard": "Standards compliance",
+    "removeStandard": "Unlink standard {name}"
   },
   "standards": {
     "eyebrow": "Asset Governance",
