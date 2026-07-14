@@ -8,7 +8,9 @@
     "navExpand": "展开导航",
     "navCollapse": "收起导航",
     "complianceTitle": "合规态势",
-    "complianceMeta": "分级分类覆盖率 96.8%"
+    "complianceMeta": "分级分类覆盖率 96.8%",
+    "navExpandAllGroups": "展开全部分组",
+    "navCollapseAllGroups": "收起全部分组"
   },
   "header": {
     "launcher": "功能板块",

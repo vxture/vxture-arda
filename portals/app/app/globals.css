@@ -3,108 +3,74 @@
  * @vxture/design-system. This file holds layout-only composition built strictly
  * on --vx-* tokens. Do not add colors, fonts, or component looks here - extend
  * the DS package instead.
+ *
+ * Shell structure (.app / .app-body / .sidebar / .content-scroll) is a values-
+ * exact port of the vxture admin/console shared shell (DS `shell-template.css`
+ * - the CSS bundle itself is not yet published in the @vxture/design-system
+ * range arda depends on, so the structure below is copied verbatim from that
+ * source rather than imported; every dimension it uses, however, is read live
+ * off DS custom properties already shipped in 1.3.2 - --vx-shell-header-height,
+ * --vx-shell-sidebar-width, --vx-shell-sidebar-collapsed-width - so this stays
+ * pixel-identical to admin/console without a DS version bump). Header chrome
+ * lives in ui/console.css; this file only owns the outer frame.
  */
 
 @import "./ui/console.css";
 
 :root {
-  /* Fixed header height. */
-  --arda-header-height: 64px;
-  /* Left section-nav column width. */
-  --arda-sidebar-width: 248px;
-  /* Content track shared by header inner, body, and footer inner. */
-  --arda-shell-max-width: 1440px;
-  /* Outer page inset for the fixed header/footer bars. */
-  --arda-shell-margin-x: var(--vx-space-2xl);
+  /* Fixed header height - consumed straight from the DS shell tokens (already
+     shipped in @vxture/design-system 1.3.2's tokens-colors-shell.css), not
+     re-declared by hand. */
+  --arda-header-height: var(--vx-shell-header-height);
+  /* Left section-nav column width, expanded / collapsed - same DS tokens the
+     admin/console shells consume. */
+  --arda-sidebar-width: var(--vx-shell-sidebar-width);
+  --arda-sidebar-width-collapsed: var(--vx-shell-sidebar-collapsed-width);
+  /* Content track: full-bleed by design (owner ruling) - admin/console cap
+     this at 1480px, arda deliberately does not: business console screens
+     (tables, graphs) benefit from the full viewport width. */
+  --arda-shell-max-width: none;
+  /* Content-inner inset. Left/right and top map onto DS default-density
+     tokens exactly (space-3xl=48px, space-xl=24px); bottom is a taller safe
+     area so the last row never sits flush with the viewport edge. */
+  --arda-content-x: var(--vx-space-3xl);
+  --arda-content-top: var(--vx-space-xl);
+  --arda-content-bottom: var(--vx-space-4xl);
 }
 
-/* Page column: pins the footer to the viewport bottom on short pages. The fixed
-   header is out of flow, so only the body grows to fill the remaining height. */
+/* Outer frame: fixed to the viewport height with internal scroll, matching
+   the admin shell (`.app { height:100vh; overflow:hidden }`). The header sits
+   in normal flow (not fixed) - only .content-scroll scrolls. */
 .app-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--vx-color-page);
 }
 
-/* Header chrome: fixed, transparent, glass on scroll. Positions the bar only;
-   all colors/fonts/control looks come from the DS. */
-.app-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 50;
-  width: 100%;
-  height: var(--arda-header-height);
-  padding-inline: var(--arda-shell-margin-x);
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid transparent;
-  background: color-mix(in srgb, var(--vx-color-surface) 0%, transparent);
-  transition: background 160ms ease, border-color 160ms ease;
-}
-
-.app-header.is-scrolled {
-  background: color-mix(in srgb, var(--vx-color-surface) 86%, transparent);
-  border-bottom-color: var(--vx-color-border);
-  backdrop-filter: blur(12px);
-}
-
-.app-header-inner {
-  width: 100%;
-  max-width: calc(var(--arda-shell-max-width) + 2 * var(--arda-shell-margin-x));
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--vx-space-lg);
-}
-
-.app-brand-lockup {
-  display: inline-flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.app-brand-name {
-  font-weight: 700;
-  color: var(--vx-color-text-strong);
-}
-
-.app-brand-tag {
-  font-size: 0.75rem;
-  color: var(--vx-color-text-muted);
-}
-
-.app-header-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-}
-
-/* Body: left section nav + content column, both inside the shared track. */
+/* Body: sidebar + content-scroll, sharing the remaining height below the
+   header (verbatim: DS `.app-body { flex:1; display:flex; min-height:0;
+   overflow:hidden }`). */
 .app-body {
-  flex: 1 0 auto;
-  width: 100%;
-  max-width: calc(var(--arda-shell-max-width) + 2 * var(--arda-shell-margin-x));
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--vx-space-2xl);
-  padding:
-    calc(var(--arda-header-height) + var(--vx-space-xl))
-    var(--arda-shell-margin-x)
-    var(--vx-space-3xl);
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.app-sidebar {
-  position: sticky;
-  top: calc(var(--arda-header-height) + var(--vx-space-xl));
-  align-self: start;
-}
-
-.app-main {
+/* Content column: the only scrolling region in the shell. */
+.content-scroll {
+  flex: 1;
+  overflow-y: auto;
   min-width: 0;
+  scroll-behavior: smooth;
+}
+
+.content-inner {
+  max-width: var(--arda-shell-max-width);
+  margin: 0 auto;
+  padding: var(--arda-content-top) var(--arda-content-x) var(--arda-content-bottom);
 }
 
 /* Generic section wrapper used by placeholder pages. */
@@ -120,41 +86,29 @@
 }
 
 /* Gate transition surface (loading / upgrade screen) - centers the DS content
-   in the available viewport below the fixed header. */
+   in the available scroll region. */
 .entitlement-pending {
   min-height: 60vh;
   display: grid;
   place-items: center;
-  padding:
-    calc(var(--arda-header-height) + var(--vx-space-3xl))
-    var(--arda-shell-margin-x)
-    var(--vx-space-3xl);
+  padding: var(--vx-space-3xl) var(--arda-content-x);
 }
 
 .app-footer {
   flex-shrink: 0;
-  padding-inline: var(--arda-shell-margin-x);
+  padding-inline: var(--arda-content-x);
   border-top: 1px solid var(--vx-color-border);
 }
 
 .app-footer-inner {
   width: 100%;
-  max-width: calc(var(--arda-shell-max-width) + 2 * var(--arda-shell-margin-x));
+  max-width: var(--arda-shell-max-width);
   margin: 0 auto;
 }
 
-/* Narrow viewports: collapse the two-column body to a single stack. */
+/* Narrow viewports: sidebar becomes a static (non-persistent-rail) column. */
 @media (max-width: 880px) {
   :root {
-    --arda-shell-margin-x: var(--vx-space-md);
-  }
-
-  .app-body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .app-sidebar {
-    position: static;
-    top: auto;
+    --arda-content-x: var(--vx-space-lg);
   }
 }
