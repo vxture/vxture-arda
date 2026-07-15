@@ -1,84 +1,89 @@
 /* ===== Arda console chrome + dashboard =====
  * Layout-only composition on DS --vx-* tokens. No colors, fonts, or DS-owned
- * component looks here (DS Button/MetricGrid/DataTable/PageHeader cover those).
- * Class names deliberately avoid the DS-owned set (card/btn/badge/metric-card).
+ * component looks here (DS Button/DataTable/EmptyState cover those).
+ *
+ * The shell chrome (.vxh header, .sidebar/.nav-*, .vxh-panel user popover,
+ * .ph/.tpl-head page-header, .card/.metric-* content cards, and everything
+ * else defined in the vxture admin/console shared shell) is NOT redeclared
+ * here - it comes straight from `@vxture/design-system/styles/shell-
+ * template.css`, imported in app/layout.tsx after the DS base packs and
+ * before app/globals.css (which only overrides the one deliberate delta:
+ * content-inner has no max-width, see globals.css). This file adds only:
+ *   1) SVG-icon compatibility shims - the template assumes an icon FONT
+ *      (`<i class="ph ph-x">`), arda renders Phosphor icons as React SVGs
+ *      (`<PIcon>` -> `@phosphor-icons/react`), so every template rule that
+ *      targets a bare `i` descendant needs an `svg` twin.
+ *   2) Genuine arda-only additions with no template equivalent
+ *      (.vxh-brand-tag subscription-tier badge, .nav-item-tag locked-tier
+ *      badge, .con-card* page-content cards - kept under an arda-local name
+ *      so they never collide with a real DS <Card> instance elsewhere).
+ * Do not add a rule here that duplicates a selector shell-template.css
+ * already defines - check the import first.
  */
 
-:root {
-  --arda-rail-w: 256px;
-  --arda-rail-w-collapsed: 60px;
+/* ---- SVG-icon compatibility (template targets `i`, arda renders `svg`) --- */
+.nav-item i,
+.nav-item svg {
+  width: calc(var(--vx-shell-sidebar-collapsed-width) - 2 * var(--vx-space-md));
+  height: var(--vx-admin-shell-icon-size, 1rem);
+  flex-shrink: 0;
+  color: var(--vx-color-text-muted);
+  transition: color 150ms;
+}
+.nav-item:hover i,
+.nav-item:hover svg,
+.nav-item.active i,
+.nav-item.active svg {
+  color: inherit;
+}
+.vxh-search svg {
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-icon-size-sm, 1rem);
+  flex-shrink: 0;
+}
+.vxh-verify svg {
+  font-size: var(--vx-admin-shell-caption-size);
+}
+.vxh-lvslot svg {
+  font-size: 17px;
+}
+.vxh-acct-row > svg:first-child {
+  font-size: var(--vx-icon-size-sm, 1rem);
+  color: var(--vx-color-text-muted);
+}
+.vxh-menu-item svg {
+  font-size: var(--vx-icon-size-sm, 1rem);
+  color: var(--vx-color-text-muted);
+}
+.vxh-menu-item.danger svg {
+  color: var(--vx-color-danger-600);
 }
 
-/* ---------------------------------------------------------------- header --- */
-.vxh {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-md);
-  width: 100%;
-}
-.vxh-left {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-sm);
-  min-width: 0;
-}
-.vxh-pop-anchor {
-  position: relative;
-}
-.vxh-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--vx-color-text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-  position: relative;
-  transition: background 160ms ease, color 160ms ease;
-}
-.vxh-icon:hover,
-.vxh-icon.is-active {
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-text-strong);
-}
-.vxh-badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--vx-color-danger-600);
-  color: var(--vx-color-surface);
-  font-size: 10px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
+/* ---- arda-only: subscription-tier badge on the brand mark ----
+   The template's .vxh-brand is `inline-flex; align-items:center`, which put
+   the tag on the same vertical center line as the brand name - owner
+   feedback: it should read as a corner badge on the product name, not a
+   second inline word. .vxh-brand gets position:relative (an arda-only
+   addition on top of the template rule, not a redeclaration of it) so the
+   tag can pin to the name's top-right corner instead of flowing in the row.
+   `left: 100%` (not `right: -Npx`) anchors the tag's own LEFT edge to the
+   name's right edge regardless of the tag's rendered width, which varies
+   by plan label ("PRO" vs "ENTERPRISE") - a `right` offset has to guess
+   that width to avoid overlap and was wrong (measured a real 19x8px
+   bounding-box overlap with the name, not just a visually-tight gap). */
 .vxh-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  text-decoration: none;
-  padding-inline: var(--vx-space-xs);
-}
-.vxh-brand-name {
-  font-weight: 700;
-  color: var(--vx-color-text-strong);
-  font-size: 1rem;
+  position: relative;
 }
 .vxh-brand-tag {
+  position: absolute;
+  top: -2px;
+  left: 100%;
+  margin-left: 4px;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 2px 6px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-brand-100);
   color: var(--vx-color-brand-700);
 }
@@ -99,370 +104,8 @@
   background: var(--vx-color-warning-surface);
   color: var(--vx-color-warning-700);
 }
-.vxh-divider {
-  width: 1px;
-  height: 22px;
-  background: var(--vx-color-border);
-  margin-inline: var(--vx-space-xs);
-}
-.vxh-search {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  flex: 1;
-  max-width: 420px;
-  height: 36px;
-  padding: 0 12px;
-  border-radius: var(--vx-radius-lg);
-  border: 1px solid var(--vx-color-border);
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-text-muted);
-}
-.vxh-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font: inherit;
-  color: var(--vx-color-text-strong);
-}
-.vxh-search kbd {
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: var(--vx-color-surface);
-  border: 1px solid var(--vx-color-border);
-  color: var(--vx-color-text-muted);
-}
-.vxh-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  margin-left: auto;
-}
-.vxh-group {
-  display: inline-flex;
-  align-items: center;
-}
 
-/* user button */
-.vxh-user {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 6px 0 4px;
-  border-radius: 999px;
-  border: 1px solid var(--vx-color-border);
-  background: var(--vx-color-surface);
-  cursor: pointer;
-  position: relative;
-}
-.vxh-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: var(--vx-color-brand-600);
-  color: var(--vx-color-surface);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
-}
-.vxh-avatar.xl {
-  width: 44px;
-  height: 44px;
-  font-size: 18px;
-}
-
-/* popovers (launcher / user) */
-.vxh-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  z-index: 60;
-  background: var(--vx-color-surface);
-  border: 1px solid var(--vx-color-border);
-  border-radius: var(--vx-radius-xl);
-  box-shadow: var(--vx-shadow-lg);
-  padding: var(--vx-space-sm);
-}
-.vxh-launcher-panel {
-  left: 0;
-  width: 320px;
-}
-.vxh-user-panel {
-  right: 0;
-  width: 320px;
-}
-.vxh-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-}
-
-/* launcher boards */
-.vxh-board-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.vxh-board {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-sm);
-  padding: var(--vx-space-sm);
-  border-radius: var(--vx-radius-lg);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  color: var(--vx-color-text-strong);
-}
-.vxh-board:hover {
-  background: var(--vx-color-surface-muted);
-}
-.vxh-board.is-active {
-  background: var(--vx-color-primary-soft);
-}
-.vxh-board-ico {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--vx-radius-md);
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-primary);
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.vxh-board-copy {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.vxh-board-copy strong {
-  font-size: 13px;
-}
-.vxh-board-copy span {
-  font-size: 11px;
-  color: var(--vx-color-text-muted);
-}
-.vxh-board-check {
-  margin-left: auto;
-  color: var(--vx-color-primary);
-}
-
-/* user panel internals */
-.vxh-user-head {
-  display: flex;
-  gap: var(--vx-space-sm);
-  align-items: center;
-  padding: var(--vx-space-sm);
-}
-.vxh-user-name {
-  font-weight: 700;
-  color: var(--vx-color-text-strong);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.vxh-verify {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--vx-color-success-700);
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-.vxh-user-contacts {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-  color: var(--vx-color-text-muted);
-  margin-top: 2px;
-}
-.vxh-level-row {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  padding: var(--vx-space-xs) var(--vx-space-sm);
-}
-.vxh-level-lead {
-  color: var(--vx-color-warning-500);
-}
-.vxh-lvslots {
-  display: inline-flex;
-  gap: 6px;
-}
-.vxh-lvslot {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-text-disabled);
-  font-size: 14px;
-}
-.vxh-lvslot.is-earned {
-  background: var(--vx-color-primary-soft);
-  color: var(--vx-color-primary);
-}
-.vxh-divider-row {
-  height: 1px;
-  background: var(--vx-color-border-muted);
-  margin: var(--vx-space-xs) 0;
-}
-.vxh-acct-row {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-sm);
-  width: 100%;
-  padding: var(--vx-space-sm);
-  border: none;
-  background: transparent;
-  border-radius: var(--vx-radius-md);
-  cursor: pointer;
-  color: var(--vx-color-text-strong);
-  font-size: 13px;
-}
-.vxh-acct-row:hover {
-  background: var(--vx-color-surface-muted);
-}
-.vxh-acct-go {
-  margin-left: auto;
-  color: var(--vx-color-text-muted);
-}
-.vxh-menu-item {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-sm);
-  width: 100%;
-  padding: var(--vx-space-sm);
-  border: none;
-  background: transparent;
-  border-radius: var(--vx-radius-md);
-  cursor: pointer;
-  color: var(--vx-color-text-strong);
-  font-size: 13px;
-}
-.vxh-menu-item:hover {
-  background: var(--vx-color-surface-muted);
-}
-.vxh-menu-item.danger {
-  color: var(--vx-color-danger-600);
-}
-
-/* --------------------------------------------------------------- sidebar --- */
-.sidebar {
-  width: var(--arda-rail-w);
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-md);
-  transition: width 160ms ease;
-}
-.sidebar.is-collapsed {
-  width: var(--arda-rail-w-collapsed);
-}
-.side-rail {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-xs);
-  height: 32px;
-}
-.rail-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--vx-radius-md);
-  border: 1px solid var(--vx-color-border);
-  background: var(--vx-color-surface);
-  color: var(--vx-color-text-secondary);
-  cursor: pointer;
-}
-.side-domain {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--vx-color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.side-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-md);
-}
-.nav-section {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.nav-section-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 4px 8px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-.nav-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--vx-color-text-muted);
-}
-.nav-section-caret {
-  color: var(--vx-color-text-disabled);
-  font-size: 12px;
-}
-.nav-items {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--vx-space-sm);
-  padding: 8px 10px;
-  border-radius: var(--vx-radius-md);
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--vx-color-text-secondary);
-  font-size: 14px;
-  text-align: left;
-  width: 100%;
-}
-.nav-item:hover {
-  background: var(--vx-color-surface-muted);
-  color: var(--vx-color-text-strong);
-}
-.nav-item.active {
-  background: var(--vx-color-primary-soft);
-  color: var(--vx-color-primary);
-  font-weight: 600;
-}
-.nav-item i,
-.nav-item svg {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.nav-item-label {
-  flex: 1;
-  min-width: 0;
-}
-/* Required-tier badge on a locked (visible-but-locked) nav entry. */
+/* ---- arda-only: required-tier badge on a locked (visible-but-locked) nav entry ---- */
 .nav-item-tag {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -473,101 +116,401 @@
   color: var(--vx-color-ai-foreground);
   flex-shrink: 0;
 }
-.sidebar.is-collapsed .nav-item-label,
-.sidebar.is-collapsed .nav-section-title,
-.sidebar.is-collapsed .side-domain {
-  display: none;
+
+/* ---- arda-only: bottom safe area on the nav scroll region, now that the
+   footer compliance card (which used to occupy this space) is gone - same
+   --vx-space-4xl the content area reserves at its own bottom, so the last
+   nav item never sits flush against the viewport edge when scrolled all the
+   way down. Overrides just the bottom side of the import's own
+   `padding: 0 var(--vx-space-md)` shorthand. ---- */
+.side-nav {
+  padding-bottom: var(--vx-space-4xl);
 }
-.sidebar.is-collapsed .nav-item {
-  justify-content: center;
+
+/* ------------------------------------------------------------- dashboard ---
+ * `.screen`/`.dash`/`.dash-cols`/`.dash-main`/`.dash-side` (grid wrappers)
+ * come straight from the shell-template import. Everything else below is
+ * hand-ported from the REAL, actually-shipped admin overview pattern - not
+ * the unused "Claude Design" shell-template mockup (`.card`/`.metric-card`/
+ * `.tpl-block` are defined in that asset but zero admin/console pages
+ * actually render them; grepped and confirmed). The real pattern, read
+ * straight from vxture admin's own home page (`app/(admin)/page.tsx`,
+ * `admin-overview-*.css`) and its `platform-layout-cards-actions.css`
+ * (already active via the DS import - `.vx-page-section`/`.vx-metric-card`/
+ * `.vx-section-card` share this exact recipe):
+ *   - content cards are a translucent "glass" surface (color-mix over white,
+ *     NOT solid var(--vx-color-surface)) with NO box-shadow, not the mockup's
+ *     hard white card + shadow-sm
+ *   - top-line KPI cards ("pulse" cards) carry a 2px colored TOP border as
+ *     the tone accent, tone-colored value text, and small tone-tinted tag
+ *     pills - no icon, no colored icon badge (that was arda's own invention)
+ *   - section/page headings are icon + title + description, where the icon
+ *     is bare (color only, no background box) and sized via font-size, not
+ *     boxed the way arda's very first pass did
+ * `.ov-heading*` and `.stat-*` are new arda-local classes for this; `.con-
+ * card*` keeps its DS-token values but switches to the real glass-card
+ * recipe (was shell-template's hard-card look). Loosened spacing (32px
+ * between major blocks, 24px within a block - owner feedback, twice: admin's
+ * own rhythm read as cramped, and the later "industry practice" density pass
+ * over-corrected back toward tight) applies on top of every gap/padding here.
+ */
+.screen,
+.dash {
+  gap: var(--vx-space-2xl);
 }
-.side-foot-card {
-  border: 1px solid var(--vx-color-border);
-  border-radius: var(--vx-radius-lg);
-  padding: var(--vx-space-sm);
-  background: var(--vx-color-surface);
+.dash-cols,
+.dash-main,
+.dash-side,
+.stat-grid {
+  gap: var(--vx-space-2xl);
 }
-.sfc-top {
+/* .ov-section has no base rule in the shell-template import (it's an
+   arda-only wrapper) - display:flex must be declared here or `gap` is a
+   silent no-op on a plain block element, which is exactly what was
+   happening: heading and content were stacking with zero space between
+   them. */
+.ov-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vx-space-2xl);
+}
+
+/* section / page heading: bare tone icon + title + description */
+.ov-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vx-space-lg);
+}
+.ov-heading-ico {
+  flex-shrink: 0;
+  color: var(--vx-color-brand-300);
+  font-size: var(--vx-font-size-2xl);
+  margin-top: 2px;
+}
+.ov-heading.is-page .ov-heading-ico {
+  font-size: 2rem;
+  margin-top: 0;
+}
+.ov-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vx-space-xs);
+  min-width: 0;
+}
+.ov-heading-copy h1,
+.ov-heading-copy h2 {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-weight: 740;
+  color: var(--vx-color-text-strong);
+}
+.ov-heading-copy h1 {
+  font-size: var(--vx-admin-page-title-size, 1.25rem);
+}
+.ov-heading-copy h2 {
+  font-size: var(--vx-admin-section-title-size, 1rem);
+  color: var(--vx-color-brand-950);
+}
+.ov-heading-copy p {
+  margin: 0;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-body-size, 0.875rem);
+  line-height: 1.55;
+}
+.ov-heading-action {
+  /* .ov-heading is align-items:flex-start (icon/title sit at the top of the
+     row) - the action (period switch / view-details link) should sit at the
+     bottom of the row, level with the description text, not float up next
+     to the icon. */
+  align-self: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--vx-space-sm);
+}
+/* "view details" lives in the SectionHeading's own action slot (bottom-
+   aligned via .ov-heading-action's align-self:flex-end) - a standalone
+   toolbar row was tried and reverted: it added a second gap (title ->
+   toolbar -> content) instead of bringing the content closer. */
+.ov-view-more {
+  font-size: var(--vx-admin-caption-size);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.ov-view-more:hover {
+  background: var(--vx-color-surface-muted);
+  border-color: var(--vx-color-border-strong);
+}
+
+/* KPI "pulse" cards - real admin-overview-pulse recipe, extended with a
+   large, pale watermark icon in the card's own background (label/value sit
+   above it via relative positioning + z-index). auto-fit (not a fixed
+   repeat(4, ...)) so a 2-card grid (e.g. the security section) doesn't
+   leave dead columns - it was leaving half the row empty. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: stretch;
+}
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vx-space-sm);
+  /* Top and left insets trimmed vs. the right/bottom (owner feedback: shift
+     the card's content up and left, real content should hug the edge) -
+     still real DS tokens (--vx-space-lg), not custom px values. */
+  padding: var(--vx-space-lg) var(--vx-space-2xl) var(--vx-space-2xl) var(--vx-space-lg);
+  border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
+  border-top: 2px solid var(--stat-tone-line);
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: color-mix(in srgb, var(--vx-color-white) 68%, transparent);
+}
+.stat-card-art {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 80px;
+  line-height: 1;
+  color: var(--stat-tone);
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Dot + label, adopted from the real /security page's .level-card (.lc-dot/
+   .lc-name): a small dot in the same tone as the card's own border-top
+   accent - var(--stat-tone) on both, no inline style needed since arda's
+   stat-card already carries its tone as a CSS custom property (the
+   security page sets it via inline style; this is the same idea done
+   cleaner since the token is already there). */
+.stat-card-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--vx-color-text-secondary);
 }
-.sfc-bar {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--vx-color-surface-muted);
-  margin: 8px 0 4px;
-  overflow: hidden;
+.stat-card-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--vx-radius-full);
+  background: var(--stat-tone-line);
 }
-.sfc-bar span {
-  display: block;
-  height: 100%;
-  background: var(--vx-color-success-600);
-}
-.sfc-meta {
-  font-size: 11px;
+.stat-card-label {
   color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-card-title-size, 0.94rem);
+  font-weight: 700;
+}
+/* Value and its delta tags share ONE row - tags are not a separate line.
+   flex-end bottom-aligns the tag pill against the value's own baseline-ish
+   edge (not `baseline` itself: that alignment mode reserves extra space to
+   line up font ascent/descent across the 24px value and the 22px pill,
+   which makes the row *taller* than either child alone - a different
+   height depending on whether a tag is present. flex-end has no such
+   reservation: the row's cross-size is just the tallest child (always the
+   24px value), so nothing changes when a tag comes or goes.) The wrapper
+   itself is ALWAYS rendered by the caller, tags or not, so gap/spacing
+   around it never disappears - only the `em` children inside it do.
+   padding-left matches the dot (8px) + .stat-card-top's own gap (6px)
+   above, so the value lines up under the LABEL TEXT, not the dot - the
+   .level-card reference this is adopted from doesn't do this (its value
+   sits flush with the dot instead), which reads as misaligned; this fixes
+   that rather than reproducing it. */
+.stat-card-value-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--vx-space-sm);
+  flex-wrap: wrap;
+  padding-left: 14px;
+}
+.stat-card-value {
+  overflow: hidden;
+  color: var(--stat-tone);
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--vx-font-size-2xl);
+  font-weight: 760;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A flex sibling of the value (not nested inside its text), so it bottom-
+   aligns via the value-row's flex-end - same row, same 18px box height as
+   the tag pill below, so the two don't just sit on the same row but
+   actually look the same size next to each other. */
+.stat-card-unit {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-caption-size);
+  font-weight: 600;
+  line-height: 1;
+}
+.stat-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+/* Neutral gray, not tone-colored - a tag the same color as the value made it
+   impossible to tell the primary number from the secondary delta apart.
+   Same 18px height as .stat-card-unit (was 22px - visibly taller and not
+   actually aligned with it despite sharing a row). */
+.stat-card-tags em {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--vx-radius-full);
+  background: var(--vx-color-surface-muted);
+  color: var(--vx-color-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* --stat-tone-line: the decorative border-top accent + dot share ONE mixed-
+   down value (22% - a deliberate, named token rather than a literal
+   sprinkled in two places) so the card's tone reads as decoration, not a
+   saturated block of color; --stat-tone itself stays full-strength for the
+   value text and watermark icon, which need to stay legible. */
+.stat-tone--blue {
+  --stat-tone: var(--vx-color-primary);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-primary) 22%, transparent);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-primary) 8%, transparent);
+}
+.stat-tone--green {
+  --stat-tone: var(--vx-color-success-600);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-success-600) 22%, transparent);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-success-600) 8%, transparent);
+}
+.stat-tone--amber {
+  --stat-tone: var(--vx-color-warning-600);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-warning-600) 22%, transparent);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-warning-600) 8%, transparent);
+}
+.stat-tone--rose {
+  --stat-tone: var(--vx-color-danger);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-danger) 22%, transparent);
+  --stat-tone-soft: color-mix(in srgb, var(--vx-color-danger) 8%, transparent);
 }
 
-/* ------------------------------------------------------------- dashboard --- */
-.screen {
+/* console card (arda alias for the real DS glass-card recipe - see file header) */
+.con-card {
+  background: color-mix(in srgb, var(--vx-color-white) 92%, transparent);
+  border: 1px solid var(--vx-color-border);
+  border-radius: var(--vx-shell-panel-radius);
+  padding: var(--vx-space-2xl);
   display: flex;
   flex-direction: column;
   gap: var(--vx-space-xl);
 }
-.dash-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: var(--vx-space-lg);
-}
-.dash-main,
-.dash-side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-lg);
-  min-width: 0;
-}
-@media (max-width: 1080px) {
-  .dash-cols {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* console card (NOT a DS card name; thin token-only surface) */
-.con-card {
-  background: var(--vx-color-surface);
-  border: 1px solid var(--vx-color-border);
-  border-radius: var(--vx-radius-xl);
-  padding: var(--vx-space-lg);
-  box-shadow: var(--vx-shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--vx-space-md);
-}
 .con-card.no-pad {
   padding: 0;
+  overflow: hidden;
+  gap: 0;
 }
 .con-card-hd {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--vx-space-sm);
+  gap: var(--vx-space-lg);
 }
 .con-card-hd.pad {
-  padding: var(--vx-space-lg) var(--vx-space-lg) 0;
+  padding: var(--vx-space-2xl);
+  border-bottom: 1px solid var(--vx-color-border-muted);
 }
 .con-card-heading {
+  font-family: var(--font-brand);
+  font-size: var(--vx-font-size-md);
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--vx-color-text-strong);
-  font-size: 15px;
 }
 .con-card-sub {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
+}
+.dark .con-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 92%, transparent);
+}
+.dark .stat-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 68%, transparent);
+}
+
+/* platform-module quick-link cards - hand-ported from admin's real
+   .admin-overview-card (icon + title/value + description, links out to the
+   owning page - the "whole platform" summary; full detail lives on that
+   page, not here). */
+.ov-link-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--vx-space-xl);
+}
+.ov-link-card {
+  min-height: 104px;
+  display: flex;
+  gap: var(--vx-space-md);
+  padding: var(--vx-space-xl);
+  border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: color-mix(in srgb, var(--vx-color-white) 72%, transparent);
+  color: var(--vx-color-text-secondary);
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.ov-link-card:hover {
+  border-color: color-mix(in srgb, var(--vx-color-primary) 32%, transparent);
+  transform: translateY(-2px);
+}
+.dark .ov-link-card {
+  background: color-mix(in srgb, var(--vx-color-shell-surface) 72%, transparent);
+}
+.ov-link-card-ico {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
+  background: var(--vx-color-primary-soft);
+  color: var(--vx-color-primary);
+  font-size: var(--vx-font-size-xl);
+}
+.ov-link-card-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vx-space-xs);
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-meta-size, 0.8125rem);
+  line-height: 1.55;
+}
+.ov-link-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vx-space-md);
+}
+.ov-link-card-top strong {
+  color: var(--vx-color-brand-950);
+  font-size: var(--vx-admin-card-title-size, 0.94rem);
+  font-family: var(--font-number);
+}
+.ov-link-card-top small {
+  color: var(--vx-color-primary);
+  font-size: var(--vx-admin-caption-size, 0.75rem);
+  font-weight: 800;
 }
 
 /* pills / tags (not DS-owned names) */
@@ -591,7 +534,7 @@
 .dim-tag {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: var(--vx-radius-md);
   background: var(--vx-color-surface-muted);
   color: var(--vx-color-text-secondary);
 }
@@ -608,13 +551,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .li-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .hbars {
   display: flex;
@@ -628,21 +571,21 @@
   gap: var(--vx-space-sm);
 }
 .hbar-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .hbar-track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
 .hbar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .hbar-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -653,7 +596,7 @@
   flex-wrap: wrap;
 }
 .donut-num {
-  font-size: 20px;
+  font-size: var(--vx-font-size-xl);
   font-weight: 700;
   fill: var(--vx-color-text-strong);
 }
@@ -671,13 +614,13 @@
 .dl-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--vx-space-sm);
+  font-size: var(--vx-admin-caption-size);
 }
 .dl-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .dl-label {
   color: var(--vx-color-text-secondary);
@@ -695,7 +638,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--vx-space-xs);
 }
 .ring-num {
   font-size: 22px;
@@ -703,19 +646,19 @@
   fill: var(--vx-color-text-strong);
 }
 .ring-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .qm-body {
   display: flex;
   align-items: center;
-  gap: var(--vx-space-lg);
+  gap: var(--vx-space-xl);
   flex-wrap: wrap;
 }
 .qm-dims {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   flex: 1;
   min-width: 160px;
 }
@@ -723,15 +666,15 @@
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) 32px;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
 }
 .qm-dim-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .qm-dim-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
@@ -741,7 +684,7 @@
   background: var(--vx-color-primary);
 }
 .qm-dim-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -767,7 +710,7 @@
 .cell-asset-name {
   font-weight: 600;
   color: var(--vx-color-text-strong);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
 }
 .cell-asset-code {
   font-size: 11px;
@@ -805,7 +748,7 @@
   flex-shrink: 0;
 }
 .alert-title {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }
@@ -830,11 +773,11 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-secondary);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -882,7 +825,7 @@
   flex: 1;
 }
 .fb-count {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .chip {
@@ -894,19 +837,19 @@
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-secondary);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 .dept-tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .dept-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 
 /* asset cards */
@@ -918,7 +861,7 @@
 .asset-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-radius: var(--vx-radius-xl);
@@ -943,19 +886,19 @@
   width: 36px;
   height: 36px;
   border-radius: var(--vx-radius-md);
-  font-size: 18px;
+  font-size: var(--vx-font-size-lg);
 }
 .ac-name {
   font-weight: 700;
   color: var(--vx-color-text-strong);
 }
 .ac-code {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   font-family: var(--vx-font-mono);
 }
 .ac-desc {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   line-height: 1.5;
   display: -webkit-box;
@@ -971,14 +914,14 @@
   display: flex;
   align-items: center;
   gap: var(--vx-space-md);
-  padding-top: 8px;
+  padding-top: var(--vx-space-sm);
   border-top: 1px solid var(--vx-color-border-muted);
 }
 .ac-stat {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .ac-q {
@@ -991,7 +934,7 @@
 }
 .mono {
   font-family: var(--vx-font-mono);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 
 /* ----------------------------------------------------------- asset detail --- */
@@ -1093,10 +1036,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   color: var(--vx-color-text-secondary);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 .pk-tag {
   margin-left: 6px;
@@ -1180,23 +1123,23 @@
 .pass-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   min-width: 120px;
 }
 .pass-track {
   flex: 1;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
 .pass-track span {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .pass-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   font-variant-numeric: tabular-nums;
   min-width: 42px;
@@ -1216,7 +1159,7 @@
 .level-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--vx-space-xs);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-top: 3px solid var(--vx-color-border);
@@ -1231,21 +1174,21 @@
 .lc-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .lc-name {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }
 .lc-val {
-  font-size: 20px;
+  font-size: var(--vx-font-size-xl);
   font-weight: 700;
   color: var(--vx-color-text-strong);
   font-variant-numeric: tabular-nums;
 }
 .lc-sub {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 
@@ -1258,7 +1201,7 @@
 .service-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-radius: var(--vx-radius-xl);
@@ -1275,7 +1218,7 @@
   font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--vx-radius-sm);
   border: 1px solid currentColor;
 }
 .sc-name {
@@ -1285,11 +1228,11 @@
 }
 .sc-path {
   font-family: var(--vx-font-mono);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .sc-desc {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   line-height: 1.5;
 }
@@ -1303,7 +1246,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--vx-space-xs);
-  padding-top: 8px;
+  padding-top: var(--vx-space-sm);
   border-top: 1px solid var(--vx-color-border-muted);
 }
 .sc-stats > div {
@@ -1312,7 +1255,7 @@
   gap: 2px;
 }
 .scs-val {
-  font-size: 14px;
+  font-size: var(--vx-font-size-sm);
   font-weight: 700;
   color: var(--vx-color-text-strong);
   font-variant-numeric: tabular-nums;
@@ -1330,7 +1273,7 @@
   flex-wrap: wrap;
 }
 .lt-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .lt-chip {
@@ -1342,7 +1285,7 @@
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-strong);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
 }
 .lt-legend {
   display: inline-flex;
@@ -1354,13 +1297,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .ltl-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .lineage-canvas {
   position: relative;
@@ -1374,7 +1317,7 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: 8px 10px;
   border-radius: var(--vx-radius-lg);
   border: 1px solid var(--vx-color-border);
@@ -1398,7 +1341,7 @@
   min-width: 0;
 }
 .ln-label {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
   white-space: nowrap;
@@ -1426,7 +1369,7 @@
 .info-chip i,
 .info-chip svg {
   color: var(--vx-color-text-muted);
-  font-size: 18px;
+  font-size: var(--vx-font-size-lg);
 }
 .info-chip.warn {
   border-color: var(--vx-color-warning-surface);
@@ -1437,7 +1380,7 @@
   color: var(--vx-color-text-muted);
 }
 .ic-value {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }
@@ -1446,30 +1389,35 @@
  * Varda assistant (right-docked AI panel) + header entry
  * ============================================================ */
 .vxh-agent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid transparent;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--vx-radius-full);
   background: transparent;
   color: var(--vx-color-brand-600);
-  font-size: 18px;
+  font-size: 32px;
   cursor: pointer;
+  transition: opacity 150ms;
 }
 .vxh-agent:hover {
-  background: color-mix(in srgb, var(--vx-color-brand-600) 12%, transparent);
+  opacity: 0.86;
 }
 .vxh-agent.is-active {
-  background: color-mix(in srgb, var(--vx-color-brand-600) 16%, transparent);
+  background: transparent;
+  opacity: 0.86;
 }
 
-/* page makes room for the docked panel (narrow/wide); full overlays */
-.app-page.vela-open.vela-narrow {
+/* page makes room for the docked panel (narrow/wide); full overlays.
+   Arda-specific: the imported shell-template docks .assistant as a flex
+   sibling inside .app-body instead, but arda renders it as a fixed overlay
+   outside .app-body (see shell.tsx) - out of scope to restructure today. */
+.app.vela-open.vela-narrow {
   padding-right: 380px;
 }
-.app-page.vela-open.vela-wide {
+.app.vela-open.vela-wide {
   padding-right: 560px;
 }
 
@@ -1703,8 +1651,8 @@
 }
 
 @media (max-width: 960px) {
-  .app-page.vela-open.vela-narrow,
-  .app-page.vela-open.vela-wide {
+  .app.vela-open.vela-narrow,
+  .app.vela-open.vela-wide {
     padding-right: 0;
   }
   .assistant,
@@ -1739,6 +1687,13 @@
   color: var(--vx-color-text-strong);
   box-shadow: var(--vx-shadow-sm);
 }
+/* period switch: filled-blue active pill (admin.vxture.com reference,
+   "近30天" tab), not the neutral active state other seg-tabs use. */
+.period-switch .seg.active {
+  background: var(--vx-color-primary);
+  color: var(--vx-color-white);
+  box-shadow: none;
+}
 .row-actions {
   display: inline-flex;
   gap: 4px;
@@ -1762,68 +1717,84 @@
 }
 
 /* ============================================================
- * User-panel preferences block (language + theme/density/font)
+ * User-panel preferences block (language + theme/density/font) - values-
+ * exact port of DS `shell-template/user-panel.css` (.vxh-prefs / .vxh-seg).
  * ============================================================ */
 .vxh-prefs {
   display: flex;
   flex-direction: column;
-  gap: var(--vx-space-xs);
-  padding: var(--vx-space-xs) var(--vx-space-sm);
+  gap: 9px;
 }
 .vxh-prefs-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--vx-color-text-muted);
-  margin-bottom: 2px;
+  font: 500 var(--vx-admin-shell-item-size) var(--font-cjk);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--vx-color-text-disabled);
+  padding: 0 0 4px 10px;
 }
 .vxh-pref-row {
   display: flex;
   align-items: center;
-  gap: var(--vx-space-sm);
-  font-size: 13px;
-  color: var(--vx-color-text-strong);
+  gap: 12px;
+  padding: 0 2px 0 10px;
 }
 .vxh-pref-ico {
-  font-size: 16px;
-  color: var(--vx-color-text-secondary);
+  font-size: var(--vx-icon-size-sm, 1rem);
+  color: var(--vx-color-text-muted);
+  flex-shrink: 0;
+  width: var(--vx-icon-size-sm, 1rem);
+  text-align: center;
 }
 .vxh-pref-label {
   flex: none;
+  font-size: 13px;
+  color: var(--vx-color-text-strong);
 }
 .vxh-pref-select {
-  margin-left: auto;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--vx-color-border);
-  border-radius: var(--vx-radius-md);
+  border-radius: var(--vx-radius-lg);
   background: var(--vx-color-surface);
-  color: var(--vx-color-text-strong);
-  font: inherit;
-  font-size: 12px;
-  padding: 3px 6px;
+  font: var(--vx-admin-shell-caption-size) var(--font-cjk);
+  color: var(--vx-color-text-primary);
+  cursor: pointer;
+  outline: none;
+}
+.vxh-pref-select:focus {
+  border-color: color-mix(in srgb, var(--vx-color-primary) 56%, transparent);
 }
 .vxh-seg {
   display: inline-flex;
   gap: 2px;
-  padding: 2px;
-  border-radius: var(--vx-radius-md);
+  padding: 3px;
   background: var(--vx-color-surface-muted);
+  border: 1px solid var(--vx-color-border);
+  border-radius: var(--vx-radius-lg);
 }
 .vxh-seg.full {
-  margin-left: auto;
+  flex: 1;
+  min-width: 0;
+}
+.vxh-seg.full button {
+  flex: 1;
+  text-align: center;
 }
 .vxh-seg button {
-  padding: 3px 10px;
+  padding: 6px 10px;
   border: none;
-  border-radius: var(--vx-radius-sm);
+  border-radius: var(--vx-radius-md);
   background: transparent;
   color: var(--vx-color-text-secondary);
-  font: inherit;
-  font-size: 12px;
+  font: 500 var(--vx-admin-shell-caption-size) var(--font-cjk);
   cursor: pointer;
+  transition: background 140ms, color 140ms;
 }
 .vxh-seg button.on {
   background: var(--vx-color-surface);
-  color: var(--vx-color-text-strong);
-  box-shadow: var(--vx-shadow-sm);
+  color: var(--vx-color-primary);
+  font-weight: 600;
+  box-shadow: var(--vx-shadow-xs);
 }

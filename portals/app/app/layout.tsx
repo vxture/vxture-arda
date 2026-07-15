@@ -4,6 +4,7 @@ import { Funnel_Display } from "next/font/google";
 import { preferenceBootstrapScript } from "@arda/shared/preferences";
 import "@vxture/design-system/styles/globals.css";
 import "@vxture/design-system/styles/brands/vxture.css";
+import "@vxture/design-system/styles/shell-template.css";
 import "./globals.css";
 import { Providers } from "@arda/shared/providers";
 import { I18nProvider } from "@arda/shared/i18n";

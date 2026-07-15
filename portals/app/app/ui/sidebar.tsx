@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "./phosphor-icon";
-import { NAV, NAV_FLAT, BOARDS, PLAN_TAGS } from "./nav-config";
+import { BOARD_NAV, NAV_FLAT, BOARDS, PLAN_TAGS } from "./nav-config";
 import { canUseFeature, minTierFor } from "../entitlement/capability";
 import { SCREEN_FEATURES } from "../entitlement/screen-features";
 import { useSubscription } from "../entitlement/gate";
@@ -17,7 +17,7 @@ interface SidebarProps {
   isAdmin?: boolean;
 }
 
-/** Grouped, collapsible left navigation with a compliance footer card. */
+/** Grouped, collapsible left navigation. No footer card - owner ruling. */
 export function Sidebar({ activeKey, onSelect, collapsed, onToggle, isAdmin = false }: SidebarProps) {
   const tn = useTranslations("nav");
   const tg = useTranslations("navGroup");
@@ -39,21 +39,53 @@ export function Sidebar({ activeKey, onSelect, collapsed, onToggle, isAdmin = fa
   const activeBoard = BOARDS.find((b) => b.screens.includes(activeKey)) ?? BOARDS[0];
   const toggleSection = (g: string) => setClosed((s) => ({ ...s, [g]: !s[g] }));
 
+  // Group-collapse-all affordance (parity with the vxture admin/console
+  // shell): only worth showing once the nav has enough items to make
+  // collapsing groups a real navigation aid.
+  const domainNav = BOARD_NAV[activeBoard.id] ?? [];
+  const visibleGroups = domainNav.filter((g) => !g.adminOnly || isAdmin);
+  const totalItems = visibleGroups.flatMap((g) => g.items).length;
+  const showCollapseAll = totalItems > 10;
+  const allClosed = visibleGroups.every((g) => closed[g.key]);
+  const toggleAll = () => {
+    const next = !allClosed;
+    const m: Record<string, boolean> = {};
+    visibleGroups.forEach((g) => {
+      m[g.key] = next;
+    });
+    setClosed(m);
+  };
+
   return (
     <aside className={"sidebar" + (collapsed ? " is-collapsed" : "")}>
       <div className="side-rail">
         <button
           className="rail-toggle"
           onClick={onToggle}
+          title={collapsed ? ts("navExpand") : ts("navCollapse")}
           aria-label={collapsed ? ts("navExpand") : ts("navCollapse")}
         >
           <PIcon name={collapsed ? "text-indent" : "text-outdent"} />
         </button>
-        {!collapsed && <span className="side-domain">{tb(activeBoard.id)}</span>}
+        {!collapsed && (
+          <span className="side-domain" title={tb(activeBoard.id)}>
+            {tb(activeBoard.id)}
+          </span>
+        )}
+        {!collapsed && showCollapseAll && (
+          <button
+            className="side-collapse-all"
+            onClick={toggleAll}
+            title={allClosed ? ts("navExpandAllGroups") : ts("navCollapseAllGroups")}
+            aria-label={allClosed ? ts("navExpandAllGroups") : ts("navCollapseAllGroups")}
+          >
+            <PIcon name={allClosed ? "caret-double-down" : "caret-double-up"} />
+          </button>
+        )}
       </div>
 
       <nav className="side-nav" aria-label={ts("nav")}>
-        {NAV.filter((g) => !g.adminOnly || isAdmin).map((group) => {
+        {visibleGroups.map((group) => {
           const isClosed = !!closed[group.key];
           return (
             <section key={group.key} className="nav-section">
@@ -89,19 +121,6 @@ export function Sidebar({ activeKey, onSelect, collapsed, onToggle, isAdmin = fa
           );
         })}
       </nav>
-
-      {!collapsed && (
-        <div className="side-foot-card">
-          <div className="sfc-top">
-            <PIcon name="shield-check" weight="fill" />
-            <span>{ts("complianceTitle")}</span>
-          </div>
-          <div className="sfc-bar">
-            <span style={{ width: "96%" }} />
-          </div>
-          <div className="sfc-meta">{ts("complianceMeta")}</div>
-        </div>
-      )}
     </aside>
   );
 }

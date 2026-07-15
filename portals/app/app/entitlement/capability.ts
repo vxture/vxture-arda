@@ -44,6 +44,7 @@ export const FEATURE_KEYS = [
   "arda.governance.classification",
   "arda.governance.lineage",
   "arda.governance.quality_rules",
+  "arda.governance.workbench", // future - org/process governance domain (arda-biz-105)
   // services
   "arda.services.publish_api",
   "arda.services.data_products",
@@ -51,6 +52,10 @@ export const FEATURE_KEYS = [
   // admin
   "arda.admin.api_keys",
   "arda.admin.audit_log",
+  // planning / architecture / operations (arda-biz-105: new L1 domains, all future)
+  "arda.planning.workbench", // future
+  "arda.architecture.workbench", // future
+  "arda.operations.dashboard", // future
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -62,6 +67,10 @@ export const FUTURE_FEATURE_KEYS: ReadonlySet<FeatureKey> = new Set([
   "arda.integration.pipelines",
   "arda.integration.scheduling",
   "arda.integration.realtime",
+  "arda.governance.workbench",
+  "arda.planning.workbench",
+  "arda.architecture.workbench",
+  "arda.operations.dashboard",
 ]);
 
 // ---- The matrix (cumulative by construction) ---------------------------------

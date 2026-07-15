@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import {
   DataTable,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   Button,
   type DataTableColumn,
@@ -12,6 +11,7 @@ import {
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon, type PIconName } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { AreaChart, Radar } from "../../ui/charts";
 import { LEVEL_TONE, passColor, QUALITY_DIMS, SCORE_TREND } from "./seed";
 import { runWorkspaceChecks, type RunChecksResult } from "./actions";
@@ -112,11 +112,12 @@ export function QualityList({
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="seal-check"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="funnel" /> {t("rules")}

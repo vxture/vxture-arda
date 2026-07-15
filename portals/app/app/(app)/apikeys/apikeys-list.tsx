@@ -14,13 +14,13 @@ import {
   Input,
   Label,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { createApiKey, revokeApiKey, type CreateKeyResult } from "./actions";
 import type { ApiKeyMetrics, ApiKeyView } from "./data";
 
@@ -122,11 +122,12 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="lock-key"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <Button onClick={() => setCreateOpen(true)}>
             <PIcon name="plus" /> {t("create.button")}
           </Button>

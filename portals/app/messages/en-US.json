@@ -7,8 +7,8 @@
     "nav": "Primary navigation",
     "navExpand": "Expand navigation",
     "navCollapse": "Collapse navigation",
-    "complianceTitle": "Compliance posture",
-    "complianceMeta": "Classification coverage 96.8%"
+    "navExpandAllGroups": "Expand all groups",
+    "navCollapseAllGroups": "Collapse all groups"
   },
   "header": {
     "launcher": "Modules",
@@ -56,23 +56,52 @@
     "authorized": "Current workspace - authorized"
   },
   "board": {
-    "asset": "Data Assets",
-    "assetDesc": "Catalog & asset inventory",
-    "integrate": "Integration",
-    "integrateDesc": "Ingestion & data development",
-    "govern": "Governance",
-    "governDesc": "Standards / quality / security",
-    "analyze": "Analytics",
-    "analyzeDesc": "Lineage & insights",
-    "serve": "Data Services",
-    "serveDesc": "API supply & sharing",
+    "overview": "Overview",
+    "overviewDesc": "Global cockpit",
+    "planning": "Planning",
+    "planningDesc": "Strategy, framework & maturity assessment",
+    "architecture": "Architecture",
+    "architectureDesc": "Enterprise architecture, data models & metrics",
+    "standards": "Standards",
+    "standardsDesc": "Standards catalog & data dictionary",
+    "metadata": "Metadata",
+    "metadataDesc": "Lineage & impact analysis",
+    "integration": "Integration",
+    "integrationDesc": "Connectors & sync ingestion",
+    "engineering": "Engineering",
+    "engineeringDesc": "Pipelines, scheduling & run monitoring",
+    "governance": "Governance",
+    "governanceDesc": "Governance org, process & issue management",
+    "quality": "Quality",
+    "qualityDesc": "Quality rules & scoring",
+    "masterdata": "Master Data",
+    "masterdataDesc": "Golden records & MDM",
+    "assets": "Data Assets",
+    "assetsDesc": "Catalog & asset inventory",
+    "services": "Data Services",
+    "servicesDesc": "API supply & sharing",
+    "security": "Security",
+    "securityDesc": "Classification, masking & access control",
+    "operations": "Operations",
+    "operationsDesc": "Runtime monitoring & operations analytics",
     "admin": "Administration",
     "adminDesc": "API keys & audit"
   },
   "navGroup": {
     "overview": "Overview",
+    "planning": "Planning",
+    "architecture": "Architecture",
+    "standards": "Standards",
+    "metadata": "Metadata",
+    "integration": "Integration",
+    "engineering": "Engineering",
+    "governance": "Governance",
+    "quality": "Quality",
+    "masterdata": "Master Data",
     "assets": "Asset Governance",
-    "sharing": "Shared Apps",
+    "services": "Data Services",
+    "security": "Security",
+    "operations": "Operations",
     "admin": "Administration"
   },
   "nav": {
@@ -80,14 +109,19 @@
     "catalog": "Asset Catalog",
     "standards": "Data Standards",
     "quality": "Data Quality",
-    "lineage": "Data Lineage",
+    "lineage": "Lineage Analysis",
     "security": "Data Security",
     "service": "Data Services",
     "etl": "Data Development",
     "apikeys": "API Keys",
     "audit": "Audit Log",
     "sources": "Data Sources",
-    "glossary": "Glossary"
+    "glossary": "Glossary",
+    "planning": "Planning",
+    "architecture": "Architecture",
+    "governance": "Governance Workbench",
+    "masterdata": "Master Data",
+    "operations": "Operations Monitoring"
   },
   "user": {
     "menu": "User menu",
@@ -120,30 +154,57 @@
     "n4Meta": "Data standards - STD-005 - today"
   },
   "dashboard": {
-    "eyebrow": "Intelligent Data Platform",
-    "title": "Data Asset Cockpit",
+    "title": "Data Overview",
     "description": "A one-screen overview of data assets, quality, and sharing posture.",
-    "range": "Last 30 days",
     "refresh": "Refresh",
     "export": "Export report",
+    "viewDetails": "View details",
+    "noData": "No data yet",
+    "period": {
+      "label": "Period",
+      "month": "This month",
+      "quarter": "This quarter",
+      "year": "This year",
+      "all": "All time"
+    },
     "metrics": {
-      "assets": "Total Data Assets",
-      "assetsTrend": "+667 this month",
-      "volume": "Ingested Volume",
-      "volumeTrend": "+3.4% MoM",
-      "calls": "Service Calls Today",
-      "callsTrend": "+7.6% MoM",
-      "compliance": "Classification Compliance",
-      "complianceTrend": "+0.4% MoM"
+      "assets": "Datasets",
+      "capacity": "Total Capacity",
+      "services": "Services",
+      "quality": "Data Quality",
+      "newInPeriod": "+{count} {period}",
+      "unitCount": "items",
+      "capacityNew": "+{value} this period",
+      "qualityRuns": "{count} scans this period"
+    },
+    "section": {
+      "metricsTitle": "Core Metrics",
+      "metricsSub": "Platform-wide totals: capacity, datasets, services, quality",
+      "assetsTitle": "Data Assets",
+      "assetsSub": "Growth trend and the most recently updated assets",
+      "servicesTitle": "Data Services",
+      "servicesSub": "{running} running of {total} published APIs",
+      "standardsTitle": "Data Standards",
+      "standardsSub": "{published} published of {total} standards",
+      "securityTitle": "Data Security",
+      "securitySub": "Active API keys and enabled policies",
+      "securityApiKeys": "Active API Keys",
+      "securityPolicies": "Enabled Policies",
+      "aggTitle": "Data Aggregation",
+      "aggSub": "Where data comes from: business, team, and external contribution",
+      "aggBusiness": "Business Contribution",
+      "aggBusinessSub": "Datasets by business domain",
+      "aggTeam": "Team Contribution",
+      "aggTeamSub": "Datasets by owning team",
+      "aggExternal": "External Access",
+      "aggExternalSub": "{connected} of {total} sources connected"
     },
     "growthTitle": "Data Asset Growth",
     "growthSub": "Tables ingested over the last 6 months",
     "growthLegend": "Tables",
-    "teamsTitle": "Contribution by Team",
-    "teamsSub": "By tables ingested - Top 6",
-    "domainTitle": "Domain Distribution",
     "domainCaption": "tables",
     "qualityTitle": "Overall Data Quality",
+    "qualitySub": "6-dimension quality scan, updated daily",
     "qualityRating": "Excellent",
     "dim": {
       "completeness": "Completeness",
@@ -153,10 +214,8 @@
       "uniqueness": "Uniqueness",
       "validity": "Validity"
     },
-    "topTitle": "Popular Data Assets",
-    "topSub": "Ranked by subscriptions and call volume",
-    "topLink": "Open catalog",
-    "noData": "No data yet",
+    "topTitle": "Recently Updated Assets",
+    "topSub": "Ranked by last update",
     "team": {
       "platform": "Data Platform",
       "analytics": "Analytics",
@@ -187,6 +246,7 @@
       "web": "Web"
     },
     "alertsTitle": "Governance Alerts",
+    "alertsSub": "{count} items need review",
     "alertsCount": "4 pending",
     "alert": {
       "a1Title": "Pipeline JOB-1006 failed",
@@ -200,7 +260,6 @@
     }
   },
   "catalog": {
-    "eyebrow": "Asset Governance",
     "title": "Asset Catalog",
     "description": "Search, browse, and request access to catalogued data assets across every domain.",
     "register": "Register source",
@@ -330,7 +389,6 @@
     "removeStandard": "Unlink standard {name}"
   },
   "standards": {
-    "eyebrow": "Asset Governance",
     "title": "Data Standards",
     "description": "Manage data elements, code sets, and naming conventions - the shared vocabulary of the platform.",
     "docs": "Spec docs",
@@ -365,7 +423,6 @@
     }
   },
   "quality": {
-    "eyebrow": "Asset Governance",
     "title": "Data Quality",
     "description": "Audit rules, issue distribution, and remediation tracking across the six quality dimensions.",
     "rules": "Rule library",
@@ -423,7 +480,6 @@
     }
   },
   "lineage": {
-    "eyebrow": "Asset Governance",
     "title": "Data Lineage",
     "description": "Trace data from source to application across every transform, hop, and downstream impact.",
     "impact": "Impact analysis",
@@ -473,7 +529,6 @@
     }
   },
   "security": {
-    "eyebrow": "Asset Governance",
     "title": "Data Security",
     "description": "Unified control of classification, masking policies, and sharing authorization.",
     "template": "Classification template",
@@ -511,7 +566,6 @@
     }
   },
   "service": {
-    "eyebrow": "Shared Apps",
     "title": "Data Services",
     "description": "Package data assets as standard APIs and serve them to teams and applications.",
     "docs": "API docs",
@@ -562,7 +616,6 @@
     }
   },
   "etl": {
-    "eyebrow": "Sharing & apps",
     "title": "Data development",
     "description": "Orchestrate and operate batch and streaming jobs for ingest, cleansing and fusion",
     "orchestrate": "Orchestrate",
@@ -640,6 +693,60 @@
     "title": "Under construction",
     "description": "This module is under construction. Stay tuned."
   },
+  "domainRoadmap": {
+    "planning": {
+      "strategy": "Data Strategy",
+      "managementSystem": "Data Management System",
+      "maturityAssessment": "Maturity Assessment",
+      "governanceOrg": "Governance Organization",
+      "roadmap": "Data Roadmap",
+      "policySystem": "Policy System",
+      "standardsOfPractice": "Management Standards",
+      "scorecard": "Scorecard"
+    },
+    "architecture": {
+      "enterpriseArchitecture": "Enterprise Data Architecture",
+      "businessArchitecture": "Business Architecture",
+      "subjectAreas": "Subject Areas",
+      "conceptualModel": "Conceptual Model",
+      "logicalModel": "Logical Model",
+      "physicalModel": "Physical Model",
+      "metricSystem": "Metric System",
+      "dataFlowArchitecture": "Data Flow Architecture"
+    },
+    "governance": {
+      "governanceOrg": "Governance Organization",
+      "dataOwners": "Data Owners",
+      "approvalWorkflow": "Approval Workflow",
+      "policySystem": "Policy & Process",
+      "classificationRules": "Classification Rules",
+      "lifecyclePolicy": "Lifecycle Policy",
+      "issueManagement": "Issue Management & Remediation",
+      "governanceScorecard": "Governance Scorecard"
+    },
+    "masterdata": {
+      "mdmEngine": "MDM Engine",
+      "referenceData": "Reference Data",
+      "codeLists": "Code Lists",
+      "masterDataModel": "Master Data Model",
+      "versioning": "Versioning",
+      "publishing": "Publishing",
+      "syncStatus": "Sync Status",
+      "conflictResolution": "Conflict Resolution",
+      "dataClaiming": "Data Claiming"
+    },
+    "operations": {
+      "runtimeMonitoring": "Runtime Monitoring",
+      "resourceMonitoring": "Resource Monitoring",
+      "taskMonitoring": "Task Monitoring",
+      "logCenter": "Log Center",
+      "costAnalysis": "Cost Analysis",
+      "dataValueInsight": "Data Value Insight",
+      "assetHeatmap": "Asset Heatmap",
+      "serviceStats": "Service Stats",
+      "operationsReport": "Operations Report"
+    }
+  },
   "entitlement": {
     "title": "An active subscription is required",
     "description": "Your workspace does not have an active Arda subscription. Upgrade to access the data assets workspace.",
@@ -658,7 +765,6 @@
     "description": "This area is limited to workspace owners and admins. Ask a workspace admin to grant you the role."
   },
   "apikeys": {
-    "eyebrow": "Administration",
     "title": "API Keys",
     "description": "Keys that authenticate external consumers of your data services. Secrets are stored as hashes; revocation is immediate and audited.",
     "metrics": {
@@ -700,7 +806,6 @@
     }
   },
   "audit": {
-    "eyebrow": "Administration",
     "title": "Audit Log",
     "description": "Workspace activity and platform commands, newest first. Retention follows your plan.",
     "metrics": {
@@ -720,7 +825,6 @@
     "emptyDesc": "Sensitive operations and platform commands are recorded here."
   },
   "sources": {
-    "eyebrow": "Integration",
     "title": "Data Sources",
     "description": "Register external systems for cataloging. Credentials are sealed with app-layer encryption before they touch the database.",
     "metrics": {
@@ -809,7 +913,6 @@
     "descriptionUntil": "The platform has marked this workspace for removal. Data is retained until {date}; re-activating the workspace on the platform before then restores access."
   },
   "glossary": {
-    "eyebrow": "Assets",
     "title": "Business Glossary",
     "description": "Shared vocabulary for your data: workspace terms you curate plus the platform reference glossary (read-only).",
     "col": {

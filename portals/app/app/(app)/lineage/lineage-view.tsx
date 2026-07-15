@@ -14,10 +14,10 @@ import {
   Input,
   Label,
   NativeSelect,
-  PageHeader,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon, type PIconName } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { TYPE_META, type NodeType } from "./seed";
 import { addLineageEdge, type AddEdgeResult } from "./actions";
 import type { LineageView } from "./data";
@@ -82,11 +82,12 @@ export function LineageCanvas({ view, isAdmin = false }: { view: LineageView; is
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="tree-structure"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           isAdmin ? (
             <Button onClick={() => setLinkOpen(true)}>
               <PIcon name="git-pull-request" /> {t("link.button")}

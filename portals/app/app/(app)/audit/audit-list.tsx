@@ -5,13 +5,13 @@ import {
   DataTable,
   EmptyState,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import type { AuditLogView, AuditMetrics } from "./data";
 
 export function AuditList({ entries, metrics }: { entries: AuditLogView[]; metrics: AuditMetrics }) {
@@ -44,7 +44,7 @@ export function AuditList({ entries, metrics }: { entries: AuditLogView[]; metri
 
   return (
     <div className="screen">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
+      <SectionHeading level="page" icon="list-checks" title={t("title")} description={t("description")} />
 
       <MetricGrid items={metricItems} />
 

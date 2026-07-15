@@ -20,6 +20,15 @@ export const SCREEN_FEATURES: Partial<Record<string, FeatureKey>> = {
   sources: "arda.integration.sources_basic",
   apikeys: "arda.admin.api_keys",
   audit: "arda.admin.audit_log",
+  // arda-biz-105 new L1 domains (round 1: placeholder shells)
+  masterdata: "arda.governance.master_data", // already a real PRO key, only the screen was missing
+  planning: "arda.planning.workbench", // future - renders "coming soon", not an upgrade prompt
+  architecture: "arda.architecture.workbench", // future
+  governance: "arda.governance.workbench", // future
+  operations: "arda.operations.dashboard", // future
+  // etl (data engineering) intentionally left ungated - unchanged from its
+  // pre-existing behavior; it is only moving nav domains this round, not
+  // being newly gated (avoid an unintended tier regression).
 };
 
 /** Screens additionally gated by workspace role (owner/admin). Role-locked

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Drawer, ShellLegalFooter } from "@vxture/design-system";
+import { Drawer } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
-import { ardaBrandCore } from "@arda/shared/brand";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { Assistant, type AssistantMode } from "./assistant";
@@ -20,17 +19,17 @@ const NOTIFS: Array<{ icon: PIconName; tone: string; key: string; route: string 
 ];
 
 /**
- * Console chrome: a fixed header (launcher + brand + search + actions + user
- * menu), a grouped collapsible left nav, the content column, and the DS legal
- * footer. Header/sidebar are arda-local compositions over DS tokens; the footer
- * and notifications drawer are DS components.
+ * Console chrome: an in-flow header (launcher + brand + search + actions +
+ * user menu), a grouped collapsible left nav, and a single scrolling content
+ * column - a values-exact port of the vxture admin/console shared shell (see
+ * globals.css header comment). Header/sidebar are arda-local compositions
+ * over DS tokens; the notifications drawer is a DS component. No page
+ * footer - owner ruling, dropped app-wide.
  */
 export function Shell({ children, isAdmin = false }: { children: ReactNode; isAdmin?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const ts = useTranslations("shell");
   const tnotif = useTranslations("notif");
-  const [isScrolled, setIsScrolled] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -53,45 +52,33 @@ export function Shell({ children, isAdmin = false }: { children: ReactNode; isAd
     setAssistantMode("narrow");
   };
 
-  useEffect(() => {
-    const update = () => setIsScrolled(window.scrollY > 50);
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
-  }, []);
-
   const activeKey = useMemo(() => (pathname ?? "/").split("/").filter(Boolean)[0] ?? "dashboard", [pathname]);
 
-  const rootClass =
-    "app-page" + (assistantOpen ? " vela-open vela-" + assistantMode : "");
+  const rootClass = "app" + (assistantOpen ? " vela-open vela-" + assistantMode : "");
 
   return (
     <div id="arda-page-root" className={rootClass}>
-      <header className={`app-header${isScrolled ? " is-scrolled" : ""}`}>
-        <div className="app-header-inner">
-          <Header
-            activeKey={activeKey}
-            onSelect={(route) => router.push(route)}
-            onOpenNotifications={() => setNotifOpen(true)}
-            onToggleAssistant={() => setAssistantOpen((o) => !o)}
-            assistantOpen={assistantOpen}
-            brandPlan={subscription?.tier ?? undefined}
-            isAdmin={isAdmin}
-          />
-        </div>
-      </header>
+      <Header
+        activeKey={activeKey}
+        onSelect={(route) => router.push(route)}
+        onOpenNotifications={() => setNotifOpen(true)}
+        onToggleAssistant={() => setAssistantOpen((o) => !o)}
+        assistantOpen={assistantOpen}
+        brandPlan={subscription?.tier ?? undefined}
+        isAdmin={isAdmin}
+      />
 
       <div className="app-body">
-        <aside className="app-sidebar" aria-label={ts("nav")}>
-          <Sidebar
-            activeKey={activeKey}
-            onSelect={(route) => router.push(route)}
-            collapsed={collapsed}
-            onToggle={() => setCollapsed((c) => !c)}
-            isAdmin={isAdmin}
-          />
-        </aside>
-        <main className="app-main">{children}</main>
+        <Sidebar
+          activeKey={activeKey}
+          onSelect={(route) => router.push(route)}
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((c) => !c)}
+          isAdmin={isAdmin}
+        />
+        <main className="content-scroll">
+          <div className="content-inner">{children}</div>
+        </main>
       </div>
 
       {assistantOpen && (
@@ -102,13 +89,6 @@ export function Shell({ children, isAdmin = false }: { children: ReactNode; isAd
           onToggleFull={toggleAssistantFull}
         />
       )}
-
-      <ShellLegalFooter
-        className="app-footer"
-        innerClassName="app-footer-inner"
-        copyright={ardaBrandCore.copyright}
-        links={ardaBrandCore.legalLinks.map(([label, href]) => ({ label, href }))}
-      />
 
       <Drawer open={notifOpen} onClose={() => setNotifOpen(false)} side="right" title={tnotif("title")}>
         <div className="alert-list">

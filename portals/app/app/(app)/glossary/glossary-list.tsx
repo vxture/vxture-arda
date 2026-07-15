@@ -13,13 +13,13 @@ import {
   EmptyState,
   Input,
   Label,
-  PageHeader,
   StatusBadge,
   Textarea,
   type DataTableColumn,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { createGlossaryTerm, type CreateTermResult } from "./actions";
 import type { GlossaryTermView } from "./data";
 
@@ -67,11 +67,12 @@ export function GlossaryList({ terms, isAdmin = false }: { terms: GlossaryTermVi
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="book-open"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           isAdmin ? (
             <Button onClick={() => setOpen(true)}>
               <PIcon name="plus" /> {t("newTerm")}

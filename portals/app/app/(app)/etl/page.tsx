@@ -5,13 +5,13 @@ import {
   Button,
   DataTable,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { PIPELINES, STATUS_META, type PipelineRow } from "./seed";
 
 type SegKey = "all" | "running" | "issues";
@@ -73,11 +73,12 @@ export default function EtlPage() {
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="flow-arrow"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="flow-arrow" /> {t("orchestrate")}

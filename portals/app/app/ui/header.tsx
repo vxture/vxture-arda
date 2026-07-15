@@ -98,7 +98,7 @@ export function Header({
   const lv = USER_LEVELS[level];
 
   return (
-    <div className="vxh">
+    <header className="vxh">
       <div className="vxh-left">
         <div className="vxh-pop-anchor">
           <button
@@ -148,6 +148,12 @@ export function Header({
         </a>
 
         <span className="vxh-divider" aria-hidden="true" />
+
+        {/* Current functional domain (non-interactive), matching the vxture
+            admin shell's .vxh-active-menu position. */}
+        <span className="vxh-active-menu">
+          <span>{tboard(activeBoard.id)}</span>
+        </span>
       </div>
 
       <label className="vxh-search">
@@ -194,7 +200,7 @@ export function Header({
             <div className="vxh-panel vxh-user-panel">
               <div className="vxh-user-head">
                 <span className="vxh-avatar xl">{tu("initial")}</span>
-                <div>
+                <div className="vxh-user-meta">
                   <div className="vxh-user-name">
                     {tu("name")}
                     <span className="vxh-verify">
@@ -203,7 +209,7 @@ export function Header({
                     </span>
                   </div>
                   <div className="vxh-user-contacts">
-                    <span>{tu("email")}</span>
+                    <span className="vxh-user-contact">{tu("email")}</span>
                   </div>
                 </div>
               </div>
@@ -223,7 +229,7 @@ export function Header({
                 </span>
               </div>
 
-              <div className="vxh-divider-row" />
+              <div className="vxh-acct-div" />
 
               <button className="vxh-acct-row">
                 <PIcon name="user" />
@@ -236,7 +242,7 @@ export function Header({
                 <PIcon className="vxh-acct-go" name="caret-right" />
               </button>
 
-              <div className="vxh-divider-row" />
+              <div className="vxh-acct-div" />
 
               <div className="vxh-prefs">
                 <div className="vxh-prefs-title">{th("prefs")}</div>
@@ -290,18 +296,20 @@ export function Header({
                 />
               </div>
 
-              <div className="vxh-divider-row" />
+              <div className="vxh-acct-div" />
 
-              <a className="vxh-menu-item danger" href="/auth/logout">
-                <PIcon name="sign-out" />
-                {tu("signOut")}
-              </a>
+              <div className="vxh-user-actions">
+                <a className="vxh-menu-item danger" href="/auth/logout">
+                  <PIcon name="sign-out" />
+                  {tu("signOut")}
+                </a>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {panel && <div className="vxh-backdrop" onClick={() => setPanel(null)} />}
-    </div>
+    </header>
   );
 }

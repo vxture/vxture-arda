@@ -106,11 +106,16 @@
 | `arda.services.data_products` | v1 | 数据产品 / 对外共享 |
 | `arda.admin.api_keys` | v1 | API key 管理 |
 | `arda.admin.audit_log` | v1 | 查看 / 导出审计日志 |
+| `arda.planning.workbench` | future | 数据规划域占位（战略 / 管理体系 / 成熟度评估等，见 `biz-105` §1） |
+| `arda.architecture.workbench` | future | 数据架构域占位（企业架构 / 数据模型 / 指标体系等） |
+| `arda.governance.workbench` | future | 数据治理域占位（组织 / 责任人 / 审批流程 / 问题管理，与既有 `arda.governance.*` 管控键并存，见下方说明） |
+| `arda.operations.dashboard` | future | 数据运营域占位（运行 / 资源 / 任务监控，运营分析） |
 
 > 已移除：`arda.admin.advanced_security`（SSO / 高级安全属身份层，归平台 / IdP）。
 > 新增（2026-07-13，源自 [`data-160`](arda-data-160-cross-workspace-authorization.md)）：`arda.services.cross_workspace_share`。
 > **档位分配的 SoT = `portals/app/app/entitlement/capability.ts`（能力矩阵，2026-07-13 起）**：本表只维护键目录与语义；每档开放哪些键以代码矩阵为准（free 基线 3 键，starter/pro/business 累进，enterprise 差异在配额而非键）。
 > 新增（2026-07-02，源自业务架构功能设计 `biz-431`/`biz-432`）：`arda.governance.standards`、`arda.governance.master_data`。键由 arda 定义；每档开放与否~~由平台订阅配置下发~~ **由 arda 能力矩阵自持（2026-07-13 修订，见 §1 归属条目）**。
+> 新增（2026-07-15，源自 [`biz-105`](arda-biz-105-capability-map.md)，采纳 DCMM/DAMA 对齐的 15 导航域后补录）：`arda.planning.workbench`、`arda.architecture.workbench`、`arda.governance.workbench`、`arda.operations.dashboard`，均为 `future`（已加入 `capability.ts` 的 `FUTURE_FEATURE_KEYS`，未分配给任何档位）。`arda.governance.workbench` 是"治理组织/流程"这一新导航域的占位键，与既有 `arda.governance.standards/master_data/policies/classification/lineage/quality_rules`（治理域内已上线的管控键）并存，不是替代关系——`governance` group 前缀现在同时承载"已上线的管控能力"与"占位的组织/流程能力"，符合 §1 "多维度可归同一 group、按键区分粒度"的既定原则。数据开发域（`etl` 屏幕）本轮**未新增能力键、维持未门控**，见 `biz-105` §3。
 
 ### 3.2 配额键（数值）
 
@@ -136,16 +141,34 @@
 
 ---
 
-## 4. 导航分区映射（采纳设计 IA）
+## 4. 导航分区映射（2026-07-15 修订：15 导航域，见 `biz-105`）
 
-| 导航分区 | group | v1 屏幕 | 备注 |
+**导航域与门控 group 已解耦**（`biz-105` §0）：`SCREEN_FEATURES` 把屏幕直接映射到
+能力键，不要求"导航域 id"等于"能力键的 group 前缀"。下表的「导航域」是控制台
+15 个功能域看板（`nav-config.ts` 的 `BOARDS`，每个域有自己独立的侧边栏菜单）；
+「门控 group」仍是 §1 定义的 5 个（`assets/integration/governance/services/admin`），**未变**。
+
+| 导航域 | 门控 group | v1 屏幕 | 备注 |
 |---|---|---|---|
-| 概览 | （无门控，恒显） | dashboard | 驾驶舱 |
-| 资产 | assets | catalog（+ 资产详情） | |
-| 治理 | governance | standards, quality, lineage, security | 数据集级 |
-| 服务 | services | service | |
-| 集成 | integration | （etl 等） | **future · 占位** |
-| 管理 | admin | api keys, audit log | |
+| 总览 overview | （无门控，恒显） | dashboard | 驾驶舱 |
+| 数据规划 planning | - | planning | **future · 占位**（新增） |
+| 数据架构 architecture | - | architecture | **future · 占位**（新增） |
+| 数据标准 standards | governance | standards | 原"治理"域拆出 |
+| 元数据 metadata | governance | lineage | 血缘 / 影响分析；原"分析域"并入 |
+| 数据集成 integration | integration | sources | |
+| 数据开发 engineering | - | etl | 未门控（原"集成"域拆出，见 §3.1 说明） |
+| 数据治理 governance | - | governance | **future · 占位**（新增，组织 / 流程，非 §3.1 管控键） |
+| 数据质量 quality | governance | quality | 原"治理"域拆出 |
+| 主数据 masterdata | governance | masterdata | PRO；键早已存在，本轮补屏幕 |
+| 数据资产 assets | assets | catalog（+ 资产详情）, glossary | 业务入口 |
+| 数据服务 services | services | service | |
+| 数据安全 security | governance | security | 原"治理"域拆出 |
+| 数据运营 operations | - | operations | **future · 占位**（新增） |
+| 管理 admin | admin | api keys, audit log | 角色锁定；范围收窄，见 `biz-105` §2 |
+
+完整的域拆分理由、L1/L2/L3 三层模型、生命周期横轴（二级导航，暂缓）与
+Administration 域的平台边界澄清，见 [`biz-105`](arda-biz-105-capability-map.md)；
+`biz-110` 的 §2 五域详解也已同步修订。
 
 ---
 
