@@ -117,7 +117,6 @@ These run in CI as part of `quality-gate`. They can also be run locally.
 | `06-check-deploy-contracts.py` | Deployment invariants: one image, two stacks, no shared state, ASCII-only in contract paths | `static-checks` |
 | `09-check-ds-usage.py --strict` | Enforce `@vxture/design-system` usage; reject raw ad-hoc styling | `static-checks` |
 | `check_yaml.py` | Validate YAML files | `static-checks` |
-| `classify_changes.py` | Path -> image/deployable classifier; used by `release.yml` `detect` job | release detect step |
 | `filter_logs.jq` | jq filter for deployment log parsing (local ops helper) | not in CI |
 
 ---
@@ -126,10 +125,9 @@ These run in CI as part of `quality-gate`. They can also be run locally.
 
 | File | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | PR to develop/main; push to develop | `quality-gate` check (static checks, portal build, secret scan) |
-| `release.yml` | Push to develop or main | detect -> docker-build -> deploy |
-| `promote.yml` | Manual (`gh workflow run`) | Validated fast-forward develop -> main |
-| `build.yml` | Called by release.yml | Build and push `arda-app` image to GHCR + Aliyun ACR |
+| `ci.yml` | PR to main; push to main | `quality-gate` check (static checks, portal build, secret scan) |
+| `deploy.yml` | Push of a `beta-*` or `v*.*.*` tag | detect environment -> docker-build -> deploy |
+| `build.yml` | Called by deploy.yml (`workflow_call`) | Build and push `arda-app` image to GHCR + Aliyun ACR |
 
 See [`50-operations/github-actions.md`](../50-operations/github-actions.md) for full
-CI/CD design and the promotion contract.
+CI/CD design and the tag-based release contract.

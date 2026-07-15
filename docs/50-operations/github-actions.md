@@ -6,17 +6,18 @@
 
 | Workflow | File | Trigger | Purpose |
 |---|---|---|---|
-| CI | `ci.yml` | PR to develop/main; push to develop | `quality-gate` status check |
-| Release | `release.yml` | Push to develop or main | detect -> build -> deploy |
-| Promote | `promote.yml` | Manual (`gh workflow run`) | Validated fast-forward develop -> main |
-| Build | `build.yml` | Called by release.yml | Build and push `arda-app` image |
+| CI | `ci.yml` | PR to main; push to main | `quality-gate` status check |
+| Deploy | `deploy.yml` | Push of a `beta-*` or `v*.*.*` tag | detect environment -> build -> deploy |
+| Build | `build.yml` | Called by deploy.yml (`workflow_call`) | Build and push `arda-app` image |
+
+There is no branch-promotion workflow. Deploys are triggered only by pushing a
+release tag - merging to `main` never deploys anything by itself.
 
 ---
 
 ## `ci.yml` - Quality Gate
 
-Runs on PRs to `develop` and `main` (guard), and on pushes to `develop`. Does
-NOT deploy.
+Runs on PRs to `main`, and on pushes to `main`. Does NOT deploy.
 
 Three parallel jobs, then a final aggregator:
 
@@ -43,40 +44,51 @@ Three parallel jobs, then a final aggregator:
 
 ### `quality-gate` (aggregator)
 
-Required status check for branch rulesets. Succeeds only when all three upstream
-jobs pass. Branch ruleset names this check exactly `quality-gate`; the job is
-also named `quality-gate`.
+Required status check for the `main` branch ruleset. Succeeds only when all
+three upstream jobs pass. Runs on every PR and on push to `main`, but NOT on a
+tag push - cutting a release tag ships whatever is already at that commit on
+`main`, it does not re-verify the gate.
 
 ---
 
-## `release.yml` - Build and Deploy
+## `deploy.yml` - Build and Deploy (tag-triggered)
 
-Triggers on push to `develop` (-> beta) or `main` (-> prod). Manual
-`workflow_dispatch` allows overriding the environment for debugging.
+Triggers only on pushing a tag matching `beta-*` (-> beta) or `v*.*.*` (->
+production). Manual `workflow_dispatch` allows overriding the environment for
+debugging without cutting a real tag.
 
-Concurrency: serialized per branch. `cancel-in-progress: false` means an
-in-flight deploy is never cancelled.
+Concurrency: serialized per tag ref. `cancel-in-progress: false` means an
+in-flight deploy is never cancelled. Keying on the ref keeps beta and
+production deploys in separate queues.
 
 ### `detect` Job
 
-Classifies which paths changed and determines whether a deploy is needed:
+Routes the pushed tag to a GitHub Environment - `beta-*` -> `beta`, `v*.*.*` ->
+`production`. Any other ref fails the job (should be unreachable given the
+trigger filter). No path-based change classification: a tag push is already a
+deliberate release action, so the job always proceeds to build+deploy.
 
-1. Maps branch to environment: `develop` -> `beta`, `main` -> `production`
-2. Finds the last successful release SHA for this branch
-3. Calls `classify_changes.py` to determine `deployable` and `build_images`
-4. Fail-open: if the compare API fails or no prior base exists, deploy everything
+### `call-build` Job (calls `build.yml` via `workflow_call`)
 
-### `call-build` Job (calls `build.yml`)
+Builds and pushes the `arda-app` image to:
+- GHCR: `ghcr.io/vxture/arda-app:sha-<short-sha>` and `:<tag-name>`
+- Aliyun ACR: same two tags, fallback mirror
 
-Runs only if `deployable == true`. Builds and pushes `arda-app` image to:
-- GHCR: `ghcr.io/vxture/arda-app:sha-<short-sha>`
-- Aliyun ACR: fallback mirror
+Skips the actual build (retags the existing digest instead) if this exact
+commit was already built and pushed under an earlier tag - e.g. a `v*.*.*` cut
+at a commit a prior `beta-*` tag already validated.
+
+Because this is a `workflow_call` inside the same workflow run (not a second,
+independently tag-triggered workflow), the `deploy` job's `needs: call-build`
+guarantees the build has finished before deploy starts - no wait-for-build
+polling step needed.
 
 ### `deploy` Job
 
-Runs only if `deployable == true`, after `call-build` succeeds. Targets the
-GitHub Environment matching the detected environment (`beta` or `production`).
-Each environment carries its own secrets.
+Runs after `call-build` succeeds. Targets the GitHub Environment matching the
+detected environment (`beta` or `production`). Each environment carries its own
+secrets; `production` additionally requires a human reviewer to approve before
+the job proceeds.
 
 Deploy sequence:
 1. Join tailnet (ephemeral tailscale node for the CI runner)
@@ -86,40 +98,21 @@ Deploy sequence:
 5. Stamp `VERSION` with `$GITHUB_SHA`
 6. SSH: `bash deploy.sh all` + `bash deploy.sh verify`
 
----
-
-## `promote.yml` - Prod Promotion
-
-Manual only. Validates all preconditions before touching `main`.
-
-```bash
-gh workflow run promote.yml \
-  -f target=main \
-  -f expected_sha=<SHA of develop HEAD> \
-  -f release_confirmed=true \
-  -f release_note="<summary>"
-```
-
-Validation gates:
-1. `target == main` (no accidental branch)
-2. `release_confirmed == true` (explicit operator intent)
-3. `release_note` is non-empty
-4. `expected_sha == origin/develop HEAD` (no surprise commits since you checked)
-5. `main` is an ancestor of `develop` (linear history; no divergence)
-6. `develop` `quality-gate` == success (green before promoting)
-
-Then fast-forwards `main` to `develop` HEAD. `PROMOTION_TOKEN` (a PAT with
-`repo` write scope) is used for the push so the push triggers `release.yml` on
-`main` automatically.
-
-`promote.yml` reads itself from `main`, so workflow self-changes take effect one
-promotion late.
+Deploy pulls by the immutable `sha-<short>` tag (not the release tag name
+directly) - this sidesteps any need for exact/unstripped tag-name matching on
+the deploy side.
 
 ---
 
-## GitHub Environments and Secrets
+## GitHub Environments, Secrets, and Variables
 
-Two GitHub Environments: `beta` and `production`. Each carries:
+Two GitHub Environments: `beta` and `production`.
+
+`production` has a required-reviewer protection rule (stonesmoker) and a
+deployment tag policy restricted to `v*`. `beta` has a deployment tag policy
+restricted to `beta-*` and no reviewer gate.
+
+Each environment carries:
 
 | Secret | Purpose |
 |---|---|
@@ -132,21 +125,31 @@ Two GitHub Environments: `beta` and `production`. Each carries:
 | `ENV_FILE_BASE64` | Base64-encoded `.env` for bootstrap deploy |
 | `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID for CI ephemeral node |
 | `TAILSCALE_OAUTH_CLIENT_SECRET` | Tailscale OAuth secret |
-| `ALIYUN_ACR_REGISTRY` | Aliyun ACR registry URL (pull-through fallback) |
-| `ALIYUN_ACR_NAMESPACE` | Aliyun ACR namespace |
 | `ALIYUN_ACR_USERNAME` | Aliyun ACR username |
 | `ALIYUN_ACR_PASSWORD` | Aliyun ACR password |
+
+`ALIYUN_ACR_REGISTRY` and `ALIYUN_ACR_NAMESPACE` are NOT secrets - they are
+public identifiers (registry hostname, image namespace), classified as
+`vars.*` per the org-wide secret/variable standard. `ALIYUN_ACR_REGISTRY` is an
+org-level variable (shared across vxture-platform/arda/umbra, since it is the
+same Aliyun account/region for all of them). `ALIYUN_ACR_NAMESPACE` is a
+repo-level variable - each product line has its own ACR namespace (arda uses
+`vx-foundation`) so images from different products don't collide.
+`ALIYUN_ACR_USERNAME`/`PASSWORD` remain credentials and stay as org-level
+secrets.
 
 Repository-level secrets:
 | Secret | Purpose |
 |---|---|
 | `NODE_AUTH_TOKEN` | GitHub Packages read token for `@vxture` scope (npm install + docker build) |
-| `PROMOTION_TOKEN` | PAT with repo write for promote.yml push to main |
 
-Repository-level variable:
+Repository-level variables:
 | Variable | Purpose |
 |---|---|
 | `TAILSCALE_OAUTH_CLIENT_TAG` | Tag for the ephemeral tailscale node (e.g., `tag:ci`) |
+| `ALIYUN_ACR_NAMESPACE` | Aliyun ACR namespace for this product's images |
+
+Org-level variable: `ALIYUN_ACR_REGISTRY` (Aliyun ACR registry hostname, pull-through fallback, shared across repos).
 
 ---
 
@@ -156,21 +159,21 @@ Repository-level variable:
 # Re-run failed jobs (e.g., after docker-build infra flake):
 gh run rerun <run-id> --failed
 
-# List recent release runs:
-gh run list --workflow release.yml --limit 10
+# List recent deploy runs:
+gh run list --workflow deploy.yml --limit 10
 
 # Watch a running workflow:
 gh run watch <run-id>
 
-# Trigger a manual release (debugging only):
-gh workflow run release.yml
+# Cut a beta release:
+git tag beta-$(date +%Y%m%d).1 && git push origin beta-$(date +%Y%m%d).1
 
-# Trigger a prod promotion:
-gh workflow run promote.yml \
-  -f target=main \
-  -f expected_sha=$(git rev-parse origin/develop) \
-  -f release_confirmed=true \
-  -f release_note="deploy: <describe what changed>"
+# Cut a production release (then approve the pending deployment request in
+# the production GitHub Environment):
+git tag vX.Y.Z && git push origin vX.Y.Z
+
+# Trigger a manual deploy (debugging only, no tag involved):
+gh workflow run deploy.yml -f explicit_environment=beta
 ```
 
 ---
@@ -180,10 +183,12 @@ gh workflow run promote.yml \
 When setting up a new environment:
 
 1. Create the GitHub Environment (`beta` or `production`) in repo Settings
-2. Add all secrets listed above to the environment
+2. Add all secrets listed above to the environment; for `production`, add the
+   required-reviewer protection rule and restrict deployment tags to `v*`; for
+   `beta`, restrict deployment tags to `beta-*`
 3. Run `scripts/github/b64-prod.ps1` (or `b64-beta.ps1`) to generate
    `ENV_FILE_BASE64` from the local `.env`
 4. Add the Tailscale OAuth client tag to `TAILSCALE_OAUTH_CLIENT_TAG` variable
-5. Trigger the first deploy via `workflow_dispatch` on `release.yml` with the
-   correct `explicit_environment` input
+5. Trigger the first deploy via `workflow_dispatch` on `deploy.yml` with the
+   correct `explicit_environment` input, or push the matching tag directly
 6. Verify with `bash deploy/deploy.sh verify` on the server

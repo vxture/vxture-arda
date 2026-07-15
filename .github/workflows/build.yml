@@ -1,24 +1,16 @@
 name: build
 
 on:
-  # Called by release.yml after the detect job determines deployable changes.
+  # Called by deploy.yml (tag-triggered) after routing the tag to an
+  # environment.
   workflow_call:
     inputs:
-      build_images:
-        description: JSON array of images requiring a new build
-        required: false
-        type: string
-        default: '[]'
       pass_sha:
         description: Commit SHA to build and tag
         required: true
         type: string
     secrets:
       NODE_AUTH_TOKEN:
-        required: true
-      ALIYUN_ACR_REGISTRY:
-        required: true
-      ALIYUN_ACR_NAMESPACE:
         required: true
       ALIYUN_ACR_USERNAME:
         required: true
@@ -29,11 +21,6 @@ on:
   # Actions UI. Defaults build the current branch's HEAD.
   workflow_dispatch:
     inputs:
-      build_images:
-        description: JSON array of images to rebuild (empty = skip build, retag only)
-        required: false
-        type: string
-        default: '["arda-app"]'
       pass_sha:
         description: Commit SHA to build and tag (defaults to branch HEAD)
         required: false
@@ -52,8 +39,11 @@ jobs:
 
     env:
       GHCR_NAMESPACE: vxture
-      ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-      ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+      # ALIYUN_ACR_REGISTRY/NAMESPACE are public identifiers, not credentials -
+      # org/repo vars, not secrets (org standard: docs/rebuild/README.md #2 in
+      # vxture-platform).
+      ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
+      ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
       VXTURE_NPM_REGISTRY: ${{ vars.VXTURE_NPM_REGISTRY }}
 
     strategy:
@@ -106,16 +96,19 @@ jobs:
         shell: bash
         env:
           PASSED_SHA: ${{ steps.sha.outputs.sha }}
-          BRANCH: ${{ github.ref_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           short_sha="${PASSED_SHA::7}"
           echo "short_sha=$short_sha" >> "$GITHUB_OUTPUT"
-          # sha-<short> is the immutable per-commit deploy tag (identical on
-          # develop and main after a fast-forward promotion). The branch tag is
-          # the moving pointer for humans/rollback.
+          # sha-<short> is the immutable per-commit build-dedup tag: if the same
+          # commit is later tagged again (e.g. a v*.*.* cut at a commit already
+          # validated under a prior beta-* tag), the existence check below skips
+          # a redundant rebuild. ref_tag is the exact pushed tag name
+          # (beta-YYYYMMDD.N or vX.Y.Z) - published unstripped, since that is
+          # the literal ref the deploy job pulls by.
           echo "image_tag=sha-$short_sha" >> "$GITHUB_OUTPUT"
-          echo "branch_tag=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "ref_tag=$REF_NAME" >> "$GITHUB_OUTPUT"
 
       # Buildx setup intermittently fails pulling the buildkit image (infra
       # flake, not code). Tolerate the first failure and retry once before the
@@ -147,35 +140,30 @@ jobs:
         id: decide
         shell: bash
         env:
-          BUILD_IMAGES: ${{ inputs.build_images }}
           IMAGE: ${{ matrix.image }}
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
         run: |
           set -euo pipefail
           ghcr_repo="ghcr.io/${GHCR_NAMESPACE}/${IMAGE}"
 
-          if printf '%s' "$BUILD_IMAGES" | jq -e --arg i "$IMAGE" 'any(. == $i)' >/dev/null; then
-            changed=true
-          else
-            changed=false
-          fi
-
-          # Build the SAME image only once across develop and main. The deploy
-          # tag is commit-addressed, so after a fast-forward promotion main sees
-          # the exact sha-<short> tag the develop release already published. If
-          # it is already present, retag-by-digest instead of rebuilding.
+          # Every tag push is a deliberate release action (arda owns exactly one
+          # image, and there is no branch-push change-classifier to gate on
+          # anymore). The only thing worth skipping is a redundant rebuild: if
+          # this exact commit was already built and pushed under an earlier tag
+          # (e.g. a v*.*.* cut at a commit a beta-* tag already validated),
+          # retag the existing digest instead of rebuilding it.
           if docker buildx imagetools inspect "${ghcr_repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
             exists=true
           else
             exists=false
           fi
 
-          if [ "$changed" = true ] && [ "$exists" = false ]; then
+          if [ "$exists" = false ]; then
             echo "build=true" >> "$GITHUB_OUTPUT"
           else
             echo "build=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "decide: image=$IMAGE changed=$changed exists=$exists"
+          echo "decide: image=$IMAGE exists=$exists"
 
       - name: Build and push image
         if: ${{ steps.decide.outputs.build == 'true' }}
@@ -194,9 +182,9 @@ jobs:
             NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
-            ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}
+            ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}
             ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
-            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}
+            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}
 
       - name: Retag unchanged image by digest
         if: ${{ steps.decide.outputs.build == 'false' }}
@@ -204,26 +192,20 @@ jobs:
         env:
           IMAGE: ${{ matrix.image }}
           IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
-          BRANCH_TAG: ${{ steps.meta.outputs.branch_tag }}
+          REF_TAG: ${{ steps.meta.outputs.ref_tag }}
         run: |
           set -euo pipefail
-          # The image's source did not change this revision (or the same commit
-          # was already built on develop), so do not rebuild (a rebuild would
-          # mint a new digest and force a pointless container recreate on
-          # deploy). Re-point the immutable sha tag and the moving branch tag at
-          # the existing digest; the digest is preserved, so the deploy keeps the
-          # running container.
+          # The commit was already built and pushed under a prior tag; do not
+          # rebuild (a rebuild would mint a new digest and force a pointless
+          # container recreate on deploy). Re-point the immutable sha tag and
+          # this tag's own ref name at the existing digest.
           for repo in \
             "ghcr.io/${GHCR_NAMESPACE}/${IMAGE}" \
             "${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE}"; do
-            if docker buildx imagetools inspect "${repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
-              source_ref="${repo}:${IMAGE_TAG}"
-            else
-              source_ref="${repo}:${BRANCH_TAG}"
-            fi
-            echo "Retagging ${source_ref} -> ${repo}:${IMAGE_TAG}, ${repo}:${BRANCH_TAG}"
+            source_ref="${repo}:${IMAGE_TAG}"
+            echo "Retagging ${source_ref} -> ${repo}:${IMAGE_TAG}, ${repo}:${REF_TAG}"
             docker buildx imagetools create \
               -t "${repo}:${IMAGE_TAG}" \
-              -t "${repo}:${BRANCH_TAG}" \
+              -t "${repo}:${REF_TAG}" \
               "${source_ref}"
           done
