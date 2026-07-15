@@ -34,6 +34,7 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write  # upload trivy SARIF results to the code scanning tab
 
 jobs:
   docker-build:
@@ -206,6 +207,28 @@ jobs:
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}
             ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
             ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}
+
+      # Report-only: never fails the build/deploy (exit-code 0). Only runs on
+      # an actual build - a retagged/unchanged image was already scanned in
+      # the run that originally built it, no need to rescan an unchanged
+      # digest. Results land in the repo's Security > Code scanning tab
+      # (free for public repos, no GHAS license needed).
+      - name: Scan image for vulnerabilities (trivy, report-only)
+        if: ${{ steps.decide.outputs.build == 'true' }}
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'
+
+      - name: Upload vulnerability scan results
+        if: ${{ steps.decide.outputs.build == 'true' }}
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: trivy-results.sarif
 
       - name: Retag unchanged image by digest
         if: ${{ steps.decide.outputs.build == 'false' }}

@@ -16,10 +16,16 @@ vxture-arda/
 |-- .gitignore
 |-- .npmrc                        # GitHub Packages auth for @vxture scope
 |-- .github/
+|   |-- dependabot.yml            # npm (portals/) + github-actions version updates
+|   |-- actions/
+|   |   `-- tailnet-ssh-connect/  # Shared composite action: join tailnet + prep SSH
 |   `-- workflows/
 |       |-- ci.yml                # quality-gate (static checks, portal build, secret scan)
 |       |-- deploy.yml            # detect + docker-build + deploy (beta-*->beta, v*.*.*->prod)
-|       `-- build.yml             # Reusable docker build workflow (called by deploy.yml)
+|       |-- build.yml             # Reusable docker build + trivy scan (called by deploy.yml)
+|       |-- codeql.yml            # SAST on TS/JS source (PR/push to main + weekly)
+|       |-- rollback.yml          # Manual: re-point a stack at a previously built image
+|       `-- seed-demo-data.yml    # Manual: load demo/sample catalog data into a workspace
 |-- configs/
 |   `-- edge/
 |       |-- README.md             # Sync procedure for edge vhost installation

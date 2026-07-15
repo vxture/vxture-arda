@@ -87,6 +87,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      issues: write  # deploy-failure/deploy-recovered issue notifications
     # Tag-routed environment: beta-* -> beta, v*.*.* -> production. The
     # environment supplies its own DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
     # DEPLOY_KNOWN_HOSTS/DEPLOY_REPO_DIR, so the same job deploys to the right
@@ -123,40 +124,16 @@ jobs:
           test -n "$TAILSCALE_OAUTH_CLIENT_ID"
           test -n "$TAILSCALE_OAUTH_CLIENT_SECRET"
 
-      # Join the tailnet so the runner can reach the deploy host (private compute,
-      # no public IP). ephemeral=true auto-removes the node after the job ends.
-      # The ping option waits up to 3 minutes for a direct/relayed connection
-      # to the deploy host BEFORE the SSH step starts -- fast failure instead of
-      # a silent SSH timeout.
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Join tailnet and prepare SSH
+        uses: ./.github/actions/tailnet-ssh-connect
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
-          tags: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
-          ping: ${{ secrets.DEPLOY_HOST }}
-
-      - name: Prepare SSH
-        shell: bash
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-          port="${DEPLOY_PORT:-22}"
-          if [ -n "${DEPLOY_KNOWN_HOSTS:-}" ]; then
-            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            ssh-keyscan -p "$port" "$DEPLOY_HOST" > ~/.ssh/known_hosts
-          fi
-          chmod 600 ~/.ssh/known_hosts
+          tailscale-oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tailscale-tag: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
+          deploy-host: ${{ secrets.DEPLOY_HOST }}
+          deploy-port: ${{ secrets.DEPLOY_PORT }}
+          deploy-ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          deploy-known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
       - name: Bootstrap environment on target host
         shell: bash
@@ -350,3 +327,73 @@ jobs:
             -o ServerAliveCountMax=20 \
             -o ConnectTimeout=30 \
             "$DEPLOY_USER@$DEPLOY_HOST" "$remote_cmd"
+
+      # beta deploys have no approval gate and nobody is necessarily watching
+      # the Actions tab, so a silent failure could sit unnoticed. Zero-config
+      # (no webhook/secret needed): open or update a GitHub issue instead.
+      # Covers production too for consistency, though a human approver is
+      # already watching that run.
+      - name: Notify on deploy failure (open/update a GitHub issue)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const env = '${{ needs.detect.outputs.environment }}';
+            const title = `Deploy failure: ${env}`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const shortSha = context.sha.substring(0, 7);
+            const tag = context.ref.replace('refs/tags/', '');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'deploy-failure',
+            });
+            const existing = issues.find((i) => i.title === title);
+            const body = `Deploy to **${env}** failed for \`${shortSha}\` (tag \`${tag}\`).\n\nRun: ${runUrl}`;
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['deploy-failure'],
+              });
+            }
+
+      - name: Close deploy-failure issue on successful deploy
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const env = '${{ needs.detect.outputs.environment }}';
+            const title = `Deploy failure: ${env}`;
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'deploy-failure',
+            });
+            const existing = issues.find((i) => i.title === title);
+            if (existing) {
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Resolved: deploy to **${env}** succeeded. Run: ${runUrl}`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+            }

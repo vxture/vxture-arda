@@ -1,13 +1,25 @@
-name: seed
+name: seed-demo-data
 
-# Manually seed a workspace with demo/sample catalog data on a deployed stack.
-# The stack Postgres is internal to the compose network (no published port), so
-# this runs on the host over SSH (same tailscale/SSH path as release.yml) and
+# Manually load DEMO/SAMPLE catalog data into a workspace on a deployed
+# stack - NOT real product/customer data. This is the "show me what it looks
+# like" dataset an operator loads into a newly onboarded tenant's workspace
+# on request, purely for evaluation/demo purposes. (Renamed from `seed.yml`
+# - the old name read as "seed the product's own data", which this is not.)
+#
+# The stack Postgres is internal to the compose network (no published port),
+# so this runs on the host over SSH (same tailnet path as deploy.yml) and
 # pipes prisma/seed.sql into the DB container. Idempotent (re-running upserts).
 #
-#   gh workflow run seed.yml -f environment=beta -f workspace_id=<active_workspace>
+#   gh workflow run seed-demo-data.yml -f environment=beta -f workspace_id=<active_workspace>
 #
 # Get the workspace id by logging into the app and opening /auth/session.
+#
+# Manual-only for now by design: there is no automatic trigger tied to tenant
+# onboarding. Wiring "onboard a workspace -> ask if they want demo data ->
+# dispatch this workflow" would need the provisioning flow
+# (portals/app/app/provisioning/) to call the GitHub API with a token scoped
+# to trigger workflow_dispatch - a real feature to design deliberately, not
+# bolted on here. See PR discussion for the open question.
 on:
   workflow_dispatch:
     inputs:
@@ -19,7 +31,7 @@ on:
           - beta
           - production
       workspace_id:
-        description: "Workspace id to seed (the user's active_workspace)"
+        description: "Workspace id to load demo data into (the user's active_workspace)"
         required: true
         type: string
 
@@ -27,12 +39,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: seed-${{ inputs.environment }}
+  group: seed-demo-data-${{ inputs.environment }}
   cancel-in-progress: false
 
 jobs:
-  seed:
-    name: seed-workspace
+  seed-demo-data:
+    name: seed-demo-data
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: ${{ inputs.environment }}
@@ -62,36 +74,18 @@ jobs:
             exit 1
           fi
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+      - name: Join tailnet and prepare SSH
+        uses: ./.github/actions/tailnet-ssh-connect
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
-          tags: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
-          ping: ${{ secrets.DEPLOY_HOST }}
+          tailscale-oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tailscale-tag: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
+          deploy-host: ${{ secrets.DEPLOY_HOST }}
+          deploy-port: ${{ secrets.DEPLOY_PORT }}
+          deploy-ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          deploy-known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
 
-      - name: Prepare SSH
-        shell: bash
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          port="${DEPLOY_PORT:-22}"
-          if [ -n "${DEPLOY_KNOWN_HOSTS:-}" ]; then
-            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          else
-            ssh-keyscan -p "$port" "$DEPLOY_HOST" > ~/.ssh/known_hosts
-          fi
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Seed over SSH
+      - name: Load demo data over SSH
         shell: bash
         env:
           ENVIRONMENT: ${{ inputs.environment }}
@@ -108,7 +102,7 @@ jobs:
             beta)       db="arda-beta-db" ;;
             *) echo "unknown environment: $ENVIRONMENT" >&2; exit 1 ;;
           esac
-          echo "Seeding workspace '$WS' into $db on $DEPLOY_HOST ..."
+          echo "Loading demo data for workspace '$WS' into $db on $DEPLOY_HOST ..."
           # Pipe seed.sql to psql inside the db container (-i keeps stdin). The
           # default postgres user/db are 'arda' (compose default); local docker
           # exec connects without a password.
