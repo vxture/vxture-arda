@@ -69,7 +69,19 @@ unsafe:
 
 ## Rollback Checklist
 
-If a deploy is bad and must be rolled back:
+If a deploy is bad and must be rolled back, prefer the automated workflow:
+
+```bash
+gh workflow run rollback.yml -f environment=production -f commit_sha=<sha>
+```
+
+Find `<sha>` from the target host's `deploy/VERSION` file or
+`gh run list --workflow deploy.yml`. Production rollback pauses for the same
+required-reviewer approval as a normal deploy. See
+[`50-operations/github-actions.md`](../50-operations/github-actions.md) for
+details.
+
+Manual fallback (if Actions is unavailable):
 
 1. Identify the last known-good image tag (check `VERSION` file or `gh run list`
    on `deploy.yml`)
@@ -96,6 +108,7 @@ and have users re-authenticate.
 |---|---|
 | First deploy (new server) | `server.sh bootstrap` -> place `.env` -> `deploy.sh all` |
 | Routine feature deploy | Push a `beta-*` tag (beta) / push a `v*.*.*` tag + approve (prod) |
+| Bad deploy needs rollback | `gh workflow run rollback.yml -f environment=<env> -f commit_sha=<sha>` |
 | CI docker-build infra flake | `gh run rerun <run-id> --failed` |
 | Manual re-deploy (same image) | `bash deploy/deploy.sh all --skip-backup` |
 | Redis data backup | `bash deploy/ops.sh backup` |

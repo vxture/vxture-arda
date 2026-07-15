@@ -6,12 +6,26 @@
 
 | Workflow | File | Trigger | Purpose |
 |---|---|---|---|
-| CI | `ci.yml` | PR to main; push to main | `quality-gate` status check |
+| CI | `ci.yml` | PR to main | `quality-gate` status check |
 | Deploy | `deploy.yml` | Push of a `beta-*` or `v*.*.*` tag | detect environment -> build -> deploy |
-| Build | `build.yml` | Called by deploy.yml (`workflow_call`) | Build and push `arda-app` image |
+| Build | `build.yml` | Called by deploy.yml (`workflow_call`) | Build, push, and scan the `arda-app` image |
+| CodeQL | `codeql.yml` | PR/push to main; weekly schedule | SAST on the TS/JS source |
+| Rollback | `rollback.yml` | Manual (`workflow_dispatch`) | Re-point a stack at a previously built image, no rebuild |
+| Seed demo data | `seed-demo-data.yml` | Manual (`workflow_dispatch`) | Load demo/sample catalog data into a workspace |
 
 There is no branch-promotion workflow. Deploys are triggered only by pushing a
 release tag - merging to `main` never deploys anything by itself.
+
+`.github/actions/tailnet-ssh-connect` is a composite action (not a standalone
+workflow) shared by `deploy.yml`, `rollback.yml`, and `seed-demo-data.yml` -
+it joins the tailnet and prepares the SSH key/known_hosts. Every value is an
+input threaded through from the caller's own secrets/vars; the action itself
+stores no credentials.
+
+`.github/dependabot.yml` covers the npm workspace (`portals/`, weekly) and
+GitHub Actions versions (weekly). `@vxture/*` packages are grouped and
+excluded from auto-bump PRs - that scope moves on its own release cadence
+from a different repo, bump it deliberately.
 
 ---
 
@@ -86,7 +100,14 @@ Builds and pushes the `arda-app` image to:
 
 Skips the actual build (retags the existing digest instead) if this exact
 commit was already built and pushed under an earlier tag - e.g. a `v*.*.*` cut
-at a commit a prior `beta-*` tag already validated.
+at a commit a prior `beta-*` tag already validated. The digest-reuse check
+verifies BOTH GHCR and ACR already have the tag before skipping - a prior
+partial push (one registry ok, the other missing) forces a rebuild instead of
+the retag step failing on a missing source ref.
+
+On an actual build (not a retag), also runs a report-only trivy vulnerability
+scan of the built image (CRITICAL/HIGH, SARIF uploaded to the repo's Security
+> Code scanning tab) - never fails the build/deploy.
 
 Because this is a `workflow_call` inside the same workflow run (not a second,
 independently tag-triggered workflow), the `deploy` job's `needs: call-build`
@@ -111,6 +132,73 @@ Deploy sequence:
 Deploy pulls by the immutable `sha-<short>` tag (not the release tag name
 directly) - this sidesteps any need for exact/unstripped tag-name matching on
 the deploy side.
+
+On failure, opens or updates a GitHub issue titled `Deploy failure: <env>`
+(zero-config, no webhook needed - beta has no approval gate and no other
+built-in signal that a deploy silently failed). On the next successful deploy
+to that environment, the matching open issue is commented on and closed
+automatically.
+
+---
+
+## `rollback.yml` - Manual Rollback
+
+`workflow_dispatch` only. Inputs: `environment` (`beta`/`production`),
+`commit_sha` (a commit that was actually built and pushed by a prior deploy -
+find it via the target host's `deploy/VERSION` file or
+`gh run list --workflow deploy.yml`).
+
+```bash
+gh workflow run rollback.yml -f environment=production -f commit_sha=<sha>
+```
+
+Does NOT rebuild and does NOT touch `deploy/`, `configs/`, or
+`docker-compose.yml` on the host - only re-points the `arda-app` image tag and
+recreates that one container (`deploy.sh start` + `deploy.sh verify`), matching
+the manual rollback procedure in
+[`40-deployment/deployment.md`](../40-deployment/deployment.md). Fails fast
+with a clear error if the image for that commit was never actually built
+(checked via `docker buildx imagetools inspect` before touching the host).
+`environment: ${{ inputs.environment }}` means a production rollback pauses
+for the same required-reviewer approval as a normal deploy - rollback is not
+an emergency bypass of that gate.
+
+Same schema-compatibility caveat as the manual procedure: rolling back past a
+breaking DB migration can serve traffic against a schema the older code
+doesn't expect - verify compatibility first for anything beyond a
+straightforward app-code revert.
+
+---
+
+## `codeql.yml` - Static Application Security Testing
+
+Runs `github/codeql-action` against the `javascript-typescript` source on PRs
+to `main`, pushes to `main`, and a weekly schedule (Monday 03:00 UTC - catches
+new CodeQL query-pack findings against code that didn't itself change).
+Separate concern from `secret-scan` (committed credentials) and the `build.yml`
+trivy scan (built image's OS/dependency layers) - this looks for code-level
+vulnerability patterns in the app's own source. Free for public repos.
+
+---
+
+## `seed-demo-data.yml` - Load Demo Data
+
+`workflow_dispatch` only. Loads DEMO/SAMPLE catalog data (`portals/app/prisma/seed.sql`)
+into a workspace for evaluation/demo purposes - not product or customer data,
+not part of the release pipeline. (Renamed from `seed.yml`, which read as
+"seed the product's own data.")
+
+```bash
+gh workflow run seed-demo-data.yml -f environment=beta -f workspace_id=<id>
+```
+
+Get the workspace id by logging into the app and opening `/auth/session`.
+Idempotent (re-running upserts). Manual-only by design for now - wiring
+"onboard a workspace -> ask if they want demo data -> dispatch this workflow"
+automatically would need the provisioning flow
+(`portals/app/app/provisioning/`) to call the GitHub API with a token scoped
+to `workflow_dispatch`; that's a real feature to design deliberately when
+there's an actual onboarding UI to hang it off of, not bolted on here.
 
 ---
 
@@ -184,6 +272,12 @@ git tag vX.Y.Z && git push origin vX.Y.Z
 
 # Trigger a manual deploy (debugging only, no tag involved):
 gh workflow run deploy.yml -f explicit_environment=beta
+
+# Roll back a stack to a previously built commit (no rebuild):
+gh workflow run rollback.yml -f environment=production -f commit_sha=<sha>
+
+# Load demo data into a workspace:
+gh workflow run seed-demo-data.yml -f environment=beta -f workspace_id=<id>
 ```
 
 ---

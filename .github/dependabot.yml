@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # npm workspace root (portals/ - covers @arda/app and @arda/shared members).
+  - package-ecosystem: npm
+    directory: /portals
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # @vxture/* is org-internal and needs a deliberate look, not batched.
+      vxture-packages:
+        patterns:
+          - '@vxture/*'
+    ignore:
+      # @vxture/* moves on its own release cadence from a different repo -
+      # bump it deliberately, not via an automated PR.
+      - dependency-name: '@vxture/*'
+
+  # Keep pinned Action versions (docker/build-push-action@v7, actions/checkout@v6,
+  # etc.) current - these live outside npm and would otherwise drift silently.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

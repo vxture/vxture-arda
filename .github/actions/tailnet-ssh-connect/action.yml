@@ -1,0 +1,62 @@
+name: tailnet-ssh-connect
+description: >
+  Join the tailnet and prepare an SSH key + known_hosts for the deploy host.
+  Shared by every workflow that SSHes to ARDA_DEPLOY_HOST (deploy.yml,
+  seed-demo-data.yml, rollback.yml) so the connection logic has one place to
+  change. Stores no credentials itself - every value is an input threaded
+  through from the caller's own secrets/vars context.
+
+inputs:
+  tailscale-oauth-client-id:
+    required: true
+  tailscale-oauth-secret:
+    required: true
+  tailscale-tag:
+    required: true
+  deploy-host:
+    required: true
+  deploy-port:
+    required: false
+    default: ''
+  deploy-ssh-key:
+    required: true
+  deploy-known-hosts:
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # ephemeral=true (the action's default) auto-removes the node after the
+    # job ends. The ping option waits up to 3 minutes for a direct/relayed
+    # connection to the deploy host BEFORE the caller's SSH steps run - fast
+    # failure instead of a silent SSH timeout.
+    - name: Connect to Tailscale
+      uses: tailscale/github-action@v4
+      with:
+        oauth-client-id: ${{ inputs.tailscale-oauth-client-id }}
+        oauth-secret: ${{ inputs.tailscale-oauth-secret }}
+        tags: ${{ inputs.tailscale-tag }}
+        ping: ${{ inputs.deploy-host }}
+
+    - name: Prepare SSH
+      shell: bash
+      env:
+        DEPLOY_HOST: ${{ inputs.deploy-host }}
+        DEPLOY_PORT: ${{ inputs.deploy-port }}
+        DEPLOY_SSH_KEY: ${{ inputs.deploy-ssh-key }}
+        DEPLOY_KNOWN_HOSTS: ${{ inputs.deploy-known-hosts }}
+      run: |
+        set -euo pipefail
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+
+        port="${DEPLOY_PORT:-22}"
+        if [ -n "${DEPLOY_KNOWN_HOSTS:-}" ]; then
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+        else
+          ssh-keyscan -p "$port" "$DEPLOY_HOST" > ~/.ssh/known_hosts
+        fi
+        chmod 600 ~/.ssh/known_hosts

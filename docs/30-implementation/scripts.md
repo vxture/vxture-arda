@@ -125,9 +125,17 @@ These run in CI as part of `quality-gate`. They can also be run locally.
 
 | File | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | PR to main; push to main | `quality-gate` check (static checks, portal build, secret scan) |
+| `ci.yml` | PR to main | `quality-gate` check (static checks, portal build, secret scan) |
 | `deploy.yml` | Push of a `beta-*` or `v*.*.*` tag | detect environment -> docker-build -> deploy |
-| `build.yml` | Called by deploy.yml (`workflow_call`) | Build and push `arda-app` image to GHCR + Aliyun ACR |
+| `build.yml` | Called by deploy.yml (`workflow_call`) | Build, push (GHCR + Aliyun ACR), and trivy-scan `arda-app` |
+| `codeql.yml` | PR/push to main; weekly schedule | SAST on the TS/JS source |
+| `rollback.yml` | Manual (`workflow_dispatch`) | Re-point a stack at a previously built image, no rebuild |
+| `seed-demo-data.yml` | Manual (`workflow_dispatch`) | Load demo/sample catalog data into a workspace |
+
+`.github/actions/tailnet-ssh-connect` is a composite action (not a standalone
+workflow) shared by `deploy.yml`/`rollback.yml`/`seed-demo-data.yml` for the
+tailnet-join + SSH-key-prep steps. `.github/dependabot.yml` covers npm
+(`portals/`) and GitHub Actions version updates.
 
 See [`50-operations/github-actions.md`](../50-operations/github-actions.md) for full
 CI/CD design and the tag-based release contract.

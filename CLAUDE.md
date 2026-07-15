@@ -95,6 +95,21 @@ by, and what the skip-rebuild-if-unchanged dedup checks across tags) and the
 exact release tag name (`beta-YYYYMMDD.N` / `vX.Y.Z`, for human/audit
 reference). Deploy internals live under `deploy/`.
 
+Additional workflows: `rollback.yml` (manual, `workflow_dispatch`) re-points a
+stack at a previously built `sha-<short>` image without rebuilding - same
+production approval gate as a normal deploy. `codeql.yml` runs SAST on the
+TypeScript/JavaScript source (PR/push to `main` + weekly schedule).
+`seed-demo-data.yml` (manual) loads demo/sample catalog data into a workspace
+for evaluation - not product data, not part of the release pipeline.
+`build.yml` also runs a report-only trivy vulnerability scan of the built
+image (SARIF -> Security tab, never blocks). `deploy.yml`/`seed-demo-data.yml`/
+`rollback.yml` share their tailnet-join + SSH-key-prep steps via the
+`.github/actions/tailnet-ssh-connect` composite action - it takes every value
+as an input from the caller's own secrets/vars, never stores credentials
+itself. `.github/dependabot.yml` covers the npm workspace (`@vxture/*` grouped
+and excluded from auto-bump - that moves on its own release cadence) and
+GitHub Actions versions.
+
 `quality-gate` must pass before any merge to `main`. It runs on every PR, but
 NOT on a tag push - cutting a release tag ships whatever is already at that
 commit on `main`, it does not re-verify the gate. It runs:

@@ -142,7 +142,14 @@ manually invalidate a session:
 
 ## Rollback
 
-To roll back to a previous image:
+Prefer the automated workflow (production rollback still requires
+required-reviewer approval, same as a normal deploy):
+
+```bash
+gh workflow run rollback.yml -f environment=production -f commit_sha=<sha>
+```
+
+Manual fallback:
 
 ```bash
 # Find the previous SHA from the CI run history
