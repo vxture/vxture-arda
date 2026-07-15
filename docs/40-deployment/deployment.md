@@ -6,8 +6,9 @@
 
 Arda deploys to a single private compute host (`ARDA_DEPLOY_HOST`, tailnet-only,
 no public IP). Two independent stacks run on that host: prod (`/srv/md0/arda`)
-and beta (`/srv/md1/arda-beta`). CI deploys beta automatically on every push to
-`develop`; prod deploys only via the manual `promote.yml` fast-forward.
+and beta (`/srv/md1/arda-beta`). Deploys are triggered only by pushing a
+release tag: a `beta-*` tag deploys beta, a `v*.*.*` tag deploys prod (after a
+required-reviewer approval). Merging to `main` never deploys by itself.
 
 There is no git clone on the server. CI rsyncs only the deploy subset
 (`deploy/`, `configs/`, `docker-compose.yml`) plus a `VERSION` file stamped
@@ -53,40 +54,35 @@ operator intervention.
 
 ## Standard Deploy (CI-Driven)
 
-### Beta (automatic on push to `develop`):
+### Beta (push a `beta-*` tag):
 
 ```
-push to develop
-  -> release.yml detect (classify changed paths)
-  -> release.yml docker-build (build arda-app image, push to GHCR + Aliyun ACR)
-  -> release.yml deploy
+git tag beta-YYYYMMDD.N && git push origin beta-YYYYMMDD.N
+  -> deploy.yml detect (route tag prefix -> beta environment)
+  -> deploy.yml docker-build (build arda-app image, push to GHCR + Aliyun ACR)
+  -> deploy.yml deploy
        - Join tailnet (tailscale github-action)
        - Bootstrap .env if not present
        - rsync deploy subset to ARDA_DEPLOY_HOST:/srv/md1/arda-beta/deploy/
        - SSH: bash deploy.sh all + bash deploy.sh verify
 ```
 
-### Prod (manual promote):
+No approval gate - deploys as soon as the build finishes.
+
+### Prod (push a `vX.Y.Z` tag):
 
 ```
-gh workflow run promote.yml \
-  -f target=main \
-  -f expected_sha=<origin/develop SHA> \
-  -f release_confirmed=true \
-  -f release_note="<summary>"
-
-  -> promote.yml validates:
-       target == main
-       release_confirmed == true
-       release_note non-empty
-       expected_sha == origin/develop HEAD
-       main is ancestor of develop
-       develop quality-gate == success
-  -> fast-forward main to develop HEAD
-  -> push triggers release.yml on main (prod environment)
-  -> release.yml reuses the same arda-app image (retag by digest if unchanged)
-  -> deploys to /srv/md0/arda
+git tag vX.Y.Z && git push origin vX.Y.Z
+  -> deploy.yml detect (route tag prefix -> production environment)
+  -> deploy.yml docker-build (reuses the same arda-app image if this commit was
+       already built under a prior tag; retag by digest instead of rebuilding)
+  -> [deploy job pauses for required-reviewer approval on the production
+       GitHub Environment]
+  -> deploy.yml deploy: same sequence as beta, targeting /srv/md0/arda
 ```
+
+Approve the pending deployment request in the GitHub Actions run (or under
+repo Settings -> Environments -> production -> Deployments) to let it proceed.
 
 ---
 
@@ -190,12 +186,16 @@ fallback for the deploy host):
 
 ```
 GHCR:       ghcr.io/vxture/arda-app:<tag>
-Aliyun ACR: crpi-l3l7g186zpo2if7p.cn-hangzhou.personal.cr.aliyuncs.com/agentos/arda-app:<tag>
+Aliyun ACR: <ALIYUN_ACR_REGISTRY>/<ALIYUN_ACR_NAMESPACE>/arda-app:<tag>
 ```
+
+`ALIYUN_ACR_REGISTRY` (org-level GitHub variable) and `ALIYUN_ACR_NAMESPACE`
+(repo-level GitHub variable, currently `vx-foundation` for arda) resolve the
+actual hostname/namespace - see `docs/50-operations/github-actions.md`.
 
 Image tags:
 - `sha-<7-char-short-sha>`: canonical per-commit tag (used by deploy)
-- `latest`: floating tag (not used by automated deploys)
+- `beta-YYYYMMDD.N` / `vX.Y.Z`: the exact pushed release tag (human/audit reference)
 
 The deploy script tries GHCR first; if the pull fails, it falls back to Aliyun
 ACR using the `FALLBACK_IMAGE_*` env vars. Docker login is retried up to 6 times

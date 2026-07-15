@@ -72,11 +72,12 @@ console/admin app and no VPN stack - Arda is one app, one owned image
 Both are direct subdomains of `vxture.com`, served by the public edge with
 the wildcard `*.vxture.com` cert. Each stack publishes `arda-app` on its own
 tailnet port (`APP_PUBLISH_PORT`); the edge upstream targets
-`ARDA_DEPLOY_HOST:APP_PUBLISH_PORT` over tailscale. Beta advances automatically on every
-push to `develop`; prod advances only via the manual `develop` -> `main`
-promotion. See [CLAUDE.md](CLAUDE.md) for the branch and promotion model.
+`ARDA_DEPLOY_HOST:APP_PUBLISH_PORT` over tailscale. Deploys are tag-triggered:
+pushing a `beta-*` tag deploys beta automatically; pushing a `v*.*.*` tag
+deploys prod, gated by a required-reviewer approval. See
+[CLAUDE.md](CLAUDE.md) for the branch and release model.
 
-> [OK] **CI/CD pipeline fully operational** -- `develop` -> beta (auto), promote -> `main` -> prod (manual confirm).
+> [OK] **CI/CD pipeline fully operational** -- `beta-*` tag -> beta (auto), `v*.*.*` tag -> prod (required-reviewer approval).
 
 ---
 
@@ -110,8 +111,8 @@ an Arda OIDC callback origin against `accounts.vxture.com`.
 Arda deploys to `ARDA_DEPLOY_HOST` (private compute, reached by its tailscale name/IP,
 same segment as the edge host). Two independent stacks live on that host: `/srv/md0/arda`
 (prod) and `/srv/md1/arda-beta` (beta). Each release builds the one owned image
-(`arda-app`) and deploys the stack matching the pushed branch (`develop` -> beta,
-`main` -> prod). The deploy starts `arda-app` + `arda-redis` + `arda-db` and publishes the
+(`arda-app`) and deploys the stack matching the pushed tag (`beta-*` -> beta,
+`v*.*.*` -> prod). The deploy starts `arda-app` + `arda-redis` + `arda-db` and publishes the
 app on `APP_PUBLISH_PORT`; TLS and the public domain are handled by the public
 edge, which fronts the app with the wildcard `*.vxture.com` cert.
 
@@ -158,5 +159,5 @@ re-implementing them. This is enforced strictly in CI by
 styling that bypasses the design system fails the build.
 
 See [CLAUDE.md](CLAUDE.md) for the full repository working agreement: branch
-model, promotion flow, CI/CD pipeline, and contract checks (including the
-ASCII-only rule over source, config, and root meta files).
+model, tag-triggered release flow, CI/CD pipeline, and contract checks
+(including the ASCII-only rule over source, config, and root meta files).

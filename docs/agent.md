@@ -65,7 +65,7 @@ is read at session creation; a `MockEntitlementResolver` covers local dev and
 the period before accounts emits the real claim. Capability surfaces
 (`data-assets`, `integration`, `management`, `governance`, `services`) exist as
 route stubs behind the auth-gated layout. CI/CD is fully operational:
-`develop` -> beta (auto on push), promote -> `main` -> prod (manual confirm).
+`beta-*` tag -> beta, `v*.*.*` tag -> prod (required-reviewer approval).
 
 ---
 
