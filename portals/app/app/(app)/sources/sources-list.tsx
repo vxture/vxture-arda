@@ -15,7 +15,6 @@ import {
   Label,
   MetricGrid,
   NativeSelect,
-  PageHeader,
   StatusBadge,
   Textarea,
   type DataTableColumn,
@@ -23,6 +22,7 @@ import {
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { canUseFeature, minTierFor } from "../../entitlement/capability";
 import { useSubscription } from "../../entitlement/gate";
 import { PLAN_TAGS } from "../../ui/nav-config";
@@ -171,11 +171,12 @@ export function SourcesList({
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="database"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           isAdmin ? (
             <Button disabled={atCap} onClick={() => setOpen(true)} title={atCap ? t("error.quota") : undefined}>
               <PIcon name="plus" /> {t("register")}

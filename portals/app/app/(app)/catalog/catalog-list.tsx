@@ -6,7 +6,6 @@ import {
   Button,
   DataTable,
   EmptyState,
-  PageHeader,
   StatusBadge,
   ViewModeSwitch,
   type DataTableColumn,
@@ -14,6 +13,7 @@ import {
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon, type PIconName } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone } from "./seed";
 import type { CatalogAssetView } from "./data";
 
@@ -91,11 +91,12 @@ export function CatalogList({ assets }: { assets: CatalogAssetView[] }) {
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="stack"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="database" /> {t("register")}

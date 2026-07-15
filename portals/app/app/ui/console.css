@@ -247,7 +247,7 @@
      still real DS tokens (--vx-space-lg), not custom px values. */
   padding: var(--vx-space-lg) var(--vx-space-2xl) var(--vx-space-2xl) var(--vx-space-lg);
   border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
-  border-top: 2px solid var(--stat-tone);
+  border-top: 2px solid var(--stat-tone-line);
   border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
   background: color-mix(in srgb, var(--vx-color-white) 68%, transparent);
 }
@@ -280,7 +280,7 @@
   width: 8px;
   height: 8px;
   border-radius: var(--vx-radius-full);
-  background: var(--stat-tone);
+  background: var(--stat-tone-line);
 }
 .stat-card-label {
   color: var(--vx-color-text-muted);
@@ -359,20 +359,29 @@
   font-weight: 700;
   white-space: nowrap;
 }
+/* --stat-tone-line: the decorative border-top accent + dot share ONE mixed-
+   down value (22% - a deliberate, named token rather than a literal
+   sprinkled in two places) so the card's tone reads as decoration, not a
+   saturated block of color; --stat-tone itself stays full-strength for the
+   value text and watermark icon, which need to stay legible. */
 .stat-tone--blue {
   --stat-tone: var(--vx-color-primary);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-primary) 22%, transparent);
   --stat-tone-soft: color-mix(in srgb, var(--vx-color-primary) 8%, transparent);
 }
 .stat-tone--green {
   --stat-tone: var(--vx-color-success-600);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-success-600) 22%, transparent);
   --stat-tone-soft: color-mix(in srgb, var(--vx-color-success-600) 8%, transparent);
 }
 .stat-tone--amber {
   --stat-tone: var(--vx-color-warning-600);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-warning-600) 22%, transparent);
   --stat-tone-soft: color-mix(in srgb, var(--vx-color-warning-600) 8%, transparent);
 }
 .stat-tone--rose {
   --stat-tone: var(--vx-color-danger);
+  --stat-tone-line: color-mix(in srgb, var(--vx-color-danger) 22%, transparent);
   --stat-tone-soft: color-mix(in srgb, var(--vx-color-danger) 8%, transparent);
 }
 
@@ -507,7 +516,7 @@
 .dim-tag {
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: var(--vx-radius-md);
   background: var(--vx-color-surface-muted);
   color: var(--vx-color-text-secondary);
 }
@@ -746,11 +755,11 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-secondary);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -798,7 +807,7 @@
   flex: 1;
 }
 .fb-count {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .chip {
@@ -810,19 +819,19 @@
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-secondary);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 .dept-tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .dept-dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 
 /* asset cards */
@@ -834,7 +843,7 @@
 .asset-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-radius: var(--vx-radius-xl);
@@ -859,19 +868,19 @@
   width: 36px;
   height: 36px;
   border-radius: var(--vx-radius-md);
-  font-size: 18px;
+  font-size: var(--vx-font-size-lg);
 }
 .ac-name {
   font-weight: 700;
   color: var(--vx-color-text-strong);
 }
 .ac-code {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   font-family: var(--vx-font-mono);
 }
 .ac-desc {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   line-height: 1.5;
   display: -webkit-box;
@@ -887,14 +896,14 @@
   display: flex;
   align-items: center;
   gap: var(--vx-space-md);
-  padding-top: 8px;
+  padding-top: var(--vx-space-sm);
   border-top: 1px solid var(--vx-color-border-muted);
 }
 .ac-stat {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .ac-q {
@@ -907,7 +916,7 @@
 }
 .mono {
   font-family: var(--vx-font-mono);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 
 /* ----------------------------------------------------------- asset detail --- */
@@ -1009,10 +1018,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   color: var(--vx-color-text-secondary);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
 }
 .pk-tag {
   margin-left: 6px;
@@ -1096,23 +1105,23 @@
 .pass-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   min-width: 120px;
 }
 .pass-track {
   flex: 1;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
 .pass-track span {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .pass-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   font-variant-numeric: tabular-nums;
   min-width: 42px;
@@ -1132,7 +1141,7 @@
 .level-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--vx-space-xs);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-top: 3px solid var(--vx-color-border);
@@ -1147,21 +1156,21 @@
 .lc-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .lc-name {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }
 .lc-val {
-  font-size: 20px;
+  font-size: var(--vx-font-size-xl);
   font-weight: 700;
   color: var(--vx-color-text-strong);
   font-variant-numeric: tabular-nums;
 }
 .lc-sub {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 
@@ -1174,7 +1183,7 @@
 .service-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: var(--vx-space-md);
   border: 1px solid var(--vx-color-border);
   border-radius: var(--vx-radius-xl);
@@ -1191,7 +1200,7 @@
   font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--vx-radius-sm);
   border: 1px solid currentColor;
 }
 .sc-name {
@@ -1201,11 +1210,11 @@
 }
 .sc-path {
   font-family: var(--vx-font-mono);
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .sc-desc {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
   line-height: 1.5;
 }
@@ -1219,7 +1228,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--vx-space-xs);
-  padding-top: 8px;
+  padding-top: var(--vx-space-sm);
   border-top: 1px solid var(--vx-color-border-muted);
 }
 .sc-stats > div {
@@ -1228,7 +1237,7 @@
   gap: 2px;
 }
 .scs-val {
-  font-size: 14px;
+  font-size: var(--vx-font-size-sm);
   font-weight: 700;
   color: var(--vx-color-text-strong);
   font-variant-numeric: tabular-nums;
@@ -1246,7 +1255,7 @@
   flex-wrap: wrap;
 }
 .lt-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .lt-chip {
@@ -1258,7 +1267,7 @@
   border: 1px solid var(--vx-color-border);
   background: var(--vx-color-surface);
   color: var(--vx-color-text-strong);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
 }
 .lt-legend {
   display: inline-flex;
@@ -1270,13 +1279,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .ltl-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .lineage-canvas {
   position: relative;
@@ -1290,7 +1299,7 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   padding: 8px 10px;
   border-radius: var(--vx-radius-lg);
   border: 1px solid var(--vx-color-border);
@@ -1314,7 +1323,7 @@
   min-width: 0;
 }
 .ln-label {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
   white-space: nowrap;
@@ -1342,7 +1351,7 @@
 .info-chip i,
 .info-chip svg {
   color: var(--vx-color-text-muted);
-  font-size: 18px;
+  font-size: var(--vx-font-size-lg);
 }
 .info-chip.warn {
   border-color: var(--vx-color-warning-surface);
@@ -1353,7 +1362,7 @@
   color: var(--vx-color-text-muted);
 }
 .ic-value {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }

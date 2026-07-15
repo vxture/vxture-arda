@@ -4,13 +4,13 @@ import {
   Button,
   DataTable,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { Donut } from "../../ui/charts";
 import { LEVEL_TONE, REQUEST_TONE, REQUESTS, type ShareRequest } from "./seed";
 import type { SecurityData } from "./data";
@@ -46,11 +46,12 @@ export function SecurityList({ data }: { data: SecurityData }) {
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="lock-key"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="shield" /> {t("template")}

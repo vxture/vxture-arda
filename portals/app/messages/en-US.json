@@ -226,7 +226,6 @@
     }
   },
   "catalog": {
-    "eyebrow": "Asset Governance",
     "title": "Asset Catalog",
     "description": "Search, browse, and request access to catalogued data assets across every domain.",
     "register": "Register source",
@@ -356,7 +355,6 @@
     "removeStandard": "Unlink standard {name}"
   },
   "standards": {
-    "eyebrow": "Asset Governance",
     "title": "Data Standards",
     "description": "Manage data elements, code sets, and naming conventions - the shared vocabulary of the platform.",
     "docs": "Spec docs",
@@ -391,7 +389,6 @@
     }
   },
   "quality": {
-    "eyebrow": "Asset Governance",
     "title": "Data Quality",
     "description": "Audit rules, issue distribution, and remediation tracking across the six quality dimensions.",
     "rules": "Rule library",
@@ -449,7 +446,6 @@
     }
   },
   "lineage": {
-    "eyebrow": "Asset Governance",
     "title": "Data Lineage",
     "description": "Trace data from source to application across every transform, hop, and downstream impact.",
     "impact": "Impact analysis",
@@ -499,7 +495,6 @@
     }
   },
   "security": {
-    "eyebrow": "Asset Governance",
     "title": "Data Security",
     "description": "Unified control of classification, masking policies, and sharing authorization.",
     "template": "Classification template",
@@ -537,7 +532,6 @@
     }
   },
   "service": {
-    "eyebrow": "Shared Apps",
     "title": "Data Services",
     "description": "Package data assets as standard APIs and serve them to teams and applications.",
     "docs": "API docs",
@@ -588,7 +582,6 @@
     }
   },
   "etl": {
-    "eyebrow": "Sharing & apps",
     "title": "Data development",
     "description": "Orchestrate and operate batch and streaming jobs for ingest, cleansing and fusion",
     "orchestrate": "Orchestrate",
@@ -684,7 +677,6 @@
     "description": "This area is limited to workspace owners and admins. Ask a workspace admin to grant you the role."
   },
   "apikeys": {
-    "eyebrow": "Administration",
     "title": "API Keys",
     "description": "Keys that authenticate external consumers of your data services. Secrets are stored as hashes; revocation is immediate and audited.",
     "metrics": {
@@ -726,7 +718,6 @@
     }
   },
   "audit": {
-    "eyebrow": "Administration",
     "title": "Audit Log",
     "description": "Workspace activity and platform commands, newest first. Retention follows your plan.",
     "metrics": {
@@ -746,7 +737,6 @@
     "emptyDesc": "Sensitive operations and platform commands are recorded here."
   },
   "sources": {
-    "eyebrow": "Integration",
     "title": "Data Sources",
     "description": "Register external systems for cataloging. Credentials are sealed with app-layer encryption before they touch the database.",
     "metrics": {
@@ -835,7 +825,6 @@
     "descriptionUntil": "The platform has marked this workspace for removal. Data is retained until {date}; re-activating the workspace on the platform before then restores access."
   },
   "glossary": {
-    "eyebrow": "Assets",
     "title": "Business Glossary",
     "description": "Shared vocabulary for your data: workspace terms you curate plus the platform reference glossary (read-only).",
     "col": {

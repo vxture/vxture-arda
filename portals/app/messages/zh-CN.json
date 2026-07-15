@@ -226,7 +226,6 @@
     }
   },
   "catalog": {
-    "eyebrow": "资产治理",
     "title": "资产目录",
     "description": "检索、浏览并申请使用全域已编目的数据资产。",
     "register": "登记数据源",
@@ -356,7 +355,6 @@
     "removeStandard": "解除标准 {name}"
   },
   "standards": {
-    "eyebrow": "资产治理",
     "title": "数据标准",
     "description": "统一管理数据元、代码集与命名规范，沉淀全域数据语言。",
     "docs": "规范文档",
@@ -391,7 +389,6 @@
     }
   },
   "quality": {
-    "eyebrow": "资产治理",
     "title": "数据质量",
     "description": "基于六大质量维度的稽核规则、问题分布与整改跟踪。",
     "rules": "规则库",
@@ -449,7 +446,6 @@
     }
   },
   "lineage": {
-    "eyebrow": "资产治理",
     "title": "数据血缘",
     "description": "追溯数据从源头到应用的全链路加工、流转与影响关系。",
     "impact": "影响分析",
@@ -499,7 +495,6 @@
     }
   },
   "security": {
-    "eyebrow": "资产治理",
     "title": "数据安全",
     "description": "数据分级分类、脱敏策略与共享授权的统一管控。",
     "template": "分级模板",
@@ -537,7 +532,6 @@
     }
   },
   "service": {
-    "eyebrow": "共享应用",
     "title": "数据服务",
     "description": "将数据资产封装为标准 API，面向团队与应用统一供给。",
     "docs": "API 文档",
@@ -588,7 +582,6 @@
     }
   },
   "etl": {
-    "eyebrow": "共享应用",
     "title": "数据开发",
     "description": "数据汇聚、清洗与融合的离线 / 实时任务编排与运维",
     "orchestrate": "任务编排",
@@ -684,7 +677,6 @@
     "description": "该区域仅限工作区所有者与管理员访问。请联系工作区管理员为你授予角色。"
   },
   "apikeys": {
-    "eyebrow": "管理",
     "title": "API 密钥",
     "description": "用于外部消费方调用数据服务的密钥。密钥仅存哈希；吊销即时生效并记入审计。",
     "metrics": {
@@ -726,7 +718,6 @@
     }
   },
   "audit": {
-    "eyebrow": "管理",
     "title": "审计日志",
     "description": "工作区操作与平台指令记录，按时间倒序。留存期限随订阅套餐。",
     "metrics": {
@@ -746,7 +737,6 @@
     "emptyDesc": "敏感操作与平台指令都会记录在这里。"
   },
   "sources": {
-    "eyebrow": "数据集成",
     "title": "数据源",
     "description": "登记外部系统以纳入编目。连接凭据入库前经应用层加密，数据库不见明文。",
     "metrics": {
@@ -835,7 +825,6 @@
     "descriptionUntil": "平台已将该工作区标记删除。数据保留至 {date}，在此之前经平台重新开通可恢复访问。"
   },
   "glossary": {
-    "eyebrow": "数据资产",
     "title": "业务术语表",
     "description": "数据的共同语言：工作区自有术语 + 平台参考术语（只读）。",
     "col": {

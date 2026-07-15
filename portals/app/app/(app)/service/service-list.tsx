@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, EmptyState, MetricGrid, PageHeader, StatusBadge, type MetricGridItem } from "@vxture/design-system";
+import { Button, EmptyState, MetricGrid, StatusBadge, type MetricGridItem } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { DOMAINS, LEVEL_TONE, METHOD_COLOR, STATUS_META } from "./seed";
 import { publishDataService, type PublishServiceResult } from "./actions";
 import type { ServiceView } from "./data";
@@ -46,11 +47,12 @@ export function ServiceList({ services, isAdmin = false }: { services: ServiceVi
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="broadcast"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="book-open" /> {t("docs")}

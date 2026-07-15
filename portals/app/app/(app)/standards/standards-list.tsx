@@ -6,13 +6,13 @@ import {
   DataTable,
   EmptyState,
   MetricGrid,
-  PageHeader,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
+import { SectionHeading } from "../../ui/section-heading";
 import { STATUS_TONE } from "./seed";
 import type { StandardsMetrics, StandardView } from "./data";
 
@@ -57,11 +57,12 @@ export function StandardsList({ standards, metrics }: { standards: StandardView[
 
   return (
     <div className="screen">
-      <PageHeader
-        eyebrow={t("eyebrow")}
+      <SectionHeading
+        level="page"
+        icon="ruler"
         title={t("title")}
         description={t("description")}
-        actions={
+        action={
           <>
             <Button variant="secondary">
               <PIcon name="book-open" /> {t("docs")}
