@@ -154,7 +154,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         ],
     ),
     (
-        "ci triggers on main (trunk-based target; develop is transitional until retired)",
+        "ci triggers only on main (no develop branch in the trunk-based model)",
         Path(CI_WORKFLOW),
         [
             "pull_request:",

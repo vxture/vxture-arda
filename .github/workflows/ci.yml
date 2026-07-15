@@ -3,15 +3,10 @@ name: ci
 on:
   pull_request:
     branches:
-      - develop
-      # TRANSITIONAL: main is the trunk-based model's only real target. develop
-      # stays here only until this PR merges and gets fast-forwarded to main
-      # and the develop branch/ruleset are retired - see the migration
-      # sequencing in PR #116. Drop this the moment develop is deleted.
       - main
   push:
     branches:
-      - develop
+      - main
 
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
