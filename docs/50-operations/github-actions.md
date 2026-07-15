@@ -132,10 +132,16 @@ Two GitHub Environments: `beta` and `production`. Each carries:
 | `ENV_FILE_BASE64` | Base64-encoded `.env` for bootstrap deploy |
 | `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID for CI ephemeral node |
 | `TAILSCALE_OAUTH_CLIENT_SECRET` | Tailscale OAuth secret |
-| `ALIYUN_ACR_REGISTRY` | Aliyun ACR registry URL (pull-through fallback) |
-| `ALIYUN_ACR_NAMESPACE` | Aliyun ACR namespace |
 | `ALIYUN_ACR_USERNAME` | Aliyun ACR username |
 | `ALIYUN_ACR_PASSWORD` | Aliyun ACR password |
+
+`ALIYUN_ACR_REGISTRY` and `ALIYUN_ACR_NAMESPACE` are NOT secrets - they are public
+identifiers (registry hostname, image namespace), classified as `vars.*` per the
+org-wide secret/variable standard. `ALIYUN_ACR_REGISTRY` is an org-level variable
+(shared across vxture-platform/arda/umbra); `ALIYUN_ACR_NAMESPACE` is a repo-level
+variable (each product's images live under its own namespace, e.g. arda uses
+`vx-foundation`). `ALIYUN_ACR_USERNAME`/`PASSWORD` remain credentials and stay as
+org-level secrets.
 
 Repository-level secrets:
 | Secret | Purpose |
@@ -143,10 +149,13 @@ Repository-level secrets:
 | `NODE_AUTH_TOKEN` | GitHub Packages read token for `@vxture` scope (npm install + docker build) |
 | `PROMOTION_TOKEN` | PAT with repo write for promote.yml push to main |
 
-Repository-level variable:
+Repository-level variables:
 | Variable | Purpose |
 |---|---|
 | `TAILSCALE_OAUTH_CLIENT_TAG` | Tag for the ephemeral tailscale node (e.g., `tag:ci`) |
+| `ALIYUN_ACR_NAMESPACE` | Aliyun ACR namespace for this product's images |
+
+Org-level variable: `ALIYUN_ACR_REGISTRY` (Aliyun ACR registry hostname, pull-through fallback, shared across repos).
 
 ---
 

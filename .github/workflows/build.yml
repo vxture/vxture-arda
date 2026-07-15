@@ -16,10 +16,6 @@ on:
     secrets:
       NODE_AUTH_TOKEN:
         required: true
-      ALIYUN_ACR_REGISTRY:
-        required: true
-      ALIYUN_ACR_NAMESPACE:
-        required: true
       ALIYUN_ACR_USERNAME:
         required: true
       ALIYUN_ACR_PASSWORD:
@@ -52,8 +48,11 @@ jobs:
 
     env:
       GHCR_NAMESPACE: vxture
-      ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-      ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+      # ALIYUN_ACR_REGISTRY/NAMESPACE are public identifiers, not credentials -
+      # org/repo vars, not secrets (org standard: docs/rebuild/README.md #2 in
+      # vxture-platform).
+      ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
+      ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
       VXTURE_NPM_REGISTRY: ${{ vars.VXTURE_NPM_REGISTRY }}
 
     strategy:
