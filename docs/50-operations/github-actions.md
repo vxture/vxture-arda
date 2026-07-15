@@ -17,7 +17,12 @@ release tag - merging to `main` never deploys anything by itself.
 
 ## `ci.yml` - Quality Gate
 
-Runs on PRs to `main`, and on pushes to `main`. Does NOT deploy.
+Runs on PRs to `main` only - no `push:main` trigger. main only advances via
+squash-merged, up-to-date-with-base PRs, so the PR's own `pull_request` run
+already validates exactly what lands on `main`; a push-triggered rerun would
+just redo identical work. (The one gap: an admin using their ruleset bypass to
+push `main` directly without a PR gets no CI validation - accepted tradeoff.)
+Does NOT deploy.
 
 Three parallel jobs, then a final aggregator:
 
@@ -32,6 +37,9 @@ Three parallel jobs, then a final aggregator:
 
 ### `portal-build`
 
+- First step diffs against the PR base to decide if the build is needed at
+  all - skipped (job still succeeds) when every changed path is docs/root-meta
+  only; fails open (runs the build) if the diff can't be determined
 - `npm ci` (workspace install from `portals/`, with co-located `.npmrc` workaround)
 - `npm run type-check -w ./app` (TypeScript type check)
 - `npm run build -w ./app` (Next.js production build)
@@ -39,15 +47,17 @@ Three parallel jobs, then a final aggregator:
 
 ### `secret-scan`
 
-- `gitleaks dir . --config .gitleaks.toml --redact` (version 8.21.2, pinned)
+- `gitleaks dir . --config .gitleaks.toml --redact` (version 8.21.2, pinned),
+  binary cached across runs by version
 - Allowlist of known-safe placeholders in `.gitleaks.toml`
 
 ### `quality-gate` (aggregator)
 
 Required status check for the `main` branch ruleset. Succeeds only when all
-three upstream jobs pass. Runs on every PR and on push to `main`, but NOT on a
-tag push - cutting a release tag ships whatever is already at that commit on
-`main`, it does not re-verify the gate.
+three upstream jobs pass (a docs-only-skipped `portal-build` still counts as
+passing - only its internal steps are conditionally skipped, the job itself
+always completes). Does not run on a tag push - cutting a release tag ships
+whatever is already at that commit on `main`, it does not re-verify the gate.
 
 ---
 

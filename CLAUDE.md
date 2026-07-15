@@ -87,15 +87,17 @@ on tag push (`beta-*` -> beta, `v*.*.*` -> production) and calls `build.yml` via
 `workflow_call` before deploying - build and deploy run in one workflow run, so
 build always finishes before deploy starts (no separate wait-for-build polling
 needed, unlike a two-independently-tag-triggered-workflows split). `ci.yml`
-triggers on PRs to `main` and pushes to `main`; it does NOT deploy. Every image
+triggers only on PRs to `main` (no `push:main` - that would just rerun
+quality-gate on content the PR's own run already validated); it does NOT
+deploy. Every image
 build publishes both an immutable `sha-<short>` tag (what deploy actually pulls
 by, and what the skip-rebuild-if-unchanged dedup checks across tags) and the
 exact release tag name (`beta-YYYYMMDD.N` / `vX.Y.Z`, for human/audit
 reference). Deploy internals live under `deploy/`.
 
-`quality-gate` must pass before any merge to `main`. It runs on every PR and on
-push to `main`, but NOT on a tag push - cutting a release tag ships whatever is
-already at that commit on `main`, it does not re-verify the gate. It runs:
+`quality-gate` must pass before any merge to `main`. It runs on every PR, but
+NOT on a tag push - cutting a release tag ships whatever is already at that
+commit on `main`, it does not re-verify the gate. It runs:
 - static script checks (`bash -n`, `python -m compileall`,
   `scripts/checks/06-check-deploy-contracts.py`, `git diff --check`,
   secret-scan via `.gitleaks.toml`)
