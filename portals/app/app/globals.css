@@ -10,8 +10,9 @@
  * so this file's overrides win) - the real vxture admin/console shell, not a
  * hand copy. This file only owns arda's deliberate deltas from that shell:
  * the content-inner inset (no max-width, full viewport - owner ruling) and a
- * few arda-only wrappers (app-section, app-footer, entitlement-pending) that
- * have no template equivalent. ui/console.css carries the same rule: it only
+ * few arda-only wrappers (app-section, entitlement-pending) that have no
+ * template equivalent. No page footer - owner ruling, dropped app-wide.
+ * ui/console.css carries the same rule: it only
  * defines classes the template doesn't (or SVG-icon compatibility shims,
  * since arda renders Phosphor icons as React SVGs, not the template's icon
  * font) - never a redeclaration of a class the import already provides.
@@ -59,18 +60,6 @@
   display: grid;
   place-items: center;
   padding: var(--vx-space-3xl) var(--arda-content-x);
-}
-
-.app-footer {
-  flex-shrink: 0;
-  padding-inline: var(--arda-content-x);
-  border-top: 1px solid var(--vx-color-border);
-}
-
-.app-footer-inner {
-  width: 100%;
-  max-width: var(--arda-shell-max-width);
-  margin: 0 auto;
 }
 
 /* Narrow viewports: tighten the content inset. */

@@ -39,7 +39,7 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-function formatBytes(n: number): string {
+function formatBytesParts(n: number): { value: string; unit: string } {
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
   let v = n;
   let i = 0;
@@ -47,7 +47,12 @@ function formatBytes(n: number): string {
     v /= 1024;
     i++;
   }
-  return (i === 0 ? String(v) : v.toFixed(1).replace(/\.0$/, "")) + units[i];
+  return { value: i === 0 ? String(v) : v.toFixed(1).replace(/\.0$/, ""), unit: units[i] };
+}
+
+function formatBytes(n: number): string {
+  const { value, unit } = formatBytesParts(n);
+  return value + unit;
 }
 
 export interface DashTopAsset {
@@ -85,7 +90,8 @@ export interface DashboardData {
   period: Period;
   // core metrics
   datasetCount: number;
-  capacity: string;
+  capacityValue: string;
+  capacityUnit: string;
   capacityNewInPeriod: string;
   datasetNewInPeriod: number;
   serviceCount: number;
@@ -200,10 +206,13 @@ export async function getDashboard(workspaceId: string, period: Period = "month"
     .map((d) => ({ key: d.team as string, value: d._count._all, color: TEAM_COLOR[d.team as string] ?? "var(--vx-color-gray-500)" }))
     .sort((a, b) => b.value - a.value);
 
+  const capacityParts = formatBytesParts(Number(capacityAgg._sum.sizeBytes ?? 0n));
+
   return {
     period,
     datasetCount,
-    capacity: formatBytes(Number(capacityAgg._sum.sizeBytes ?? 0n)),
+    capacityValue: capacityParts.value,
+    capacityUnit: capacityParts.unit,
     capacityNewInPeriod: formatBytes(Number(capacityNewAgg._sum.sizeBytes ?? 0n)),
     datasetNewInPeriod,
     serviceCount,

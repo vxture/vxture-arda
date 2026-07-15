@@ -24,19 +24,45 @@ export function DashboardClient({
   const t = useTranslations("dashboard");
   const router = useRouter();
 
-  const newInPeriod = (count: number) =>
-    periods.main === "all" ? null : t("metrics.newInPeriod", { count, period: t("period." + periods.main) });
+  const newInPeriod = (count: number): string[] =>
+    periods.main === "all" ? [] : [t("metrics.newInPeriod", { count, period: t("period." + periods.main) })];
 
-  const metrics: Array<{ id: string; label: string; value: string; trend: string | null; tone: StatTone }> = [
-    { id: "assets", label: t("metrics.assets"), value: data.datasetCount.toLocaleString(), trend: newInPeriod(data.datasetNewInPeriod), tone: "blue" },
-    { id: "capacity", label: t("metrics.capacity"), value: data.capacity, trend: periods.main === "all" ? null : t("metrics.capacityNew", { value: data.capacityNewInPeriod }), tone: "blue" },
-    { id: "services", label: t("metrics.services"), value: data.serviceCount.toLocaleString(), trend: newInPeriod(data.serviceNewInPeriod), tone: "green" },
+  const metrics: Array<{ id: string; label: string; value: string; unit?: string; tags: string[]; tone: StatTone; icon: PIconName }> = [
+    {
+      id: "assets",
+      label: t("metrics.assets"),
+      value: data.datasetCount.toLocaleString(),
+      unit: t("metrics.unitCount"),
+      tags: newInPeriod(data.datasetNewInPeriod),
+      tone: "blue",
+      icon: "stack",
+    },
+    {
+      id: "capacity",
+      label: t("metrics.capacity"),
+      value: data.capacityValue,
+      unit: data.capacityUnit,
+      tags: periods.main === "all" ? [] : [t("metrics.capacityNew", { value: data.capacityNewInPeriod })],
+      tone: "blue",
+      icon: "database",
+    },
+    {
+      id: "services",
+      label: t("metrics.services"),
+      value: data.serviceCount.toLocaleString(),
+      unit: t("metrics.unitCount"),
+      tags: newInPeriod(data.serviceNewInPeriod),
+      tone: "green",
+      icon: "broadcast",
+    },
     {
       id: "quality",
       label: t("metrics.quality"),
-      value: data.qualityScore ? data.qualityScore.toFixed(0) + "%" : "-",
-      trend: periods.main === "all" || !data.qualityRunsInPeriod ? null : t("metrics.qualityRuns", { count: data.qualityRunsInPeriod }),
+      value: data.qualityScore ? data.qualityScore.toFixed(0) : "-",
+      unit: data.qualityScore ? "%" : undefined,
+      tags: periods.main === "all" || !data.qualityRunsInPeriod ? [] : [t("metrics.qualityRuns", { count: data.qualityRunsInPeriod })],
       tone: data.qualityScore && data.qualityScore < 95 ? "amber" : "blue",
+      icon: "seal-check",
     },
   ];
 
@@ -83,15 +109,20 @@ export function DashboardClient({
       <div className="stat-grid">
         {metrics.map((m) => (
           <div className={"stat-card stat-tone--" + m.tone} key={m.id}>
+            <PIcon className="stat-card-art" name={m.icon} weight="fill" aria-hidden />
             <div className="stat-card-top">
+              <span className="stat-card-dot" aria-hidden />
               <span className="stat-card-label">{m.label}</span>
-              {m.trend && (
-                <span className="stat-card-tags">
-                  <em>{m.trend}</em>
-                </span>
-              )}
             </div>
-            <span className="stat-card-value">{m.value}</span>
+            <div className="stat-card-value-row">
+              <span className="stat-card-value">{m.value}</span>
+              {m.unit && <small className="stat-card-unit">{m.unit}</small>}
+              <span className="stat-card-tags">
+                {m.tags.map((tag) => (
+                  <em key={tag}>{tag}</em>
+                ))}
+              </span>
+            </div>
           </div>
         ))}
       </div>
@@ -103,8 +134,8 @@ export function DashboardClient({
           title={t("section.assetsTitle")}
           description={t("section.assetsSub")}
           action={
-            <Button variant="link" onClick={() => router.push("/catalog")}>
-              {t("viewAll")}
+            <Button variant="secondary" size="sm" className="ov-view-more" onClick={() => router.push("/catalog")}>
+              {t("viewDetails")}
             </Button>
           }
         />
@@ -144,8 +175,8 @@ export function DashboardClient({
           title={t("section.servicesTitle")}
           description={t("section.servicesSub", { running: data.servicesRunning, total: data.serviceCount })}
           action={
-            <Button variant="link" onClick={() => router.push("/service")}>
-              {t("viewAll")}
+            <Button variant="secondary" size="sm" className="ov-view-more" onClick={() => router.push("/service")}>
+              {t("viewDetails")}
             </Button>
           }
         />
@@ -202,8 +233,8 @@ export function DashboardClient({
           title={t("section.standardsTitle")}
           description={t("section.standardsSub", { published: data.standardsPublished, total: data.standardsTotal })}
           action={
-            <Button variant="link" onClick={() => router.push("/standards")}>
-              {t("viewAll")}
+            <Button variant="secondary" size="sm" className="ov-view-more" onClick={() => router.push("/standards")}>
+              {t("viewDetails")}
             </Button>
           }
         />
@@ -234,19 +265,33 @@ export function DashboardClient({
           title={t("section.securityTitle")}
           description={t("section.securitySub")}
           action={
-            <Button variant="link" onClick={() => router.push("/security")}>
-              {t("viewAll")}
+            <Button variant="secondary" size="sm" className="ov-view-more" onClick={() => router.push("/security")}>
+              {t("viewDetails")}
             </Button>
           }
         />
         <div className="stat-grid">
           <div className="stat-card stat-tone--blue">
-            <span className="stat-card-label">{t("section.securityApiKeys")}</span>
-            <span className="stat-card-value">{data.apiKeysActive.toLocaleString()}</span>
+            <PIcon className="stat-card-art" name="lock-key" weight="fill" aria-hidden />
+            <div className="stat-card-top">
+              <span className="stat-card-dot" aria-hidden />
+              <span className="stat-card-label">{t("section.securityApiKeys")}</span>
+            </div>
+            <div className="stat-card-value-row">
+              <span className="stat-card-value">{data.apiKeysActive.toLocaleString()}</span>
+              <small className="stat-card-unit">{t("metrics.unitCount")}</small>
+            </div>
           </div>
           <div className="stat-card stat-tone--blue">
-            <span className="stat-card-label">{t("section.securityPolicies")}</span>
-            <span className="stat-card-value">{data.policiesEnabled.toLocaleString()}</span>
+            <PIcon className="stat-card-art" name="shield-check" weight="fill" aria-hidden />
+            <div className="stat-card-top">
+              <span className="stat-card-dot" aria-hidden />
+              <span className="stat-card-label">{t("section.securityPolicies")}</span>
+            </div>
+            <div className="stat-card-value-row">
+              <span className="stat-card-value">{data.policiesEnabled.toLocaleString()}</span>
+              <small className="stat-card-unit">{t("metrics.unitCount")}</small>
+            </div>
           </div>
         </div>
       </div>

@@ -40,8 +40,12 @@ export function PeriodSwitch({
   const router = useRouter();
 
   const setPeriod = (next: PeriodKey) => {
+    // scroll:false - router.push scrolls to the top of the page by default
+    // on navigation; without this, switching a sub-block's period (or even
+    // the main one, mid-scroll) yanks the viewport back up to the page
+    // title instead of staying put while the section refreshes in place.
     if (scope === "main") {
-      router.push("?" + paramKey + "=" + next);
+      router.push("?" + paramKey + "=" + next, { scroll: false });
       return;
     }
     const params = new URLSearchParams();
@@ -49,7 +53,7 @@ export function PeriodSwitch({
       if (v) params.set(key, v);
     }
     params.set(paramKey, next);
-    router.push("?" + params.toString());
+    router.push("?" + params.toString(), { scroll: false });
   };
 
   return (

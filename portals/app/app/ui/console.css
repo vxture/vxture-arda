@@ -99,6 +99,16 @@
   flex-shrink: 0;
 }
 
+/* ---- arda-only: bottom safe area on the nav scroll region, now that the
+   footer compliance card (which used to occupy this space) is gone - same
+   --vx-space-4xl the content area reserves at its own bottom, so the last
+   nav item never sits flush against the viewport edge when scrolled all the
+   way down. Overrides just the bottom side of the import's own
+   `padding: 0 var(--vx-space-md)` shorthand. ---- */
+.side-nav {
+  padding-bottom: var(--vx-space-4xl);
+}
+
 /* ------------------------------------------------------------- dashboard ---
  * `.screen`/`.dash`/`.dash-cols`/`.dash-main`/`.dash-side` (grid wrappers)
  * come straight from the shell-template import. Everything else below is
@@ -155,8 +165,8 @@
 }
 .ov-heading-ico {
   flex-shrink: 0;
-  color: var(--vx-color-primary);
-  font-size: 1.5rem;
+  color: var(--vx-color-brand-300);
+  font-size: var(--vx-font-size-2xl);
   margin-top: 2px;
 }
 .ov-heading.is-page .ov-heading-ico {
@@ -166,7 +176,7 @@
 .ov-heading-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--vx-space-xs);
   min-width: 0;
 }
 .ov-heading-copy h1,
@@ -190,77 +200,163 @@
   line-height: 1.55;
 }
 .ov-heading-action {
+  /* .ov-heading is align-items:flex-start (icon/title sit at the top of the
+     row) - the action (period switch / view-details link) should sit at the
+     bottom of the row, level with the description text, not float up next
+     to the icon. */
+  align-self: flex-end;
   margin-left: auto;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
+}
+/* "view details" lives in the SectionHeading's own action slot (bottom-
+   aligned via .ov-heading-action's align-self:flex-end) - a standalone
+   toolbar row was tried and reverted: it added a second gap (title ->
+   toolbar -> content) instead of bringing the content closer. */
+.ov-view-more {
+  font-size: var(--vx-admin-caption-size);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.ov-view-more:hover {
+  background: var(--vx-color-surface-muted);
+  border-color: var(--vx-color-border-strong);
 }
 
-/* KPI "pulse" cards - real admin-overview-pulse recipe. auto-fit (not a
-   fixed repeat(4, ...)) so a 2-card grid (e.g. the security section) doesn't
+/* KPI "pulse" cards - real admin-overview-pulse recipe, extended with a
+   large, pale watermark icon in the card's own background (label/value sit
+   above it via relative positioning + z-index). auto-fit (not a fixed
+   repeat(4, ...)) so a 2-card grid (e.g. the security section) doesn't
    leave dead columns - it was leaving half the row empty. */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: stretch;
 }
 .stat-card {
+  position: relative;
+  overflow: hidden;
   min-width: 0;
-  display: grid;
-  align-content: start;
-  gap: var(--vx-space-md);
-  padding: var(--vx-space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--vx-space-sm);
+  /* Top inset trimmed vs. the other three sides (owner feedback: shift the
+     card's content up) - still a real DS token (--vx-space-lg), not a
+     custom px value. */
+  padding: var(--vx-space-lg) var(--vx-space-2xl) var(--vx-space-2xl);
   border: 1px solid color-mix(in srgb, var(--vx-color-brand-400) 16%, transparent);
   border-top: 2px solid var(--stat-tone);
   border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
   background: color-mix(in srgb, var(--vx-color-white) 68%, transparent);
 }
-/* label + delta tag share the top row (live admin.vxture.com reference:
-   label/help-icon on the left, the "+N" pill on the right); the value is
-   its own row below - not label/value/tag stacked three-deep. */
+.stat-card-art {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 80px;
+  line-height: 1;
+  color: var(--stat-tone);
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Dot + label, adopted from the real /security page's .level-card (.lc-dot/
+   .lc-name): a small dot in the same tone as the card's own border-top
+   accent - var(--stat-tone) on both, no inline style needed since arda's
+   stat-card already carries its tone as a CSS custom property (the
+   security page sets it via inline style; this is the same idea done
+   cleaner since the token is already there). */
 .stat-card-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--vx-space-sm);
+  gap: 6px;
+}
+.stat-card-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--vx-radius-full);
+  background: var(--stat-tone);
 }
 .stat-card-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   color: var(--vx-color-text-muted);
-  font-size: var(--vx-admin-caption-size, 0.75rem);
+  font-size: var(--vx-admin-card-title-size, 0.94rem);
   font-weight: 700;
+}
+/* Value and its delta tags share ONE row - tags are not a separate line.
+   flex-end bottom-aligns the tag pill against the value's own baseline-ish
+   edge (not `baseline` itself: that alignment mode reserves extra space to
+   line up font ascent/descent across the 24px value and the 22px pill,
+   which makes the row *taller* than either child alone - a different
+   height depending on whether a tag is present. flex-end has no such
+   reservation: the row's cross-size is just the tallest child (always the
+   24px value), so nothing changes when a tag comes or goes.) The wrapper
+   itself is ALWAYS rendered by the caller, tags or not, so gap/spacing
+   around it never disappears - only the `em` children inside it do.
+   padding-left matches the dot (8px) + .stat-card-top's own gap (6px)
+   above, so the value lines up under the LABEL TEXT, not the dot - the
+   .level-card reference this is adopted from doesn't do this (its value
+   sits flush with the dot instead), which reads as misaligned; this fixes
+   that rather than reproducing it. */
+.stat-card-value-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--vx-space-sm);
+  flex-wrap: wrap;
+  padding-left: 14px;
 }
 .stat-card-value {
   overflow: hidden;
   color: var(--stat-tone);
   font-family: var(--font-number);
   font-variant-numeric: tabular-nums;
-  font-size: 1.5rem;
+  font-size: var(--vx-font-size-2xl);
   font-weight: 760;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.stat-card-tags {
+/* A flex sibling of the value (not nested inside its text), so it bottom-
+   aligns via the value-row's flex-end - same row, same 18px box height as
+   the tag pill below, so the two don't just sit on the same row but
+   actually look the same size next to each other. */
+.stat-card-unit {
   display: inline-flex;
+  align-items: center;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--vx-color-text-muted);
+  font-size: var(--vx-admin-caption-size);
+  font-weight: 600;
+  line-height: 1;
+}
+.stat-card-tags {
+  display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  flex-shrink: 0;
 }
+/* Neutral gray, not tone-colored - a tag the same color as the value made it
+   impossible to tell the primary number from the secondary delta apart.
+   Same 18px height as .stat-card-unit (was 22px - visibly taller and not
+   actually aligned with it despite sharing a row). */
 .stat-card-tags em {
   display: inline-flex;
   align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--stat-tone-soft);
-  color: var(--stat-tone);
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--vx-radius-full);
+  background: var(--vx-color-surface-muted);
+  color: var(--vx-color-text-secondary);
   font-size: 11px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 .stat-tone--blue {
@@ -306,12 +402,14 @@
   border-bottom: 1px solid var(--vx-color-border-muted);
 }
 .con-card-heading {
-  font: 700 16px var(--font-brand);
+  font-family: var(--font-brand);
+  font-size: var(--vx-font-size-md);
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--vx-color-text-strong);
 }
 .con-card-sub {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   margin-top: 3px;
 }
@@ -360,13 +458,13 @@
   border-radius: var(--vx-admin-card-radius, var(--vx-radius-lg));
   background: var(--vx-color-primary-soft);
   color: var(--vx-color-primary);
-  font-size: 20px;
+  font-size: var(--vx-font-size-xl);
 }
 .ov-link-card-body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--vx-space-xs);
   color: var(--vx-color-text-muted);
   font-size: var(--vx-admin-meta-size, 0.8125rem);
   line-height: 1.55;
@@ -426,13 +524,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .li-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .hbars {
   display: flex;
@@ -446,21 +544,21 @@
   gap: var(--vx-space-sm);
 }
 .hbar-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .hbar-track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
 .hbar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .hbar-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -471,7 +569,7 @@
   flex-wrap: wrap;
 }
 .donut-num {
-  font-size: 20px;
+  font-size: var(--vx-font-size-xl);
   font-weight: 700;
   fill: var(--vx-color-text-strong);
 }
@@ -489,13 +587,13 @@
 .dl-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: var(--vx-space-sm);
+  font-size: var(--vx-admin-caption-size);
 }
 .dl-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
 }
 .dl-label {
   color: var(--vx-color-text-secondary);
@@ -513,7 +611,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--vx-space-xs);
 }
 .ring-num {
   font-size: 22px;
@@ -521,7 +619,7 @@
   fill: var(--vx-color-text-strong);
 }
 .ring-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
 }
 .qm-body {
@@ -533,7 +631,7 @@
 .qm-dims {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--vx-space-sm);
   flex: 1;
   min-width: 160px;
 }
@@ -541,15 +639,15 @@
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) 32px;
   align-items: center;
-  gap: 8px;
+  gap: var(--vx-space-sm);
 }
 .qm-dim-label {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-secondary);
 }
 .qm-dim-track {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--vx-radius-full);
   background: var(--vx-color-surface-muted);
   overflow: hidden;
 }
@@ -559,7 +657,7 @@
   background: var(--vx-color-primary);
 }
 .qm-dim-val {
-  font-size: 12px;
+  font-size: var(--vx-admin-caption-size);
   color: var(--vx-color-text-muted);
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -585,7 +683,7 @@
 .cell-asset-name {
   font-weight: 600;
   color: var(--vx-color-text-strong);
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
 }
 .cell-asset-code {
   font-size: 11px;
@@ -623,7 +721,7 @@
   flex-shrink: 0;
 }
 .alert-title {
-  font-size: 13px;
+  font-size: var(--vx-admin-meta-size);
   font-weight: 600;
   color: var(--vx-color-text-strong);
 }

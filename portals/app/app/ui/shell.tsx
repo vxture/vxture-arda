@@ -2,9 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Drawer, ShellLegalFooter } from "@vxture/design-system";
+import { Drawer } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
-import { ardaBrandCore } from "@arda/shared/brand";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { Assistant, type AssistantMode } from "./assistant";
@@ -24,7 +23,8 @@ const NOTIFS: Array<{ icon: PIconName; tone: string; key: string; route: string 
  * user menu), a grouped collapsible left nav, and a single scrolling content
  * column - a values-exact port of the vxture admin/console shared shell (see
  * globals.css header comment). Header/sidebar are arda-local compositions
- * over DS tokens; the footer and notifications drawer are DS components.
+ * over DS tokens; the notifications drawer is a DS component. No page
+ * footer - owner ruling, dropped app-wide.
  */
 export function Shell({ children, isAdmin = false }: { children: ReactNode; isAdmin?: boolean }) {
   const router = useRouter();
@@ -89,13 +89,6 @@ export function Shell({ children, isAdmin = false }: { children: ReactNode; isAd
           onToggleFull={toggleAssistantFull}
         />
       )}
-
-      <ShellLegalFooter
-        className="app-footer"
-        innerClassName="app-footer-inner"
-        copyright={ardaBrandCore.copyright}
-        links={ardaBrandCore.legalLinks.map(([label, href]) => ({ label, href }))}
-      />
 
       <Drawer open={notifOpen} onClose={() => setNotifOpen(false)} side="right" title={tnotif("title")}>
         <div className="alert-list">

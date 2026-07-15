@@ -25,7 +25,7 @@ export function SectionHeading({
   const Title = level === "page" ? "h1" : "h2";
   return (
     <div className={"ov-heading" + (level === "page" ? " is-page" : "")}>
-      <PIcon className="ov-heading-ico" name={icon} weight="fill" />
+      <PIcon className="ov-heading-ico" name={icon} />
       <div className="ov-heading-copy">
         <Title>{title}</Title>
         <p>{description}</p>

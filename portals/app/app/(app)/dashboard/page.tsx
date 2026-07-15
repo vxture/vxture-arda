@@ -16,7 +16,8 @@ function empty(period: Period): DashboardData {
   return {
     period,
     datasetCount: 0,
-    capacity: "0B",
+    capacityValue: "0",
+    capacityUnit: "B",
     capacityNewInPeriod: "0B",
     datasetNewInPeriod: 0,
     serviceCount: 0,

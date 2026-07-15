@@ -17,7 +17,7 @@ interface SidebarProps {
   isAdmin?: boolean;
 }
 
-/** Grouped, collapsible left navigation with a compliance footer card. */
+/** Grouped, collapsible left navigation. No footer card - owner ruling. */
 export function Sidebar({ activeKey, onSelect, collapsed, onToggle, isAdmin = false }: SidebarProps) {
   const tn = useTranslations("nav");
   const tg = useTranslations("navGroup");
@@ -120,19 +120,6 @@ export function Sidebar({ activeKey, onSelect, collapsed, onToggle, isAdmin = fa
           );
         })}
       </nav>
-
-      {!collapsed && (
-        <div className="side-foot-card">
-          <div className="sfc-top">
-            <PIcon name="shield-check" weight="fill" />
-            <span>{ts("complianceTitle")}</span>
-          </div>
-          <div className="sfc-bar">
-            <span style={{ width: "96%" }} />
-          </div>
-          <div className="sfc-meta">{ts("complianceMeta")}</div>
-        </div>
-      )}
     </aside>
   );
 }

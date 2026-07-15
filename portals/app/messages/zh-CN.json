@@ -7,8 +7,6 @@
     "nav": "主导航",
     "navExpand": "展开导航",
     "navCollapse": "收起导航",
-    "complianceTitle": "合规态势",
-    "complianceMeta": "分级分类覆盖率 96.8%",
     "navExpandAllGroups": "展开全部分组",
     "navCollapseAllGroups": "收起全部分组"
   },
@@ -126,7 +124,7 @@
     "description": "全域数据资产、质量与共享态势一屏总览。",
     "refresh": "刷新",
     "export": "导出报告",
-    "viewAll": "查看全部",
+    "viewDetails": "查看详情",
     "noData": "暂无数据",
     "period": {
       "label": "统计周期",
@@ -141,6 +139,7 @@
       "services": "服务数量",
       "quality": "数据质量",
       "newInPeriod": "{period}新增 {count}",
+      "unitCount": "个",
       "capacityNew": "本周期新增 {value}",
       "qualityRuns": "本周期评估 {count} 次"
     },

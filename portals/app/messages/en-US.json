@@ -7,8 +7,6 @@
     "nav": "Primary navigation",
     "navExpand": "Expand navigation",
     "navCollapse": "Collapse navigation",
-    "complianceTitle": "Compliance posture",
-    "complianceMeta": "Classification coverage 96.8%",
     "navExpandAllGroups": "Expand all groups",
     "navCollapseAllGroups": "Collapse all groups"
   },
@@ -126,7 +124,7 @@
     "description": "A one-screen overview of data assets, quality, and sharing posture.",
     "refresh": "Refresh",
     "export": "Export report",
-    "viewAll": "View all",
+    "viewDetails": "View details",
     "noData": "No data yet",
     "period": {
       "label": "Period",
@@ -141,6 +139,7 @@
       "services": "Services",
       "quality": "Data Quality",
       "newInPeriod": "+{count} {period}",
+      "unitCount": "items",
       "capacityNew": "+{value} this period",
       "qualityRuns": "{count} scans this period"
     },
