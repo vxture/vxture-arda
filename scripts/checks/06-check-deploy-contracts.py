@@ -154,11 +154,10 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         ],
     ),
     (
-        "ci triggers only on main (no develop branch in the trunk-based model)",
+        "ci triggers on pull_request to main (no push:main duplicate rerun)",
         Path(CI_WORKFLOW),
         [
             "pull_request:",
-            "push:",
             "- main",
         ],
     ),
@@ -294,6 +293,21 @@ def check_docker_build_image_matrix() -> list[str]:
     return problems
 
 
+def check_ci_no_push_trigger() -> list[str]:
+    # ci.yml intentionally only triggers on pull_request to main - a
+    # push:main trigger would rerun quality-gate on content the PR's own run
+    # already validated (main only advances via squash-merged, up-to-date-
+    # with-base PRs). Line-anchored so a comment merely mentioning "push:"
+    # (e.g. explaining why it's absent) does not false-positive this check.
+    path = PROJECT_ROOT / CI_WORKFLOW
+    if not path.exists():
+        return [f"[{CI_WORKFLOW}] not found"]
+    text = read(path)
+    if re.search(r"^\s*push:\s*$", text, flags=re.MULTILINE):
+        return [f"[{CI_WORKFLOW}] must not have a push: trigger (duplicates the pull_request quality-gate run)"]
+    return []
+
+
 def check_promote_workflow_retired() -> list[str]:
     # branch-promotion (develop -> main fast-forward) has no place in the
     # trunk-based model - deploys are tag-triggered, not promoted between
@@ -346,6 +360,7 @@ CUSTOM_CHECKS = (
     ("env.example is bash-source-safe", check_env_example_is_source_safe),
     ("compose references the owned image", check_compose_image_refs),
     ("docker build matrix publishes the exact owned image", check_docker_build_image_matrix),
+    ("ci has no duplicate push:main trigger", check_ci_no_push_trigger),
     ("branch-promotion workflow retired", check_promote_workflow_retired),
     ("path-based change classifier retired", check_classifier_removed),
 )

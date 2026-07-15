@@ -87,7 +87,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-      id-token: write  # Allows requesting an OIDC JWT token for cloud provider auth
     # Tag-routed environment: beta-* -> beta, v*.*.* -> production. The
     # environment supplies its own DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
     # DEPLOY_KNOWN_HOSTS/DEPLOY_REPO_DIR, so the same job deploys to the right
@@ -209,6 +208,7 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_REPO_DIR: ${{ secrets.DEPLOY_REPO_DIR }}
           PASSED_SHA: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.call-build.outputs.image_tag }}
           ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
           ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
           ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
@@ -228,12 +228,14 @@ jobs:
             *) echo "unknown environment: $DEPLOY_ENV" >&2; exit 1 ;;
           esac
           deploy_dir="${DEPLOY_REPO_DIR:-$default_dir}"
-          short_sha="${PASSED_SHA::7}"
-          # Deploy always pulls by the immutable sha-<short> tag build.yml
-          # publishes for every image regardless of which tag triggered the
-          # build - this sidesteps any ambiguity from the human-facing release
-          # tag (beta-YYYYMMDD.N / vX.Y.Z) needing exact, unstripped matching.
-          image_tag="sha-$short_sha"
+          # Deploy pulls by the immutable sha-<short> tag call-build's own
+          # meta step computed and published as a job output - reading it
+          # here instead of recomputing from PASSED_SHA keeps the tag format
+          # a single source of truth. Sidesteps any ambiguity from the
+          # human-facing release tag (beta-YYYYMMDD.N / vX.Y.Z) needing
+          # exact, unstripped matching.
+          image_tag="$IMAGE_TAG"
+          test -n "$image_tag"
 
           # No git clone on the server. Push only the deploy subset (deploy/,
           # configs/, docker-compose.yml) with rsync; the runner checkout is the

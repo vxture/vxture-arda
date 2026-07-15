@@ -16,6 +16,10 @@ on:
         required: true
       ALIYUN_ACR_PASSWORD:
         required: true
+    outputs:
+      image_tag:
+        description: Immutable sha-<short> tag the deploy job should pull by
+        value: ${{ jobs.docker-build.outputs.image_tag }}
 
   # Manual trigger so the workflow has a visible execution record in the
   # Actions UI. Defaults build the current branch's HEAD.
@@ -36,6 +40,11 @@ jobs:
     name: docker-build
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # arda owns exactly one image (enforced by 06-check-deploy-contracts.py),
+    # so the matrix always has exactly one combination - safe to surface a
+    # single job-level output from the one matrix job's step output.
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
 
     env:
       GHCR_NAMESPACE: vxture
@@ -145,14 +154,21 @@ jobs:
         run: |
           set -euo pipefail
           ghcr_repo="ghcr.io/${GHCR_NAMESPACE}/${IMAGE}"
+          acr_repo="${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE}"
 
           # Every tag push is a deliberate release action (arda owns exactly one
           # image, and there is no branch-push change-classifier to gate on
           # anymore). The only thing worth skipping is a redundant rebuild: if
           # this exact commit was already built and pushed under an earlier tag
           # (e.g. a v*.*.* cut at a commit a beta-* tag already validated),
-          # retag the existing digest instead of rebuilding it.
-          if docker buildx imagetools inspect "${ghcr_repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
+          # retag the existing digest instead of rebuilding it. Check BOTH
+          # registries, not just GHCR - the retag step below copies from each
+          # registry's own existing tag, so if one registry is missing it
+          # (e.g. a prior partial push failure) a GHCR-only check would send
+          # the retag step into a "source ref not found" failure instead of
+          # just rebuilding.
+          if docker buildx imagetools inspect "${ghcr_repo}:${IMAGE_TAG}" >/dev/null 2>&1 \
+            && docker buildx imagetools inspect "${acr_repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
             exists=true
           else
             exists=false
@@ -172,7 +188,12 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
-          no-cache: true
+          # GitHub Actions cache backend: reuses unchanged layers (e.g. npm
+          # install) across separate build runs instead of building from
+          # scratch every time (GH-hosted runners are otherwise always a cold
+          # VM with no local Docker cache to reuse).
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           # GITHUB_TOKEN lacks read_package permission for @vxture/* packages
           # (they live under a different repo). Use NODE_AUTH_TOKEN PAT instead.
           # If Docker build fails with 401, the PAT has likely expired and
