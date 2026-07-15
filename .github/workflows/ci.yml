@@ -3,14 +3,10 @@ name: ci
 on:
   pull_request:
     branches:
-      - develop
-      # main never receives PRs in the normal flow (it only advances via
-      # promote.yml's fast-forward). This trigger is a deliberate guard: if a
-      # PR is ever opened against main directly, the quality gate still runs.
       - main
   push:
     branches:
-      - develop
+      - main
 
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}

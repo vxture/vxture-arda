@@ -7,7 +7,7 @@
 Before any deployment to prod:
 
 - [ ] `quality-gate` check is green on the source commit
-- [ ] Beta has been validated (the develop stack is the pre-flight for prod)
+- [ ] Beta has been validated (the beta stack is the pre-flight for prod)
 - [ ] No in-flight sessions that would be disrupted by a Redis restart
       (Redis is persistent; container restart does not lose sessions)
 - [ ] The edge vhost config in `configs/edge/` matches the current `APEX_DOMAIN`
@@ -72,7 +72,7 @@ unsafe:
 If a deploy is bad and must be rolled back:
 
 1. Identify the last known-good image tag (check `VERSION` file or `gh run list`
-   on `release.yml`)
+   on `deploy.yml`)
 2. On the server, pull the previous image tag:
    ```bash
    IMAGE_TAG=sha-<previous-sha> docker compose pull arda-app
@@ -95,7 +95,7 @@ and have users re-authenticate.
 | Scenario | Action |
 |---|---|
 | First deploy (new server) | `server.sh bootstrap` -> place `.env` -> `deploy.sh all` |
-| Routine feature deploy | CI runs automatically on push to develop (beta) / promote to main (prod) |
+| Routine feature deploy | Push a `beta-*` tag (beta) / push a `v*.*.*` tag + approve (prod) |
 | CI docker-build infra flake | `gh run rerun <run-id> --failed` |
 | Manual re-deploy (same image) | `bash deploy/deploy.sh all --skip-backup` |
 | Redis data backup | `bash deploy/ops.sh backup` |

@@ -18,9 +18,8 @@ vxture-Arda/
 |-- .github/
 |   `-- workflows/
 |       |-- ci.yml                # quality-gate (static checks, portal build, secret scan)
-|       |-- release.yml           # detect + docker-build + deploy (develop->beta, main->prod)
-|       |-- promote.yml           # Manual fast-forward develop->main with validation gates
-|       `-- build.yml             # Reusable docker build workflow (called by release.yml)
+|       |-- deploy.yml            # detect + docker-build + deploy (beta-*->beta, v*.*.*->prod)
+|       `-- build.yml             # Reusable docker build workflow (called by deploy.yml)
 |-- configs/
 |   `-- edge/
 |       |-- README.md             # Sync procedure for edge vhost installation
@@ -66,7 +65,6 @@ vxture-Arda/
     |   |-- 06-check-deploy-contracts.py  # Deployment invariants + ASCII-only check
     |   |-- 09-check-ds-usage.py          # @vxture/design-system enforcement (strict)
     |   |-- check_yaml.py                 # YAML validation
-    |   |-- classify_changes.py           # Path -> image/deployable classifier for CI
     |   `-- filter_logs.jq                # jq filter for deployment log parsing
     `-- github/
         |-- b64-beta.ps1                  # Helper: base64-encode beta .env for CI secret

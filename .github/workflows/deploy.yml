@@ -1,22 +1,21 @@
-name: release
+name: deploy
 
 on:
   push:
-    branches:
-      # develop -> beta environment, main -> production environment. The detect
-      # job maps the pushed branch to its GitHub Environment; the deploy job
-      # binds to that environment so beta and production each carry their own
-      # DEPLOY_* secrets.
-      - develop
-      - main
-  # workflow_dispatch allows manual triggering from the Actions UI or CLI.
-  # This is used for the initial production bootstrap; once the production
-  # environment is initialized, the promote.yml fast-forward with a valid
-  # PROMOTION_TOKEN secret will trigger release.yml automatically on push.
+    tags:
+      # beta-YYYYMMDD.N -> beta environment, vX.Y.Z -> production environment.
+      # The detect job maps the tag prefix to its GitHub Environment; the
+      # deploy job binds to that environment so beta and production each
+      # carry their own DEPLOY_* secrets and (production only) a required
+      # human-reviewer gate.
+      - 'beta-*'
+      - 'v*.*.*'
+  # workflow_dispatch allows manual triggering from the Actions UI or CLI,
+  # used for debugging the pipeline without cutting a real tag.
   workflow_dispatch:
     inputs:
       explicit_environment:
-        description: "Override environment detection (develop->beta, main->production). Use only for debugging."
+        description: "Override environment detection (beta-*->beta, v*.*.*->production). Use only for debugging."
         required: false
         type: choice
         options:
@@ -24,12 +23,11 @@ on:
           - beta
           - production
 
-# Serialize releases per branch: a build+deploy for one environment must finish
-# before the next one on the same branch starts, and an in-flight deploy must
-# never be cancelled. Keying on the branch keeps beta (develop) and production
-# (main) in separate queues so a beta deploy never blocks a production deploy.
+# Serialize deploys per tag ref: an in-flight deploy is never cancelled.
+# Keying on the ref keeps beta and production in separate queues so a beta
+# deploy never blocks a production deploy.
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -38,90 +36,46 @@ permissions:
 
 jobs:
   detect:
-    name: detect-deployable-changes
+    name: detect-target-environment
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: read
+    timeout-minutes: 5
     outputs:
-      deployable: ${{ steps.scope.outputs.deployable }}
-      build_images: ${{ steps.scope.outputs.build_images }}
-      environment: ${{ steps.scope.outputs.environment }}
+      environment: ${{ steps.route.outputs.environment }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Determine target environment, deployable scope and changed images
-        id: scope
+      - name: Route tag prefix to GitHub Environment
+        id: route
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_SHA: ${{ github.sha }}
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
+          TAG: ${{ github.ref_name }}
           EXPLICIT_ENV: ${{ inputs.explicit_environment || '' }}
         run: |
           set -euo pipefail
 
-          # Branch -> GitHub Environment routing. develop ships to beta, main to
-          # production. Any other branch must never reach a deploy.
-          # workflow_dispatch can override via explicit_environment input.
+          # Tag prefix -> GitHub Environment routing. Any other tag/ref must
+          # never reach a deploy. workflow_dispatch can override via
+          # explicit_environment input.
           if [ -n "$EXPLICIT_ENV" ]; then
             environment="$EXPLICIT_ENV"
             echo "override: environment=$environment (explicit via workflow_dispatch)"
           else
-            case "$BRANCH" in
-              develop) environment=beta ;;
-              main)    environment=production ;;
-              *) echo "release.yml triggered on unsupported branch: $BRANCH" >&2; exit 1 ;;
+            case "$TAG" in
+              beta-*) environment=beta ;;
+              v*.*.*) environment=production ;;
+              *) echo "deploy.yml triggered on unsupported tag: $TAG" >&2; exit 1 ;;
             esac
           fi
 
-          # The allow-list classifier in scripts/checks/ is the single source of
-          # truth for path -> image / deployable rules. This step only handles
-          # the base lookup and the fail-open cases; it holds no path logic.
-          all_json="$(python3 scripts/checks/classify_changes.py --all-images)"
-
-          base="$(gh run list --repo "$REPO" --workflow release.yml --branch "$BRANCH" \
-            --status success --limit 1 --json headSha --jq '.[0].headSha' 2>/dev/null || true)"
-
-          if [[ -z "$base" ]]; then
-            # First release on this branch with no known-good base: deploy and
-            # rebuild all - fail-open, because we cannot prove what changed.
-            deployable=true; reason=no-known-base; build_json="$all_json"
-          elif ! files="$(gh api "repos/$REPO/compare/$base...$HEAD_SHA" --jq '.files[].filename')"; then
-            # The compare API call itself failed (infra/flake). Fail OPEN: a gate
-            # that cannot classify must never silently skip a real release.
-            deployable=true; reason=compare-failed; build_json="$all_json"
-          elif [[ -z "$files" ]]; then
-            deployable=false; reason=no-changes; build_json='[]'
-          else
-            # Allow-list / default-skip: a path is non-deployable unless a rule
-            # claims it.
-            scope_json="$(printf '%s\n' "$files" | python3 scripts/checks/classify_changes.py)"
-            deployable="$(printf '%s' "$scope_json" | jq -r '.deployable')"
-            build_json="$(printf '%s' "$scope_json" | jq -c '.build_images')"
-            reason=classified
-          fi
-
-          echo "deployable=$deployable" >> "$GITHUB_OUTPUT"
-          echo "build_images=$build_json" >> "$GITHUB_OUTPUT"
           echo "environment=$environment" >> "$GITHUB_OUTPUT"
-          echo "scope: env=$environment deployable=$deployable reason=$reason build_images=$build_json ($base...$HEAD_SHA)"
+          echo "route: tag=$TAG -> environment=$environment"
 
   call-build:
     name: docker-build
     uses: ./.github/workflows/build.yml
     needs: detect
-    if: ${{ needs.detect.outputs.deployable == 'true' }}
     with:
-      build_images: ${{ needs.detect.outputs.build_images }}
       pass_sha: ${{ github.sha }}
     secrets:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-      ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-      ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
       ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
       ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
@@ -130,15 +84,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [detect, call-build]
-    if: ${{ needs.detect.outputs.deployable == 'true' }}
     permissions:
       contents: read
       packages: read
       id-token: write  # Allows requesting an OIDC JWT token for cloud provider auth
-    # Branch-routed environment: develop -> beta, main -> production. The
+    # Tag-routed environment: beta-* -> beta, v*.*.* -> production. The
     # environment supplies its own DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
     # DEPLOY_KNOWN_HOSTS/DEPLOY_REPO_DIR, so the same job deploys to the right
-    # host with the right credentials.
+    # host with the right credentials. production also carries a required
+    # human-reviewer protection rule - the job pauses here until approved.
     environment:
       name: ${{ needs.detect.outputs.environment }}
 
@@ -156,8 +110,8 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-          ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+          ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
+          ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
           TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
           TAILSCALE_OAUTH_CLIENT_SECRET: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
         run: |
@@ -255,8 +209,8 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
           DEPLOY_REPO_DIR: ${{ secrets.DEPLOY_REPO_DIR }}
           PASSED_SHA: ${{ github.sha }}
-          ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
-          ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+          ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
+          ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
           ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
           ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
           GHCR_USERNAME: ${{ github.actor }}
@@ -275,6 +229,10 @@ jobs:
           esac
           deploy_dir="${DEPLOY_REPO_DIR:-$default_dir}"
           short_sha="${PASSED_SHA::7}"
+          # Deploy always pulls by the immutable sha-<short> tag build.yml
+          # publishes for every image regardless of which tag triggered the
+          # build - this sidesteps any ambiguity from the human-facing release
+          # tag (beta-YYYYMMDD.N / vX.Y.Z) needing exact, unstripped matching.
           image_tag="sha-$short_sha"
 
           # No git clone on the server. Push only the deploy subset (deploy/,

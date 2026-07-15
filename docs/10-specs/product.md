@@ -122,10 +122,10 @@ tier-to-feature matrix.
 
 ## Environments
 
-| Environment | Branch | Domain | Auto-deploy |
+| Environment | Release tag | Domain | Approval gate |
 |---|---|---|---|
-| beta | `develop` | `beta-arda.vxture.com` | Yes, on every push to develop |
-| prod | `main` | `arda.vxture.com` | Manual promote only |
+| beta | `beta-YYYYMMDD.N` | `beta-arda.vxture.com` | None - deploys on tag push |
+| prod | `vX.Y.Z` | `arda.vxture.com` | Required reviewer approval |
 
 Beta is an internal pre-release and demo environment; end users never touch
 it. User-facing trial ("public beta") is expressed in prod as

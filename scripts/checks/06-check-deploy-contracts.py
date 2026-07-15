@@ -17,9 +17,10 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RELEASE_WORKFLOW = ".github/workflows/release.yml"
+DEPLOY_WORKFLOW = ".github/workflows/deploy.yml"
 BUILD_WORKFLOW = ".github/workflows/build.yml"
 CI_WORKFLOW = ".github/workflows/ci.yml"
+PROMOTE_WORKFLOW = ".github/workflows/promote.yml"
 
 # arda owns exactly one image (TLS/proxy moved to the shared public edge, so
 # there is no arda-nginx image). The docker-build matrix, the compose image
@@ -80,15 +81,13 @@ SKIP_NAME_SUFFIXES = (".bak", ".backup", ".old", ".tmp", ".swp", ".swo")
 
 CHECKS: list[tuple[str, Path, list[str]]] = [
     (
-        "release triggers on develop and main branches, passes SHA and secrets",
-        Path(RELEASE_WORKFLOW),
+        "deploy triggers on beta-*/v*.*.* tags, passes SHA and secrets",
+        Path(DEPLOY_WORKFLOW),
         [
-            "- develop",
-            "- main",
+            "beta-*",
+            "v*.*.*",
             "${{ github.sha }}",
             "NODE_AUTH_TOKEN",
-            "ALIYUN_ACR_REGISTRY",
-            "ALIYUN_ACR_NAMESPACE",
             "ALIYUN_ACR_USERNAME",
             "ALIYUN_ACR_PASSWORD",
         ],
@@ -100,14 +99,14 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "name: docker-build",
             "arda-app",
             "NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}",
-            "ALIYUN_ACR_REGISTRY",
-            "ALIYUN_ACR_NAMESPACE",
+            "vars.ALIYUN_ACR_REGISTRY",
+            "vars.ALIYUN_ACR_NAMESPACE",
             "ALIYUN_ACR_USERNAME",
             "ALIYUN_ACR_PASSWORD",
         ],
     ),
     (
-        "release builds an image once and retags the rest by digest",
+        "build workflow builds an image once and retags by digest for repeat tags",
         Path(BUILD_WORKFLOW),
         [
             "Decide build vs retag",
@@ -117,8 +116,8 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         ],
     ),
     (
-        "release routes branch to environment (develop->beta, main->production)",
-        Path(RELEASE_WORKFLOW),
+        "deploy routes tag prefix to environment (beta-*->beta, v*.*.*->production)",
+        Path(DEPLOY_WORKFLOW),
         [
             "environment=beta",
             "environment=production",
@@ -126,8 +125,8 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         ],
     ),
     (
-        "release deploy consumes build output with GHCR primary and ACR fallback",
-        Path(RELEASE_WORKFLOW),
+        "deploy job consumes build output with GHCR primary and ACR fallback",
+        Path(DEPLOY_WORKFLOW),
         [
             "name: deploy",
             "needs: [detect, call-build]",
@@ -152,6 +151,15 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "06-check-deploy-contracts.py",
             "09-check-ds-usage.py --strict",
             "docker compose --env-file .env.example config --quiet",
+        ],
+    ),
+    (
+        "ci triggers only on main (no develop branch in the trunk-based model)",
+        Path(CI_WORKFLOW),
+        [
+            "pull_request:",
+            "push:",
+            "- main",
         ],
     ),
     (
@@ -276,9 +284,9 @@ def check_docker_build_image_matrix() -> list[str]:
 
     required_tag_patterns = (
         "ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}",
-        "ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}",
+        "ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}",
         "${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}",
-        "${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.branch_tag }}",
+        "${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}",
     )
     missing_tags = [tag for tag in required_tag_patterns if tag not in text]
     if missing_tags:
@@ -286,21 +294,24 @@ def check_docker_build_image_matrix() -> list[str]:
     return problems
 
 
-def check_classifier_images_match() -> list[str]:
+def check_promote_workflow_retired() -> list[str]:
+    # branch-promotion (develop -> main fast-forward) has no place in the
+    # trunk-based model - deploys are tag-triggered, not promoted between
+    # branches. Its reappearance means gitflow crept back in.
+    path = PROJECT_ROOT / PROMOTE_WORKFLOW
+    if path.exists():
+        return [f"[{PROMOTE_WORKFLOW}] must not exist in the trunk-based model"]
+    return []
+
+
+def check_classifier_removed() -> list[str]:
+    # The path-based change classifier belonged to the branch-push deploy
+    # model (skip a deploy if nothing deployable changed). Tag pushes are
+    # already a deliberate release action, so it was retired along with
+    # release.yml - its reappearance means the old gating logic crept back.
     path = PROJECT_ROOT / "scripts/checks/classify_changes.py"
-    if not path.exists():
-        return ["[scripts/checks/classify_changes.py] not found"]
-    sys.path.insert(0, str(PROJECT_ROOT / "scripts" / "checks"))
-    try:
-        import classify_changes as cc  # type: ignore
-    except Exception as exc:  # pragma: no cover - import failure surfaces as a problem
-        return [f"could not import classify_changes: {exc!r}"]
-    images = set(cc.ALL_IMAGES)
-    if images != EXPECTED_ARDA_IMAGES:
-        return [
-            "classify_changes.ALL_IMAGES must be exactly "
-            f"{sorted(EXPECTED_ARDA_IMAGES)!r}; got {sorted(images)!r}"
-        ]
+    if path.exists():
+        return ["[scripts/checks/classify_changes.py] must not exist in the tag-triggered model"]
     return []
 
 
@@ -335,7 +346,8 @@ CUSTOM_CHECKS = (
     ("env.example is bash-source-safe", check_env_example_is_source_safe),
     ("compose references the owned image", check_compose_image_refs),
     ("docker build matrix publishes the exact owned image", check_docker_build_image_matrix),
-    ("change classifier owns the exact image set", check_classifier_images_match),
+    ("branch-promotion workflow retired", check_promote_workflow_retired),
+    ("path-based change classifier retired", check_classifier_removed),
 )
 
 

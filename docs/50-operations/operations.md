@@ -146,7 +146,7 @@ To roll back to a previous image:
 
 ```bash
 # Find the previous SHA from the CI run history
-gh run list --workflow release.yml --branch develop --limit 10
+gh run list --workflow deploy.yml --limit 10
 
 # On the server:
 cd /srv/md0/arda

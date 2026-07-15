@@ -77,9 +77,8 @@ Same keys, with: `OIDC_CLIENT_ID=arda`, real `OIDC_CLIENT_SECRET`,
 ## 3. Apply + verify
 
 1. SSH to ARDA_DEPLOY_HOST, edit the stack's `etc/.env`.
-2. Redeploy: push a deployable change, or re-run the latest `release.yml` run for
-   the branch (develop=beta, main=prod). A plain container restart will NOT pick
-   up new env.
+2. Redeploy: push a new `beta-*`/`v*.*.*` tag, or re-run the latest `deploy.yml`
+   run for that tag. A plain container restart will NOT pick up new env.
 3. Verify:
    - `cd <REPO_DIR> && docker compose ps` -> `arda-(beta-)app`, `-redis`, `-db`
      all `Up (healthy)`.
@@ -90,14 +89,13 @@ Same keys, with: `OIDC_CLIENT_ID=arda`, real `OIDC_CLIENT_SECRET`,
 
 ---
 
-## 4. Promotion to prod
+## 4. Cut a production release
 
-Beta validated -> promote develop to main (see CLAUDE.md "Promotion"):
+Beta validated -> push a production tag (see CLAUDE.md "How to make a change"):
 ```
-gh workflow run promote.yml -f target=main \
-  -f expected_sha=<origin/develop SHA> \
-  -f release_confirmed=true \
-  -f release_note="<summary>"
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
-Before promoting, ensure prod `etc/.env` already carries the §2 values so the
-prod stack comes up healthy on first deploy of the new image.
+Then approve the pending deployment request on the `production` GitHub
+Environment to let the deploy proceed. Before tagging, ensure prod `etc/.env`
+already carries the §2 values so the prod stack comes up healthy on first
+deploy of the new image.
