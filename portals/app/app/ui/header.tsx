@@ -40,9 +40,8 @@ function PrefSeg<T extends string>({
   onChange: (opt: T) => void;
 }) {
   return (
-    <div className="vxh-pref-row">
+    <div className="vxh-pref-row" aria-label={label}>
       <PIcon className="vxh-pref-ico" name={icon} />
-      <span className="vxh-pref-label">{label}</span>
       <div className="vxh-seg full">
         {options.map((opt) => (
           <button key={opt} className={value === opt ? "on" : ""} onClick={() => onChange(opt)}>
@@ -102,7 +101,7 @@ export function Header({
       <div className="vxh-left">
         <div className="vxh-pop-anchor">
           <button
-            className={"vxh-icon" + (panel === "launcher" ? " is-active" : "")}
+            className={"vxh-icon vxh-launcher" + (panel === "launcher" ? " is-active" : "")}
             aria-label={th("launcher")}
             onClick={() => toggle("launcher")}
           >
@@ -246,9 +245,8 @@ export function Header({
 
               <div className="vxh-prefs">
                 <div className="vxh-prefs-title">{th("prefs")}</div>
-                <div className="vxh-pref-row">
+                <div className="vxh-pref-row" aria-label={th("language")}>
                   <PIcon className="vxh-pref-ico" name="globe" />
-                  <span className="vxh-pref-label">{th("language")}</span>
                   <select
                     className="vxh-pref-select"
                     value={locale}

@@ -41,6 +41,15 @@
   font-size: var(--vx-icon-size-sm, 1rem);
   flex-shrink: 0;
 }
+/* .vxh-launcher i { font-size: var(--vx-icon-size-md) } is a real, already-
+   shipped template rule (matches vxture admin's own launcher button) -
+   arda just wasn't applying the `vxh-launcher` modifier class, so the
+   domain-switch icon fell back to the generic 16px .vxh-icon size instead
+   of the 24px "nav / functional tile" size admin uses for it. SVG twin per
+   the compat-shim rule above (template targets `i`, arda renders `svg`). */
+.vxh-launcher svg {
+  font-size: var(--vx-icon-size-md);
+}
 .vxh-verify svg {
   font-size: var(--vx-admin-shell-caption-size);
 }
@@ -62,23 +71,26 @@
 /* ---- arda-only: subscription-tier badge on the brand mark ----
    The template's .vxh-brand is `inline-flex; align-items:center`, which put
    the tag on the same vertical center line as the brand name - owner
-   feedback: it should read as a corner badge on the product name, not a
-   second inline word. .vxh-brand gets position:relative (an arda-only
-   addition on top of the template rule, not a redeclaration of it) so the
-   tag can pin to the name's top-right corner instead of flowing in the row.
-   `left: 100%` (not `right: -Npx`) anchors the tag's own LEFT edge to the
-   name's right edge regardless of the tag's rendered width, which varies
-   by plan label ("PRO" vs "ENTERPRISE") - a `right` offset has to guess
-   that width to avoid overlap and was wrong (measured a real 19x8px
-   bounding-box overlap with the name, not just a visually-tight gap). */
+   feedback: it should sit top-aligned next to the name. Taking it out of
+   flow with `position:absolute` was wrong on two counts: it doesn't
+   participate in .vxh-brand's own width, so .vxh-left's flex siblings
+   (.vxh-divider right after .vxh-brand) lay out as if the tag weren't
+   there and the tag visually collides with the divider; and pinning it by
+   guessed offsets is exactly the "fudge the effect" approach that keeps
+   producing a new overlap in a different spot each time. The correct fix
+   stays in normal horizontal flex flow (so siblings still get pushed over
+   by the tag's real width) and only overrides this one item's own cross-
+   axis alignment to the top via `align-self`, instead of the row's
+   inherited `align-items:center`. Also trims the template's own
+   `.vxh-brand` gap (--vx-space-md, 12px) down to --vx-space-xs (4px) - an
+   arda-only override, not a redeclaration, of the row's only other
+   property - so the tag sits close to the name instead of reading as a
+   separate word. */
 .vxh-brand {
-  position: relative;
+  gap: var(--vx-space-xs);
 }
 .vxh-brand-tag {
-  position: absolute;
-  top: -2px;
-  left: 100%;
-  margin-left: 4px;
+  align-self: flex-start;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1744,11 +1756,6 @@
   flex-shrink: 0;
   width: var(--vx-icon-size-sm, 1rem);
   text-align: center;
-}
-.vxh-pref-label {
-  flex: none;
-  font-size: 13px;
-  color: var(--vx-color-text-strong);
 }
 .vxh-pref-select {
   flex: 1;
