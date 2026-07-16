@@ -56,3 +56,7 @@ coverage/
 *.swo
 
 .claude/
+
+# Python bytecode (local compileall artifacts)
+__pycache__/
+*.pyc
