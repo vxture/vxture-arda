@@ -76,6 +76,15 @@ jobs:
     name: docker-build
     uses: ./.github/workflows/build.yml
     needs: detect
+    # A called workflow may not request MORE permissions than the caller
+    # grants this job - build.yml needs security-events: write (trivy SARIF
+    # upload), and without this explicit grant GitHub startup-fails the WHOLE
+    # run at validation time (zero jobs, "startup_failure"). The workflow-level
+    # permissions above stay minimal; only this call gets the wider set.
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
     with:
       pass_sha: ${{ github.sha }}
     secrets:

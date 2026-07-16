@@ -126,6 +126,16 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         ],
     ),
     (
+        "call-build grants the called workflow its full permission ceiling",
+        Path(DEPLOY_WORKFLOW),
+        [
+            # build.yml requests security-events: write (trivy SARIF upload);
+            # a called workflow requesting more than the caller grants makes
+            # GitHub startup-fail the whole run at validation time.
+            "security-events: write",
+        ],
+    ),
+    (
         "deploy job consumes build output with GHCR primary and ACR fallback",
         Path(DEPLOY_WORKFLOW),
         [
