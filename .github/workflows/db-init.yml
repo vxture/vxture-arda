@@ -1,0 +1,147 @@
+name: db-init
+
+# Manual DB structure operations for the arda stacks (org governance #6/#7).
+# The regular deploy chain never runs migrations or seed - DB structure change
+# is an independently authorized action that goes through THIS workflow only:
+#
+#   action=verify -> read-only live audit (tables/enums vs DDL, service role)
+#   action=roles  -> apply 97_service_role + 98_column_locks only (adopt a
+#                    live prisma-created schema in place)
+#   action=apply  -> create-once full baseline on an EMPTY schema
+#   action=reset  -> DROP schema + full baseline  [DESTRUCTIVE]
+#
+# Safety gates: confirm=yes typed by hand; expected_sha pins the ref against
+# drift (required for every mutating action); environment routing means a
+# production run pauses for the required-reviewer approval, same as a deploy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target stack"
+        required: true
+        default: "beta"
+        type: choice
+        options:
+          - beta
+          - production
+      action:
+        description: "DB action"
+        required: true
+        default: "verify"
+        type: choice
+        options:
+          - verify
+          - roles
+          - apply
+          - reset
+      ref:
+        description: "Git ref whose deploy/database scripts to use"
+        required: true
+        default: "main"
+      expected_sha:
+        description: "Full SHA the ref must resolve to (required for mutating actions)"
+        required: false
+        default: ""
+      confirm:
+        description: "Type yes to confirm"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-init-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  db-init:
+    name: ${{ inputs.environment }} DB ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The environment supplies DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
+    # DEPLOY_KNOWN_HOSTS + ARDA_DB_SVC_PASSWORD; production additionally
+    # carries the required-reviewer approval gate.
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Confirm
+        if: ${{ inputs.confirm != 'yes' }}
+        shell: bash
+        run: |
+          echo "Confirmation mismatch - type 'yes' to proceed." >&2
+          exit 1
+
+      - name: Checkout requested ref
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Pin ref against drift (expected_sha)
+        shell: bash
+        env:
+          ACTION: ${{ inputs.action }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          if [ "$ACTION" != "verify" ] && [ -z "$EXPECTED_SHA" ]; then
+            echo "expected_sha is REQUIRED for mutating action '$ACTION'" >&2
+            exit 1
+          fi
+          if [ -n "$EXPECTED_SHA" ] && [ "$actual" != "$EXPECTED_SHA" ]; then
+            echo "ref drift: HEAD=$actual expected=$EXPECTED_SHA" >&2
+            exit 1
+          fi
+          echo "pinned at $actual"
+
+      - name: Join tailnet and prepare SSH
+        uses: ./.github/actions/tailnet-ssh-connect
+        with:
+          tailscale-oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+          tailscale-oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          tailscale-tag: ${{ vars.TAILSCALE_OAUTH_CLIENT_TAG }}
+          deploy-host: ${{ secrets.DEPLOY_HOST }}
+          deploy-port: ${{ secrets.DEPLOY_PORT }}
+          deploy-ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          deploy-known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+
+      - name: Run DB action over SSH
+        shell: bash
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DB_ACTION: ${{ inputs.action }}
+          ARDA_DB_SVC_PASSWORD: ${{ secrets.ARDA_DB_SVC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          port="${DEPLOY_PORT:-22}"
+          case "$DEPLOY_ENV" in
+            production) stack_root="/srv/md0/arda" ;;
+            beta)       stack_root="/srv/md1/arda-beta" ;;
+            *) echo "unknown environment: $DEPLOY_ENV" >&2; exit 1 ;;
+          esac
+          staging="$stack_root/deploy-dbinit"
+          ssh_opts="-i $HOME/.ssh/deploy_key -p $port \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o ConnectTimeout=30"
+
+          # Push the PINNED ref's database scripts to a staging tree separate
+          # from the release-deployed deploy/ (no drift into the release copy).
+          # shellcheck disable=SC2086
+          ssh $ssh_opts "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$staging'"
+          # shellcheck disable=SC2086
+          rsync -az --delete -e "ssh $ssh_opts" \
+            deploy/lib deploy/database \
+            "$DEPLOY_USER@$DEPLOY_HOST:$staging/"
+
+          # The service-role password rides stdin, never argv on the host.
+          # shellcheck disable=SC2086
+          printf '%s' "${ARDA_DB_SVC_PASSWORD:-}" | ssh $ssh_opts \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "ARDA_SVC_PASSWORD=\$(cat) bash '$staging/database/apply.sh' '$DB_ACTION'"
+
+          # shellcheck disable=SC2086
+          ssh $ssh_opts "$DEPLOY_USER@$DEPLOY_HOST" "rm -rf '$staging'"
+          echo "db-init $DB_ACTION on $DEPLOY_ENV done"

@@ -99,3 +99,20 @@ Then approve the pending deployment request on the `production` GitHub
 Environment to let the deploy proceed. Before tagging, ensure prod `etc/.env`
 already carries the §2 values so the prod stack comes up healthy on first
 deploy of the new image.
+
+## 5. DB service-role cutover (one-time per stack)
+
+After `db-init` (`roles` action) has created `arda_svc` on the stack DB:
+
+1. Read the environment's `ARDA_DB_SVC_PASSWORD` (GitHub Environment secret).
+2. On the host, edit the stack `etc/.env`: set
+   `DATABASE_URL=postgresql://arda_svc:<password>@<stack>-db:5432/arda?schema=public`
+   (host is `arda-db` for prod, `arda-beta-db` for beta).
+3. Restart the app container (`docker compose up -d arda-app` from the stack
+   deploy dir, or rerun the release deploy).
+4. Verify: app healthy + a write path works (create/edit a catalog entity).
+   `permission denied for table ...` means a writable column is missing from
+   `98_column_locks.sql` - fix the whitelist, rerun db-init `roles`.
+
+Order: beta first, observe, then production. Until cutover the app still
+connects as the DB owner role; the locks exist but do not constrain it.

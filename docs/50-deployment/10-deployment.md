@@ -216,3 +216,37 @@ as the `ENV_FILE_BASE64` GitHub Environment secret:
 ```
 
 Copy the output into the corresponding GitHub Environment secret.
+
+## Database Structure (db-init, governance #7)
+
+DB structure has a single authority: the hand-written DDL under
+`deploy/database/ddl/` (`00_baseline.sql` schema, `97_service_role.sql`
+least-privilege `arda_svc` role, `98_column_locks.sql` UPDATE column
+whitelist). The app container never migrates at startup and the regular
+deploy chain never touches schema. All structure operations run through the
+`db-init` workflow (Actions -> db-init -> Run workflow):
+
+| action   | effect                                                       |
+| -------- | ------------------------------------------------------------ |
+| `verify` | read-only audit: live tables/enums vs DDL, service role      |
+| `roles`  | apply service role + column locks only (adopt a live schema) |
+| `apply`  | create-once full baseline on an EMPTY schema                 |
+| `reset`  | DROP schema + full baseline (DESTRUCTIVE)                    |
+
+Gates: `confirm=yes`, `expected_sha` (required for mutating actions, pins the
+ref), and environment routing - a `production` run pauses for the required
+reviewer, exactly like a deploy. The role password comes from the
+environment-level `ARDA_DB_SVC_PASSWORD` secret.
+
+Schema increments: add the column to `prisma/schema.prisma` (client source),
+add an idempotent numbered ddl file (`ADD COLUMN IF NOT EXISTS`), extend the
+`98_column_locks.sql` whitelist if the column is writable, regenerate
+`00_baseline.sql` parity (the `check-data-architecture` guardrail in
+quality-gate blocks drift), then run `db-init` with the increment.
+
+Existing stacks created under the old prisma-migrate flow are ADOPTED in
+place: run `db-init` `roles` then `verify` (the leftover `_prisma_migrations`
+table is ignored by verify). Cutting the app over to the `arda_svc` role is
+an operator action: set `DATABASE_URL` in the stack's `etc/.env` to
+`postgresql://arda_svc:<ARDA_DB_SVC_PASSWORD>@<stack>-db:5432/arda?schema=public`
+and restart the app container - beta first, verify, then production.

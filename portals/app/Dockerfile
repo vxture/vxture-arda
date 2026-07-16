@@ -51,18 +51,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 127.0.0.1 healthcheck cannot reach it. Bind all interfaces instead.
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3230
-# Prisma CLI for `migrate deploy` at startup. Prisma 7 is Rust-free (schema
-# engine bundled), so there is no engine-binary download and no openssl/musl
-# target to manage.
-RUN npm install -g prisma@7.8.0
+# No prisma CLI in the runtime image: DB structure is owned by the hand-written
+# DDL under deploy/database/ddl/ and applied only via the db-init workflow
+# (org governance #7) - the container never migrates at startup.
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
 # Monorepo standalone output is nested under the workspace dir (app/).
 COPY --from=builder --chown=nextjs:nextjs /app/app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nextjs /app/app/.next/static ./app/.next/static
 COPY --from=builder --chown=nextjs:nextjs /app/app/public ./app/public
-# Schema + migrations + config so the entrypoint can apply migrations at start.
-COPY --from=builder --chown=nextjs:nextjs /app/app/prisma ./app/prisma
-COPY --from=builder --chown=nextjs:nextjs /app/app/prisma.config.ts ./app/prisma.config.ts
 COPY --chown=nextjs:nextjs app/docker-entrypoint.sh ./docker-entrypoint.sh
 USER nextjs
 EXPOSE 3230

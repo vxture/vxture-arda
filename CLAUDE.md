@@ -97,7 +97,10 @@ reference). Deploy internals live under `deploy/`.
 
 Additional workflows: `rollback.yml` (manual, `workflow_dispatch`) re-points a
 stack at a previously built `sha-<short>` image without rebuilding - same
-production approval gate as a normal deploy. `codeql.yml` runs SAST on the
+production approval gate as a normal deploy. `db-init.yml` (manual) is the
+ONLY pipeline allowed to touch DB structure: `verify`/`roles`/`apply`/`reset`
+actions, `confirm=yes` + `expected_sha` pin, routed through the target
+GitHub Environment so production runs pause for approval. `codeql.yml` runs SAST on the
 TypeScript/JavaScript source (PR/push to `main` + weekly schedule).
 `seed-demo-data.yml` (manual) loads demo/sample catalog data into a workspace
 for evaluation - not product data, not part of the release pipeline.
@@ -159,6 +162,20 @@ quotes, or non-ASCII characters, or `quality-gate` fails.
 `scripts/checks/09-check-ds-usage.py` enforces strict design-system usage: app
 UI must consume `@vxture/design-system` primitives rather than re-implementing
 them. Raw ad-hoc styling that bypasses the DS fails the gate.
+
+Database structure is DDL-owned (org governance #7): the single authority is
+the hand-written SQL under `deploy/database/ddl/` (`00_baseline.sql` +
+`97_service_role.sql` least-privilege `arda_svc` role + `98_column_locks.sql`
+UPDATE column whitelist). `portals/app/prisma/schema.prisma` remains the
+client-generation source and MUST stay in lockstep with the DDL -
+`scripts/guardrails/check-data-architecture.mjs` (in quality-gate) enforces
+tables/columns/enums parity, anchor-column locks and seed idempotency. The
+container entrypoint never migrates; the regular deploy chain never touches
+schema; every structure change ships as an idempotent numbered ddl increment
+(`ADD COLUMN IF NOT EXISTS`) applied via the `db-init.yml` workflow. Adding a
+writable column requires updating the `98_column_locks.sql` whitelist or the
+service role's writes fail with permission denied. Local dev uses
+`prisma db push` (there is no migrations directory).
 
 `docs/` follows the org docs taxonomy (vxture-platform
 `docs/10-standards/070-docs-taxonomy.md`): top-level decades `00-meta` /

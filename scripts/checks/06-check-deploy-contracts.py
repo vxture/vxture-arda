@@ -152,6 +152,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "06-check-deploy-contracts.py",
             "09-check-ds-usage.py --strict",
             "check-docs-numbering.mjs --strict",
+            "check-data-architecture.mjs",
             "docker compose --env-file .env.example config --quiet",
         ],
     ),
@@ -191,6 +192,24 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         [
             "PROJECT_ROOT=",
             "$PROJECT_ROOT/etc/.env",
+        ],
+    ),
+    (
+        "db-init is the only DB-structure pipeline: confirm + pinned sha + env approval gate",
+        Path(".github/workflows/db-init.yml"),
+        [
+            "workflow_dispatch:",
+            "expected_sha",
+            "inputs.confirm != 'yes'",
+            "environment: ${{ inputs.environment }}",
+            "database/apply.sh",
+        ],
+    ),
+    (
+        "DDL authority artifacts exist (baseline + service role + column locks)",
+        Path("deploy/database/ddl/98_column_locks.sql"),
+        [
+            "REVOKE UPDATE ON ALL TABLES IN SCHEMA public FROM arda_svc",
         ],
     ),
 ]
@@ -317,6 +336,18 @@ def check_docker_build_image_matrix() -> list[str]:
     return problems
 
 
+def check_entrypoint_never_migrates() -> list[str]:
+    # Governance #7: the regular deploy chain (including container start) never
+    # runs schema migrations - DB structure changes go through db-init only.
+    path = PROJECT_ROOT / "portals/app/docker-entrypoint.sh"
+    if not path.exists():
+        return ["[portals/app/docker-entrypoint.sh] not found"]
+    text = read(path)
+    if "migrate deploy" in text or "db push" in text:
+        return ["[portals/app/docker-entrypoint.sh] must not run schema migrations (db-init owns DB structure)"]
+    return []
+
+
 def check_promote_workflow_retired() -> list[str]:
     # branch-promotion (develop -> main fast-forward) has no place in the
     # trunk-based model - deploys are tag-triggered, not promoted between
@@ -369,6 +400,7 @@ CUSTOM_CHECKS = (
     ("env.example is bash-source-safe", check_env_example_is_source_safe),
     ("compose references the owned image", check_compose_image_refs),
     ("docker build matrix publishes the exact owned image", check_docker_build_image_matrix),
+    ("container entrypoint never migrates the schema", check_entrypoint_never_migrates),
     ("branch-promotion workflow retired", check_promote_workflow_retired),
     ("path-based change classifier retired", check_classifier_removed),
 )

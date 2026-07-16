@@ -1,3 +1,17 @@
+-- 00_baseline.sql - arda domain DB baseline (single DDL authority).
+--
+-- Org governance #7: the hand-written SQL under deploy/database/ddl/ is the
+-- single source of truth for DB STRUCTURE; the regular deploy chain never
+-- runs migrations. Applied only via the db-init workflow (apply.sh).
+-- portals/app/prisma/schema.prisma remains the source the app client is
+-- generated from; scripts/guardrails/check-data-architecture.mjs enforces
+-- that this file and schema.prisma stay in lockstep (tables, columns, enums).
+--
+-- Create-once: this file CREATEs objects and is NOT idempotent against a
+-- live schema. Increments belong in new numbered ddl files using idempotent
+-- ADD COLUMN IF NOT EXISTS forms (governance #7 live-db increments).
+-- Service role + column locks live in 97_service_role.sql / 98_column_locks.sql.
+
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
@@ -7,17 +21,27 @@ CREATE TYPE "AssetLevel" AS ENUM ('public', 'internal', 'sensitive', 'core');
 -- CreateEnum
 CREATE TYPE "QualityStatus" AS ENUM ('pass', 'warn', 'fail');
 
+-- CreateEnum
+CREATE TYPE "AssetScope" AS ENUM ('workspace', 'platform');
+
 -- CreateTable
 CREATE TABLE "Dataset" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "dataSourceId" TEXT,
     "name" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "description" TEXT,
+    "domain" TEXT,
+    "team" TEXT,
+    "refreshFreq" TEXT,
     "type" TEXT NOT NULL,
     "location" TEXT,
     "rowCountEst" BIGINT,
     "sizeBytes" BIGINT,
     "ownerUserId" TEXT,
+    "ownerApp" TEXT,
+    "goldenRecord" BOOLEAN NOT NULL DEFAULT false,
     "classification" "AssetLevel" NOT NULL DEFAULT 'internal',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -51,6 +75,7 @@ CREATE TABLE "GlossaryTerm" (
     "term" TEXT NOT NULL,
     "definition" TEXT NOT NULL,
     "stewardUserId" TEXT,
+    "scope" "AssetScope" NOT NULL DEFAULT 'workspace',
 
     CONSTRAINT "GlossaryTerm_pkey" PRIMARY KEY ("id")
 );
@@ -59,6 +84,8 @@ CREATE TABLE "GlossaryTerm" (
 CREATE TABLE "DataSource" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
+    "orgId" TEXT,
+    "productCode" TEXT NOT NULL DEFAULT 'arda',
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "connectionConfig" JSONB,
@@ -88,6 +115,9 @@ CREATE TABLE "QualityRule" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "datasetId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "dimension" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "config" JSONB,
     "severity" TEXT NOT NULL DEFAULT 'warning',
@@ -105,9 +135,28 @@ CREATE TABLE "QualityResult" (
     "runAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "status" "QualityStatus" NOT NULL,
     "score" DOUBLE PRECISION,
+    "issues" INTEGER NOT NULL DEFAULT 0,
     "details" JSONB,
 
     CONSTRAINT "QualityResult_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Standard" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "ref" TEXT NOT NULL,
+    "items" INTEGER NOT NULL DEFAULT 0,
+    "usage" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "scope" "AssetScope" NOT NULL DEFAULT 'workspace',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Standard_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -126,14 +175,31 @@ CREATE TABLE "LineageEdge" (
 CREATE TABLE "DataService" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "path" TEXT NOT NULL,
+    "method" TEXT NOT NULL DEFAULT 'GET',
+    "description" TEXT,
+    "domain" TEXT,
+    "level" "AssetLevel" NOT NULL DEFAULT 'internal',
     "type" TEXT NOT NULL,
     "config" JSONB,
     "status" TEXT NOT NULL DEFAULT 'draft',
+    "ownerApp" TEXT,
+    "visibility" TEXT NOT NULL DEFAULT 'workspace',
     "publishedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "DataService_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DatasetStandard" (
+    "datasetId" TEXT NOT NULL,
+    "standardId" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+
+    CONSTRAINT "DatasetStandard_pkey" PRIMARY KEY ("datasetId","standardId")
 );
 
 -- CreateTable
@@ -151,6 +217,7 @@ CREATE TABLE "ApiKey" (
     "workspaceId" TEXT NOT NULL,
     "dataServiceId" TEXT,
     "name" TEXT NOT NULL,
+    "consumerApp" TEXT,
     "hashedKey" TEXT NOT NULL,
     "scopes" TEXT[],
     "lastUsedAt" TIMESTAMP(3),
@@ -178,10 +245,28 @@ CREATE TABLE "AuditLog" (
 CREATE TABLE "WorkspaceRef" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "plan" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'provisioned',
     "seedStatus" TEXT,
+    "wipedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "WorkspaceRef_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProvisioningEvent" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "seq" INTEGER NOT NULL,
+    "plan" TEXT,
+    "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProvisioningEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -204,11 +289,37 @@ CREATE TABLE "TemplateVersion" (
     CONSTRAINT "TemplateVersion_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "UsageRaw" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "product" TEXT NOT NULL DEFAULT 'arda',
+    "metric" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL DEFAULT 1,
+    "idempotencyKey" TEXT NOT NULL,
+    "flushed" BOOLEAN NOT NULL DEFAULT false,
+    "flushAttempts" INTEGER NOT NULL DEFAULT 0,
+    "flushError" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "flushedAt" TIMESTAMP(3),
+
+    CONSTRAINT "UsageRaw_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE INDEX "Dataset_workspaceId_idx" ON "Dataset"("workspaceId");
 
 -- CreateIndex
 CREATE INDEX "Dataset_workspaceId_dataSourceId_idx" ON "Dataset"("workspaceId", "dataSourceId");
+
+-- CreateIndex
+CREATE INDEX "Dataset_workspaceId_domain_idx" ON "Dataset"("workspaceId", "domain");
+
+-- CreateIndex
+CREATE INDEX "Dataset_workspaceId_ownerApp_idx" ON "Dataset"("workspaceId", "ownerApp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Dataset_workspaceId_code_key" ON "Dataset"("workspaceId", "code");
 
 -- CreateIndex
 CREATE INDEX "Tag_workspaceId_idx" ON "Tag"("workspaceId");
@@ -229,6 +340,9 @@ CREATE UNIQUE INDEX "GlossaryTerm_workspaceId_term_key" ON "GlossaryTerm"("works
 CREATE INDEX "DataSource_workspaceId_idx" ON "DataSource"("workspaceId");
 
 -- CreateIndex
+CREATE INDEX "DataSource_orgId_idx" ON "DataSource"("orgId");
+
+-- CreateIndex
 CREATE INDEX "Policy_workspaceId_idx" ON "Policy"("workspaceId");
 
 -- CreateIndex
@@ -236,6 +350,9 @@ CREATE INDEX "QualityRule_workspaceId_idx" ON "QualityRule"("workspaceId");
 
 -- CreateIndex
 CREATE INDEX "QualityRule_datasetId_idx" ON "QualityRule"("datasetId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "QualityRule_workspaceId_code_key" ON "QualityRule"("workspaceId", "code");
 
 -- CreateIndex
 CREATE INDEX "QualityResult_workspaceId_idx" ON "QualityResult"("workspaceId");
@@ -247,6 +364,12 @@ CREATE INDEX "QualityResult_ruleId_idx" ON "QualityResult"("ruleId");
 CREATE INDEX "QualityResult_datasetId_idx" ON "QualityResult"("datasetId");
 
 -- CreateIndex
+CREATE INDEX "Standard_workspaceId_idx" ON "Standard"("workspaceId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Standard_workspaceId_code_key" ON "Standard"("workspaceId", "code");
+
+-- CreateIndex
 CREATE INDEX "LineageEdge_workspaceId_idx" ON "LineageEdge"("workspaceId");
 
 -- CreateIndex
@@ -254,6 +377,15 @@ CREATE UNIQUE INDEX "LineageEdge_upstreamDatasetId_downstreamDatasetId_key" ON "
 
 -- CreateIndex
 CREATE INDEX "DataService_workspaceId_idx" ON "DataService"("workspaceId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DataService_workspaceId_code_key" ON "DataService"("workspaceId", "code");
+
+-- CreateIndex
+CREATE INDEX "DatasetStandard_workspaceId_idx" ON "DatasetStandard"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "DatasetStandard_standardId_idx" ON "DatasetStandard"("standardId");
 
 -- CreateIndex
 CREATE INDEX "DataServiceDataset_workspaceId_idx" ON "DataServiceDataset"("workspaceId");
@@ -277,7 +409,25 @@ CREATE INDEX "AuditLog_workspaceId_createdAt_idx" ON "AuditLog"("workspaceId", "
 CREATE INDEX "WorkspaceRef_orgId_idx" ON "WorkspaceRef"("orgId");
 
 -- CreateIndex
+CREATE INDEX "WorkspaceRef_wipedAt_idx" ON "WorkspaceRef"("wipedAt");
+
+-- CreateIndex
+CREATE INDEX "WorkspaceRef_status_idx" ON "WorkspaceRef"("status");
+
+-- CreateIndex
+CREATE INDEX "ProvisioningEvent_workspaceId_idx" ON "ProvisioningEvent"("workspaceId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "TemplateVersion_templateId_version_key" ON "TemplateVersion"("templateId", "version");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UsageRaw_idempotencyKey_key" ON "UsageRaw"("idempotencyKey");
+
+-- CreateIndex
+CREATE INDEX "UsageRaw_flushed_createdAt_idx" ON "UsageRaw"("flushed", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "UsageRaw_workspaceId_idx" ON "UsageRaw"("workspaceId");
 
 -- AddForeignKey
 ALTER TABLE "Dataset" ADD CONSTRAINT "Dataset_dataSourceId_fkey" FOREIGN KEY ("dataSourceId") REFERENCES "DataSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -304,6 +454,12 @@ ALTER TABLE "LineageEdge" ADD CONSTRAINT "LineageEdge_upstreamDatasetId_fkey" FO
 ALTER TABLE "LineageEdge" ADD CONSTRAINT "LineageEdge_downstreamDatasetId_fkey" FOREIGN KEY ("downstreamDatasetId") REFERENCES "Dataset"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "DatasetStandard" ADD CONSTRAINT "DatasetStandard_datasetId_fkey" FOREIGN KEY ("datasetId") REFERENCES "Dataset"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DatasetStandard" ADD CONSTRAINT "DatasetStandard_standardId_fkey" FOREIGN KEY ("standardId") REFERENCES "Standard"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "DataServiceDataset" ADD CONSTRAINT "DataServiceDataset_dataServiceId_fkey" FOREIGN KEY ("dataServiceId") REFERENCES "DataService"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -314,4 +470,3 @@ ALTER TABLE "ApiKey" ADD CONSTRAINT "ApiKey_dataServiceId_fkey" FOREIGN KEY ("da
 
 -- AddForeignKey
 ALTER TABLE "TemplateVersion" ADD CONSTRAINT "TemplateVersion_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "SeedTemplate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
