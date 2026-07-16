@@ -15,7 +15,7 @@
  * now, derived from tier in capability.ts (owner ruling 2026-07-13).
  *
  * Metric names below are the canonical strings both arda and vxture platform
- * must agree on. See docs/20-design/arda-biz-260-billing.md for the full spec.
+ * must agree on. See docs/30-design/arda-biz-260-billing.md for the full spec.
  */
 
 // ---- C3 metric name constants ------------------------------------------------

@@ -151,6 +151,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "name: quality-gate",
             "06-check-deploy-contracts.py",
             "09-check-ds-usage.py --strict",
+            "check-docs-numbering.mjs --strict",
             "docker compose --env-file .env.example config --quiet",
         ],
     ),

@@ -119,6 +119,9 @@ whatever is already at that commit on `main`, it does not re-verify the gates.
 - `build`: portal type-check and production build (`@arda/app`) - also its
   own required check
 - DS-usage check (`scripts/checks/09-check-ds-usage.py`, strict)
+- docs numbering guardrail (`scripts/guardrails/check-docs-numbering.mjs`,
+  strict): every `.md` under `docs/` must carry a taxonomy number (`NN-`,
+  `arda-{sub}-NNN-`, `ADR-NNN`/`TD-NNN`); unnumbered = temporary = blocked
 - `docker compose --env-file .env.example config` validation
 
 `audit` is a separate required check: `osv-scanner` (pinned binary) scans
@@ -156,6 +159,14 @@ quotes, or non-ASCII characters, or `quality-gate` fails.
 `scripts/checks/09-check-ds-usage.py` enforces strict design-system usage: app
 UI must consume `@vxture/design-system` primitives rather than re-implementing
 them. Raw ad-hoc styling that bypasses the DS fails the gate.
+
+`docs/` follows the org docs taxonomy (vxture-platform
+`docs/10-standards/070-docs-taxonomy.md`): top-level decades `00-meta` /
+`10-standards` / `20-specs` / `30-design` / `40-implementation` /
+`50-deployment` / `60-operations` / `70-workplan` / `80-liaison` /
+`90-memory`; map in `docs/00-meta/00-index.md`. Numbered = formal, unnumbered
+= temporary (delete or number it) - enforced by the docs numbering guardrail
+above. ADRs live in `docs/30-design/decisions/` with stable append-only IDs.
 
 Deploy contracts hold the one-image, two-stack reality: the build emits exactly
 `arda-app`; prod resolves to `/srv/md0/arda` and beta to `/srv/md1/arda-beta` on

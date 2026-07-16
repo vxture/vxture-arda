@@ -10,7 +10,7 @@
  * cached envelope even when the platform is unreachable (loose coupling).
  *
  * Editing rules:
- *  - Key catalog lives in docs/20-design/domain-entities-and-feature-keys.md
+ *  - Key catalog lives in docs/30-design/arda-biz-120-domain-entities-and-feature-keys.md
  *    §3.1; add keys there first, then here.
  *  - Tiers are cumulative BY CONSTRUCTION (each tier spreads the previous
  *    one). Never remove a key from a higher tier without an owner decision.

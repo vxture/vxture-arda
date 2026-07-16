@@ -1,6 +1,6 @@
 // Arda domain schema (v1, catalog-first).
 //
-// Source of truth for these entities: docs/design/domain-entities-and-feature-keys.md.
+// Source of truth for these entities: docs/30-design/arda-biz-120-domain-entities-and-feature-keys.md.
 // Scope: catalog + metadata + governance at the DATASET level. Integration data
 // movement (Pipeline/JobRun) and column-level Field are `future` and are NOT
 // modeled here. Platform/IdP-owned concepts (Org, workspace lifecycle,
@@ -45,7 +45,7 @@ enum QualityStatus {
 /// the reserved sentinel workspaceId "__platform__" (workspaceId is a plain column,
 /// not a FK, so no WorkspaceRef row is required); a tenant read overlays them via
 /// workspaceId IN (self, "__platform__"). Writing a `platform` row requires the
-/// ops/platform role, never a tenant user. See docs/20-design/arda-data-150-multiagent-sharing.md.
+/// ops/platform role, never a tenant user. See docs/30-design/arda-data-150-multiagent-sharing.md.
 enum AssetScope {
   workspace
   platform

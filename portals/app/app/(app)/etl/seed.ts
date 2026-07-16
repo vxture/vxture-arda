@@ -2,7 +2,7 @@
  * Data development (ETL) static seed + display metadata.
  *
  * Pipelines are not modeled in the v1 domain schema (they are `future` in
- * docs/design/domain-entities-and-feature-keys.md), so this screen renders from
+ * docs/30-design/arda-biz-120-domain-entities-and-feature-keys.md), so this screen renders from
  * a static, generic seed (like lineage) until a Pipeline/JobRun schema lands.
  */
 import type { StatusBadgeTone } from "@vxture/design-system";

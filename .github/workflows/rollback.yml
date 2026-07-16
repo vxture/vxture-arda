@@ -4,7 +4,7 @@ name: rollback
 # (does not rebuild, does not touch deploy/configs/docker-compose.yml on the
 # host - only swaps the arda-app image tag and recreates that one
 # container). Matches the manual rollback procedure already documented in
-# docs/40-deployment/{deployment,checklists}.md, just automated.
+# docs/50-deployment/{deployment,checklists}.md, just automated.
 #
 #   gh workflow run rollback.yml -f environment=production -f commit_sha=<sha>
 #

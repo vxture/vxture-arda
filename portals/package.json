@@ -2,5 +2,8 @@
   "name": "arda-portals",
   "private": true,
   "version": "0.0.0",
-  "workspaces": ["app", "packages/*"]
+  "workspaces": ["app", "packages/*"],
+  "scripts": {
+    "lint:docs-numbering": "node ../scripts/guardrails/check-docs-numbering.mjs --strict"
+  }
 }

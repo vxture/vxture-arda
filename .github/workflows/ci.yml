@@ -60,6 +60,9 @@ jobs:
           # self-built design primitives (raw colors, local fonts, duplicated
           # component CSS).
           python scripts/checks/09-check-ds-usage.py --strict
+          # Docs numbering iron rule (org docs taxonomy): unnumbered .md under
+          # docs/ = temporary = blocked. Always runs, including docs-only PRs.
+          node scripts/guardrails/check-docs-numbering.mjs --strict
 
       - name: Docker Compose config validation
         shell: bash
@@ -183,7 +186,7 @@ jobs:
 
   # SCA (dependency vulnerability) gate. Independent required check, not
   # folded into quality-gate's aggregation - matches the org-wide standard
-  # (vxture-platform docs/standards/repo-governance-standard.md #9), and a
+  # (vxture-platform docs/10-standards/140-repo-governance-standard.md #9), and a
   # security-critical gate deserves its own visible status rather than being
   # buried inside an aggregate. Hard-blocks: any new finding must be fixed or
   # explicitly accepted in .osv-scanner.toml, never silenced by removing this
