@@ -108,6 +108,7 @@ export async function setGoldenRecord(datasetId: string, golden: boolean): Promi
   ]);
   revalidatePath(`/catalog/${datasetId}`);
   revalidatePath("/catalog");
+  revalidatePath("/masterdata");
   return { ok: true };
 }
 

@@ -111,7 +111,6 @@ export const DOMAIN_ROADMAP: Record<string, string[]> = {
   planning: ["strategy", "managementSystem", "maturityAssessment", "governanceOrg", "roadmap", "policySystem", "standardsOfPractice", "scorecard"],
   architecture: ["enterpriseArchitecture", "businessArchitecture", "subjectAreas", "conceptualModel", "logicalModel", "physicalModel", "metricSystem", "dataFlowArchitecture"],
   governance: ["governanceOrg", "dataOwners", "approvalWorkflow", "policySystem", "classificationRules", "lifecyclePolicy", "issueManagement", "governanceScorecard"],
-  masterdata: ["mdmEngine", "referenceData", "codeLists", "masterDataModel", "versioning", "publishing", "syncStatus", "conflictResolution", "dataClaiming"],
   operations: ["runtimeMonitoring", "resourceMonitoring", "taskMonitoring", "logCenter", "costAnalysis", "dataValueInsight", "assetHeatmap", "serviceStats", "operationsReport"],
 };
 

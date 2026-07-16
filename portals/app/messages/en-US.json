@@ -422,6 +422,28 @@
       "review": "In review"
     }
   },
+  "masterdata": {
+    "title": "Master Data",
+    "description": "Datasets marked as authoritative golden records for the workspace.",
+    "libraryTitle": "Golden records",
+    "search": "Search master data...",
+    "unmark": "Unmark golden",
+    "emptyTitle": "No golden records yet",
+    "emptyDesc": "Mark a dataset as a golden record from its detail page in the catalog to see it here.",
+    "metrics": {
+      "total": "Golden Records",
+      "domains": "Domains Covered",
+      "standardsLinked": "Standards-Linked"
+    },
+    "col": {
+      "name": "Dataset",
+      "domain": "Domain",
+      "team": "Team",
+      "type": "Type",
+      "standards": "Standards",
+      "updated": "Updated"
+    }
+  },
   "quality": {
     "title": "Data Quality",
     "description": "Audit rules, issue distribution, and remediation tracking across the six quality dimensions.",
@@ -723,17 +745,6 @@
       "lifecyclePolicy": "Lifecycle Policy",
       "issueManagement": "Issue Management & Remediation",
       "governanceScorecard": "Governance Scorecard"
-    },
-    "masterdata": {
-      "mdmEngine": "MDM Engine",
-      "referenceData": "Reference Data",
-      "codeLists": "Code Lists",
-      "masterDataModel": "Master Data Model",
-      "versioning": "Versioning",
-      "publishing": "Publishing",
-      "syncStatus": "Sync Status",
-      "conflictResolution": "Conflict Resolution",
-      "dataClaiming": "Data Claiming"
     },
     "operations": {
       "runtimeMonitoring": "Runtime Monitoring",

@@ -422,6 +422,28 @@
       "review": "评审中"
     }
   },
+  "masterdata": {
+    "title": "主数据",
+    "description": "工作区内被标记为权威黄金记录的数据集。",
+    "libraryTitle": "黄金记录",
+    "search": "搜索主数据…",
+    "unmark": "取消黄金标记",
+    "emptyTitle": "暂无黄金记录",
+    "emptyDesc": "在目录中打开某个数据集的详情页，将其标记为黄金记录后会在此处显示。",
+    "metrics": {
+      "total": "黄金记录数",
+      "domains": "覆盖主题域",
+      "standardsLinked": "已关联标准"
+    },
+    "col": {
+      "name": "数据集",
+      "domain": "主题域",
+      "team": "团队",
+      "type": "类型",
+      "standards": "标准",
+      "updated": "更新时间"
+    }
+  },
   "quality": {
     "title": "数据质量",
     "description": "基于六大质量维度的稽核规则、问题分布与整改跟踪。",
@@ -723,17 +745,6 @@
       "lifecyclePolicy": "生命周期",
       "issueManagement": "问题管理与整改",
       "governanceScorecard": "治理评价"
-    },
-    "masterdata": {
-      "mdmEngine": "MDM 引擎",
-      "referenceData": "参考数据",
-      "codeLists": "编码",
-      "masterDataModel": "主数据模型",
-      "versioning": "版本管理",
-      "publishing": "发布",
-      "syncStatus": "同步",
-      "conflictResolution": "冲突管理",
-      "dataClaiming": "数据认领"
     },
     "operations": {
       "runtimeMonitoring": "运行监控",
