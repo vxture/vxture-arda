@@ -1,14 +1,9 @@
 #!/bin/sh
-# Container entrypoint: apply pending DB migrations, then start the app.
-# One container per stack, so a serial migrate-then-serve is safe (no leader
-# election needed). DATABASE_URL is provided by compose; the DB is gated
-# service_healthy so it is accepting connections by the time we run.
+# Container entrypoint: start the app. Deliberately NO schema migration here -
+# DB structure is owned by the hand-written DDL under deploy/database/ddl/ and
+# is applied only through the approval-gated db-init workflow (org governance
+# #7: the regular deploy chain never runs migrations). A schema-behind DB
+# surfaces as query errors, not as a silent half-migrated serve.
 set -e
-
-# prisma.config.ts + prisma/ live under the workspace dir (app/); run migrate
-# from there so its relative schema/migrations paths resolve. Fatal: (app)
-# routes now query the DB directly, so a half-migrated schema must not serve
-# traffic - let `set -e` propagate the failure instead of starting anyway.
-( cd app && prisma migrate deploy )
 
 exec node app/server.js

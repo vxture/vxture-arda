@@ -35,8 +35,9 @@ services:
     depends_on:
       arda-redis:
         condition: service_started
-      # App start runs `prisma migrate deploy` (entrypoint), so the DB must be
-      # accepting connections first.
+      # App routes query the DB directly, so it must be accepting connections
+      # first. Schema is NOT applied here - DB structure changes go through the
+      # approval-gated db-init workflow (deploy/database/, governance #7).
       arda-db:
         condition: service_healthy
     # Publish the app port so the public edge can reach it over tailscale.

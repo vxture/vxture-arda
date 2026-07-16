@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "workspaces": ["app", "packages/*"],
   "scripts": {
-    "lint:docs-numbering": "node ../scripts/guardrails/check-docs-numbering.mjs --strict"
+    "lint:docs-numbering": "cd .. && node scripts/guardrails/check-docs-numbering.mjs --strict",
+    "lint:data-architecture": "cd .. && node scripts/guardrails/check-data-architecture.mjs"
   }
 }

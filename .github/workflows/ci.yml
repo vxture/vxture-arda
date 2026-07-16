@@ -63,6 +63,10 @@ jobs:
           # Docs numbering iron rule (org docs taxonomy): unnumbered .md under
           # docs/ = temporary = blocked. Always runs, including docs-only PRs.
           node scripts/guardrails/check-docs-numbering.mjs --strict
+          # DDL-authority guardrail (governance #7): schema.prisma, the
+          # hand-written baseline DDL and the column-lock whitelist must stay
+          # in lockstep; seed must stay idempotent.
+          node scripts/guardrails/check-data-architecture.mjs
 
       - name: Docker Compose config validation
         shell: bash

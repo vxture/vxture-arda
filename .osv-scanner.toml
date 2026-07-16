@@ -11,15 +11,16 @@
 # GHSA-92pp-h63x-v22m (CVSS 5.3). Transitive dep of @prisma/dev (Prisma's
 # local dev-server tooling, package-lock.json path:
 # node_modules/@prisma/dev -> @hono/node-server@1.19.11). Dev-only: the
-# Dockerfile runner stage does a fresh `npm install -g prisma` and never
-# copies the workspace node_modules this lives in, so it never reaches the
-# built image. Revisit if @prisma/dev bumps its own pin past 1.19.13.
+# Dockerfile runner stage ships no prisma CLI at all (DB structure is db-init
+# owned) and never copies the workspace node_modules this lives in, so it
+# never reaches the built image. Revisit if @prisma/dev bumps its own pin
+# past 1.19.13.
 [[PackageOverrides]]
 name = "@hono/node-server"
 version = "1.19.11"
 ecosystem = "npm"
 vulnerability.ignore = true
-reason = "transitive dep of @prisma/dev (local dev tooling only); Dockerfile runner stage never copies this node_modules, does not reach production"
+reason = "transitive dep of @prisma/dev (local dev tooling only); runtime image has no prisma CLI and never copies this node_modules, does not reach production"
 
 # GHSA-qx2v-qp2m-jg93 (CVSS 6.1). Next.js's own nested copy
 # (node_modules/next/node_modules/postcss@8.4.31) - Next pins an older range
