@@ -4,15 +4,17 @@ on:
   pull_request:
     branches:
       - main
-  # No push:main trigger. main only advances via squash-merged PRs (ruleset:
-  # PR required, quality-gate required, strict/up-to-date-with-base), so the
-  # PR's own pull_request run already validates exactly what lands - a
-  # push-triggered rerun would just redo the identical work. The one gap this
-  # leaves is an admin using their ruleset bypass to push main directly
-  # without a PR; accepted tradeoff (see CLAUDE.md operational gotchas).
+  # push:main runs the same gates on the squash commit that actually lands on
+  # main. The PR run validates an identical tree (strict/up-to-date-with-base
+  # ruleset), but the squash commit itself is a new SHA the PR run never saw,
+  # and org governance mandates CI on both PR and push:main
+  # (vxture-platform docs/10-standards/140-repo-governance-standard.md #1).
+  push:
+    branches:
+      - main
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
+  group: ci-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -67,9 +69,10 @@ jobs:
 
   # Single arda app. type-check + production build run together. The Next.js
   # build cache is restored/saved to make repeat builds incremental instead of
-  # cold.
-  portal-build:
-    name: portal-build
+  # cold. Named `build` to match the org-standard required-check contexts
+  # (main-ruleset.json: quality-gate/build/audit/gitleaks).
+  build:
+    name: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -174,44 +177,9 @@ jobs:
           set -euo pipefail
           npm run build -w ./app
 
-  # Secret scan: fail the gate if a token/key/credential is committed to a
-  # tracked file. Runs the gitleaks binary directly (the gitleaks Action
-  # requires a license for orgs). Allowlist of known-safe placeholders lives in
-  # .gitleaks.toml.
-  secret-scan:
-    name: secret-scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Cache gitleaks binary
-        id: gitleaks-cache
-        uses: actions/cache@v4
-        with:
-          path: /tmp/gitleaks-bin
-          key: gitleaks-8.21.2-linux-x64
-
-      - name: Download gitleaks (cache miss only)
-        if: ${{ steps.gitleaks-cache.outputs.cache-hit != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          version=8.21.2
-          url="https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
-          mkdir -p /tmp/gitleaks-bin
-          curl -fsSL "$url" -o /tmp/gitleaks.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp/gitleaks-bin gitleaks
-
-      - name: Scan working tree for secrets (gitleaks)
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x /tmp/gitleaks-bin/gitleaks
-          # Scan the checked-out tree (what would merge). --redact keeps any
-          # match value out of the logs; a finding exits non-zero and fails CI.
-          /tmp/gitleaks-bin/gitleaks dir . --config .gitleaks.toml --redact --no-banner --exit-code 1
+  # Secret scanning lives in .github/workflows/secret-scan.yml as its own
+  # `gitleaks` required check (org standard layer 2): full-history detect,
+  # pinned binary, rules in .gitleaks.toml.
 
   # SCA (dependency vulnerability) gate. Independent required check, not
   # folded into quality-gate's aggregation - matches the org-wide standard
@@ -268,9 +236,9 @@ jobs:
     name: quality-gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [static-checks, portal-build, secret-scan]
+    needs: [static-checks, build]
 
     steps:
       - name: Confirm upstream gates passed
         shell: bash
-        run: echo "static-checks, portal-build and secret-scan succeeded"
+        run: echo "static-checks and build succeeded"

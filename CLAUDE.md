@@ -59,9 +59,9 @@ Enforced via repo Rulesets (`gh api repos/vxture/vxture-arda/rulesets`). Legacy
 `branches/*/protection` returns 404 - do not look there.
 
 - `main` (single ruleset): require PR (0 approvals - checks gate merges, not
-  human review), require `quality-gate` and `audit` status checks (strict /
-  up-to-date with base), block deletion, block non-fast-forward, require
-  linear history, squash-only merges.
+  human review), require `quality-gate`, `build`, `audit` and `gitleaks`
+  status checks (strict / up-to-date with base), block deletion, block
+  non-fast-forward, require linear history, squash-only merges.
 - `production` GitHub Environment: required reviewer (stonesmoker) - every
   `v*.*.*` tag deploy pauses here until approved.
 - `beta` GitHub Environment: no reviewer gate - a `beta-*` tag deploys
@@ -87,9 +87,9 @@ on tag push (`beta-*` -> beta, `v*.*.*` -> production) and calls `build.yml` via
 `workflow_call` before deploying - build and deploy run in one workflow run, so
 build always finishes before deploy starts (no separate wait-for-build polling
 needed, unlike a two-independently-tag-triggered-workflows split). `ci.yml`
-triggers only on PRs to `main` (no `push:main` - that would just rerun
-quality-gate on content the PR's own run already validated); it does NOT
-deploy. Every image
+triggers on PRs to `main` and on `push:main` (org governance #1: the squash
+commit that lands on main is a new SHA, so it gets its own gate run); it does
+NOT deploy. Every image
 build publishes both an immutable `sha-<short>` tag (what deploy actually pulls
 by, and what the skip-rebuild-if-unchanged dedup checks across tags) and the
 exact release tag name (`beta-YYYYMMDD.N` / `vX.Y.Z`, for human/audit
@@ -110,13 +110,14 @@ itself. `.github/dependabot.yml` covers the npm workspace (`@vxture/*` grouped
 and excluded from auto-bump - that moves on its own release cadence) and
 GitHub Actions versions.
 
-`quality-gate` and `audit` must both pass before any merge to `main`. Neither
-runs on a tag push - cutting a release tag ships whatever is already at that
-commit on `main`, it does not re-verify either gate. `quality-gate` runs:
+`quality-gate`, `build`, `audit` and `gitleaks` must all pass before any merge
+to `main`. None of them runs on a tag push - cutting a release tag ships
+whatever is already at that commit on `main`, it does not re-verify the gates.
+`quality-gate` aggregates:
 - static script checks (`bash -n`, `python -m compileall`,
-  `scripts/checks/06-check-deploy-contracts.py`, `git diff --check`,
-  secret-scan via `.gitleaks.toml`)
-- portal type-check and production build (`@arda/app`)
+  `scripts/checks/06-check-deploy-contracts.py`, `git diff --check`)
+- `build`: portal type-check and production build (`@arda/app`) - also its
+  own required check
 - DS-usage check (`scripts/checks/09-check-ds-usage.py`, strict)
 - `docker compose --env-file .env.example config` validation
 
@@ -125,6 +126,13 @@ commit on `main`, it does not re-verify either gate. `quality-gate` runs:
 on any new finding. Exceptions (dev-only/build-time-only transitive deps that
 never reach the deployed image) are recorded in `.osv-scanner.toml` with a
 reason, per-package-version - never suppressed by removing the check.
+
+`gitleaks` is a separate required check (`.github/workflows/secret-scan.yml`):
+pinned gitleaks binary, full-history `detect` scan, rules and allowlist in
+`.gitleaks.toml`. It is CI layer 2 of the org's four-layer secret hygiene;
+layer 3 is the local pre-commit hook in `.husky/pre-commit` - wire it once per
+clone with `git config core.hooksPath .husky` (and install gitleaks locally,
+e.g. `scoop install gitleaks`).
 
 ## Repository hygiene
 
