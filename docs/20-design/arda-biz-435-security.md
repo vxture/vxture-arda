@@ -25,7 +25,7 @@
 |---|---|---|---|---|
 | `Sec-BL1` | 服务：脱敏/加密执行缺 | `Policy(masking)` 只是规则，无执行器在服务/查询层生效 | 脱敏执行器（服务响应/查询时应用） | `biz-441` |
 | `Sec-BL2` | 服务：对外分级过滤未接 | `DataService` 响应不按 classification 脱敏 | 对外契约收口（分级过滤） | `biz-441` |
-| `Sec-BL3` | 监管：访问审计未接 | 对外/敏感访问不落 `AuditLog` | 补访问审计写入 | `biz-451`/admin |
+| `Sec-BL3` | 监管：访问审计未接 | ✅ **已接通**：`api/services/[serviceId]` 网关每次调用落 `AuditLog{action:"service.access"}`（含排除计数、对外分级上限），随 Sec-BL1/BL2 网关同批交付（#102） | 补访问审计写入 | `biz-451`/admin |
 | `Sec-BL4` | 过程：共享审批流未接 | 资产权限申请表单已建、未接审批（`biz-210`） | 落审批流（与标准/生命周期审批一致） | — |
 | `Sec-BL5` | 过程：自动分类缺 | PII/自动识别未实现（手动分级） | 自动分类（`arda.governance.classification`） | — |
 

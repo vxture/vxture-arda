@@ -20,6 +20,7 @@ export interface QualityRuleView {
   pass: number | null;
   issues: number | null;
   trend: Trend;
+  enabled: boolean;
 }
 
 export interface QualityMetrics {
@@ -61,6 +62,7 @@ export async function getQuality(workspaceId: string): Promise<QualityData> {
       pass: latest?.score ?? null,
       issues: latest?.issues ?? null,
       trend,
+      enabled: r.enabled,
     };
   });
 
@@ -73,4 +75,19 @@ export async function getQuality(workspaceId: string): Promise<QualityData> {
   };
 
   return { rules, metrics };
+}
+
+export interface DatasetOption {
+  id: string;
+  name: string;
+}
+
+/** Lightweight dataset picker for the create-rule form (id + name only). */
+export async function getDatasetOptions(workspaceId: string): Promise<DatasetOption[]> {
+  return prisma.dataset.findMany({
+    where: { workspaceId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+    take: 500,
+  });
 }

@@ -447,7 +447,6 @@
   "quality": {
     "title": "Data Quality",
     "description": "Audit rules, issue distribution, and remediation tracking across the six quality dimensions.",
-    "rules": "Rule library",
     "runAudit": "Run audit",
     "trendTitle": "Quality score trend",
     "trendSub": "Last 10 audit cycles",
@@ -471,7 +470,8 @@
       "level": "Level",
       "pass": "Pass rate",
       "issues": "Issues",
-      "trend": "Trend"
+      "trend": "Trend",
+      "enabled": "Enabled"
     },
     "dim": {
       "completeness": "Completeness",
@@ -499,6 +499,26 @@
         "no_rules": "No enabled rules to run.",
         "connect": "Source connection failed."
       }
+    },
+    "enabled": {
+      "on": "Enabled",
+      "off": "Disabled"
+    },
+    "removeRule": "Delete rule",
+    "addRule": "Add rule",
+    "ruleNamePh": "Rule name",
+    "ruleTypeLabel": "Check type",
+    "ruleType": {
+      "not_null": "Not null",
+      "unique": "Unique",
+      "range": "Range",
+      "freshness": "Freshness",
+      "row_count": "Row count"
+    },
+    "severityLabel": "Severity",
+    "severity": {
+      "warning": "Warning",
+      "critical": "Critical"
     }
   },
   "lineage": {

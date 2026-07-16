@@ -28,7 +28,7 @@
 |---|---|---|---|---|
 | `Q-BL1` | 过程：无真实调度 | ✅ **已接通（2026-07-14）**：`runWorkspaceChecks` 手动触发——规则按源分组、经连接器**下推 SQL 到源库执行**（not_null/unique/range/freshness/row_count 五型，活库实测；标识符强校验防注入），写 `QualityResult`；无连接器数据集显式跳过并计数；**同时接通首个 C3 consume 触发点**（`quality.check.run` divisible 后报 + 配额预闸）。周期化接 scheduling（future） | `biz-410`/future |
 | `Q-BL2` | 服务：准入未接 | ✅ **已接通（2026-07-14）**：`qualityGate` + `publishDataService`——发布前读关联数据集派生质量分（不落库）；关联数据集存在严重级 fail = **拦截发布**（审计 `service.publish_blocked`）；低分/从未质检 = 预警放行（记入发布审计）。调用期拦截/降权 = 后续 | `biz-441` |
-| `Q-BL3` | 监管：审计未接 | ✅ **部分接通（2026-07-14）**：质检运行 `quality.run`/告警 `quality.alert`、发布 `service.publish`/`service.publish_blocked` 已落 `AuditLog`；**规则建改审计随规则 CRUD UI 落地**（规则界面尚未建） | `biz-451`/admin |
+| `Q-BL3` | 监管：审计未接 | ✅ **已接通（2026-07-17）**：质检运行 `quality.run`/告警 `quality.alert`、发布 `service.publish`/`service.publish_blocked`、规则 CRUD（`quality.rule.create`/`enable`/`disable`/`delete`）均已落 `AuditLog`；规则创建/启停/删除界面已建（`/quality`） | `biz-451`/admin |
 | `Q-BL4` | 目标：阈值/SLA 未显式建模 | `QualityRule` 有 `severity` 无 `threshold` | 先用 `config`（Json）承载阈值/SLA，避免迁移；确有需要再加字段 | da（可选） |
 
 > **本功能"贯通"的真正工作 = 接通 Q-BL1~3**（Q-BL4 是建模优化）。Q-BL1（能真跑）与 Q-BL2（能卡服务）是让质量"活起来"的关键两环。

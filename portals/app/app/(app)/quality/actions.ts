@@ -13,6 +13,134 @@ import { recordUsage } from "../../usage/lib/buffer";
 import { getConnector } from "../sources/connectors";
 import type { QualityCheckSpec } from "../sources/connectors/types";
 
+export type RuleActionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "invalid" };
+
+const DIMENSIONS = new Set(["completeness", "accuracy", "consistency", "timeliness", "uniqueness", "validity"]);
+const RULE_TYPES = new Set(["not_null", "unique", "range", "freshness", "row_count"]);
+const SEVERITIES = new Set(["warning", "critical"]);
+
+export interface CreateQualityRuleInput {
+  datasetId: string;
+  name: string;
+  dimension: string;
+  type: string;
+  severity: string;
+}
+
+/** Create a quality rule (Q-BL3 input: rules can only be audited once they can
+ *  be authored). Config stays empty in v1 - connectors run with per-type
+ *  defaults; a config editor can follow once a real per-rule need shows up. */
+export async function createQualityRule(input: CreateQualityRuleInput): Promise<RuleActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "unauthenticated" };
+  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
+
+  const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
+  if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
+
+  const name = input.name.trim();
+  if (!name || name.length > 120) return { ok: false, error: "invalid" };
+  if (!DIMENSIONS.has(input.dimension) || !RULE_TYPES.has(input.type) || !SEVERITIES.has(input.severity)) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const dataset = await prisma.dataset.findFirst({ where: { workspaceId: session.workspaceId, id: input.datasetId } });
+  if (!dataset) return { ok: false, error: "invalid" };
+
+  const existing = await prisma.qualityRule.findMany({ where: { workspaceId: session.workspaceId }, select: { code: true } });
+  let maxNum = 300;
+  for (const r of existing) {
+    const m = /^Q-(\d+)$/.exec(r.code);
+    if (m) maxNum = Math.max(maxNum, Number(m[1]));
+  }
+  const code = `Q-${maxNum + 1}`;
+
+  await prisma.$transaction(async (tx) => {
+    const rule = await tx.qualityRule.create({
+      data: {
+        workspaceId: session.workspaceId,
+        datasetId: dataset.id,
+        code,
+        name,
+        dimension: input.dimension,
+        type: input.type,
+        severity: input.severity,
+      },
+    });
+    await tx.auditLog.create({
+      data: {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: "quality.rule.create",
+        target: rule.id,
+        metadata: { code, name, dataset: dataset.name, dimension: input.dimension, type: input.type, severity: input.severity },
+      },
+    });
+  });
+
+  revalidatePath("/quality");
+  return { ok: true };
+}
+
+/** Enable/disable a rule without deleting its result history. */
+export async function setQualityRuleEnabled(ruleId: string, enabled: boolean): Promise<RuleActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "unauthenticated" };
+  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
+
+  const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
+  if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
+
+  const rule = await prisma.qualityRule.findFirst({ where: { workspaceId: session.workspaceId, id: ruleId } });
+  if (!rule) return { ok: false, error: "invalid" };
+  if (rule.enabled === enabled) return { ok: true };
+
+  await prisma.$transaction([
+    prisma.qualityRule.update({ where: { id: rule.id }, data: { enabled } }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: enabled ? "quality.rule.enable" : "quality.rule.disable",
+        target: rule.id,
+        metadata: { code: rule.code, name: rule.name },
+      },
+    }),
+  ]);
+
+  revalidatePath("/quality");
+  return { ok: true };
+}
+
+/** Delete a rule (cascades its result history, schema onDelete: Cascade). */
+export async function deleteQualityRule(ruleId: string): Promise<RuleActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "unauthenticated" };
+  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
+
+  const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
+  if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
+
+  const rule = await prisma.qualityRule.findFirst({ where: { workspaceId: session.workspaceId, id: ruleId } });
+  if (!rule) return { ok: false, error: "invalid" };
+
+  await prisma.$transaction([
+    prisma.qualityRule.delete({ where: { id: rule.id } }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: "quality.rule.delete",
+        target: rule.id,
+        metadata: { code: rule.code, name: rule.name },
+      },
+    }),
+  ]);
+
+  revalidatePath("/quality");
+  return { ok: true };
+}
+
 export type RunChecksResult =
   | { ok: true; ran: number; passed: number; warned: number; failed: number; skipped: number }
   | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "quota" | "no_rules" | "connect"; reason?: string };

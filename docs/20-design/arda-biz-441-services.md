@@ -27,7 +27,7 @@
 | `Svc-BL2` | 过程：quality-gate 未接 | 发布不校验资产质量 | 发布/调用校验质量分（对应 Q-BL2） | `biz-433` |
 | `Svc-BL3` | 结果：调用统计/监测占位 | telemetry 未建模，统计是展示占位 | telemetry 建模（真实调用统计） | future |
 | `Svc-BL4` | 监管：请求量计量点未定 | `api_requests_monthly` 在 arda 计数 vs 平台网关 | 与 `plat`（对接）维度定计量点 | 平台 |
-| `Svc-BL5` | 监管：服务/调用审计未接 | 变更/调用不落 `AuditLog` | 补写入点 | `biz-451`/admin |
+| `Svc-BL5` | 监管：服务/调用审计未接 | ✅ **部分接通**：调用侧 `api/services/[serviceId]` 每次调用落 `AuditLog{action:"service.access"}`（#102）；**服务变更（创建/编辑 `DataService`）仍无 UI/action，尚无从审计** | 服务变更管理落地后补写入 | `biz-451`/admin |
 
 > 服务是**多功能结果的汇出口**：质量（准入）、安全（过滤）、血缘（可溯源）在此对外兑现。`Svc-BL1/BL2` 是"可信数据安全地用出去"的闭合点。
 

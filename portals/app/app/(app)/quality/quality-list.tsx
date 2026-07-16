@@ -3,7 +3,9 @@
 import { useState, useTransition } from "react";
 import {
   DataTable,
+  Input,
   MetricGrid,
+  NativeSelect,
   StatusBadge,
   Button,
   type DataTableColumn,
@@ -14,8 +16,12 @@ import { PIcon, type PIconName } from "../../ui/phosphor-icon";
 import { SectionHeading } from "../../ui/section-heading";
 import { AreaChart, Radar } from "../../ui/charts";
 import { LEVEL_TONE, passColor, QUALITY_DIMS, SCORE_TREND } from "./seed";
-import { runWorkspaceChecks, type RunChecksResult } from "./actions";
-import type { QualityMetrics, QualityRuleView, Trend } from "./data";
+import { createQualityRule, deleteQualityRule, runWorkspaceChecks, setQualityRuleEnabled, type RunChecksResult } from "./actions";
+import type { DatasetOption, QualityMetrics, QualityRuleView, Trend } from "./data";
+
+const DIMENSIONS = ["completeness", "accuracy", "consistency", "timeliness", "uniqueness", "validity"];
+const RULE_TYPES = ["not_null", "unique", "range", "freshness", "row_count"];
+const SEVERITIES = ["warning", "critical"];
 
 const TREND_META: Record<Trend, { icon: PIconName; color: string }> = {
   up: { icon: "trend-up", color: "var(--vx-color-success-600)" },
@@ -32,15 +38,32 @@ function compact(n: number): string {
 export function QualityList({
   rules,
   metrics,
+  datasets,
   isAdmin = false,
 }: {
   rules: QualityRuleView[];
   metrics: QualityMetrics;
+  datasets: DatasetOption[];
   isAdmin?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [runMsg, setRunMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const t = useTranslations("quality");
+
+  const [ruleDataset, setRuleDataset] = useState("");
+  const [ruleName, setRuleName] = useState("");
+  const [ruleDim, setRuleDim] = useState(DIMENSIONS[0]);
+  const [ruleType, setRuleType] = useState(RULE_TYPES[0]);
+  const [ruleSeverity, setRuleSeverity] = useState(SEVERITIES[0]);
+
+  const addRule = () => {
+    const name = ruleName.trim();
+    if (!ruleDataset || !name) return;
+    startTransition(async () => {
+      const res = await createQualityRule({ datasetId: ruleDataset, name, dimension: ruleDim, type: ruleType, severity: ruleSeverity });
+      if (res.ok) setRuleName("");
+    });
+  };
 
   const runChecks = () => {
     setRunMsg(null);
@@ -108,6 +131,40 @@ export function QualityList({
       header: t("col.trend"),
       cell: (r) => <PIcon name={TREND_META[r.trend].icon} color={TREND_META[r.trend].color} />,
     },
+    {
+      id: "enabled",
+      header: t("col.enabled"),
+      cell: (r) =>
+        isAdmin ? (
+          <button
+            disabled={pending}
+            onClick={() => startTransition(async () => { await setQualityRuleEnabled(r.id, !r.enabled); })}
+            style={{ border: 0, background: "none", cursor: "pointer", padding: 0 }}
+          >
+            <StatusBadge tone={r.enabled ? "success" : "warning"}>{r.enabled ? t("enabled.on") : t("enabled.off")}</StatusBadge>
+          </button>
+        ) : (
+          <StatusBadge tone={r.enabled ? "success" : "warning"}>{r.enabled ? t("enabled.on") : t("enabled.off")}</StatusBadge>
+        ),
+    },
+    ...(isAdmin
+      ? [
+          {
+            id: "remove",
+            header: "",
+            cell: (r: QualityRuleView) => (
+              <button
+                aria-label={t("removeRule")}
+                disabled={pending}
+                onClick={() => startTransition(async () => { await deleteQualityRule(r.id); })}
+                style={{ border: 0, background: "none", cursor: "pointer", padding: 0, color: "inherit" }}
+              >
+                <PIcon name="x" />
+              </button>
+            ),
+          } as DataTableColumn<QualityRuleView>,
+        ]
+      : []),
   ];
 
   return (
@@ -118,16 +175,11 @@ export function QualityList({
         title={t("title")}
         description={t("description")}
         action={
-          <>
-            <Button variant="secondary">
-              <PIcon name="funnel" /> {t("rules")}
+          isAdmin && (
+            <Button disabled={pending} onClick={runChecks}>
+              <PIcon name="play" /> {pending ? t("run.running") : t("runAudit")}
             </Button>
-            {isAdmin && (
-              <Button disabled={pending} onClick={runChecks}>
-                <PIcon name="play" /> {pending ? t("run.running") : t("runAudit")}
-              </Button>
-            )}
-          </>
+          )
         }
       />
 
@@ -174,6 +226,49 @@ export function QualityList({
           </div>
         </div>
         <DataTable columns={columns} rows={rules} rowKey={(r) => r.id} />
+        {isAdmin && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "0 var(--vx-space-md) var(--vx-space-md)" }}>
+            <NativeSelect aria-label={t("col.target")} value={ruleDataset} onChange={(e) => setRuleDataset(e.target.value)}>
+              <option value="">-</option>
+              {datasets.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </NativeSelect>
+            <Input
+              value={ruleName}
+              maxLength={120}
+              placeholder={t("ruleNamePh")}
+              onChange={(e) => setRuleName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addRule()}
+            />
+            <NativeSelect aria-label={t("col.dim")} value={ruleDim} onChange={(e) => setRuleDim(e.target.value)}>
+              {DIMENSIONS.map((d) => (
+                <option key={d} value={d}>
+                  {t("dim." + d)}
+                </option>
+              ))}
+            </NativeSelect>
+            <NativeSelect aria-label={t("ruleTypeLabel")} value={ruleType} onChange={(e) => setRuleType(e.target.value)}>
+              {RULE_TYPES.map((ty) => (
+                <option key={ty} value={ty}>
+                  {t("ruleType." + ty)}
+                </option>
+              ))}
+            </NativeSelect>
+            <NativeSelect aria-label={t("severityLabel")} value={ruleSeverity} onChange={(e) => setRuleSeverity(e.target.value)}>
+              {SEVERITIES.map((s) => (
+                <option key={s} value={s}>
+                  {t("severity." + s)}
+                </option>
+              ))}
+            </NativeSelect>
+            <Button size="sm" disabled={pending || !ruleDataset || !ruleName.trim()} onClick={addRule}>
+              <PIcon name="plus" /> {t("addRule")}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
