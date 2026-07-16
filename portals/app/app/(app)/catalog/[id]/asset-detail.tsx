@@ -28,7 +28,9 @@ import { Radar } from "../../../ui/charts";
 import { QUALITY_DIMS } from "../../dashboard/seed";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone, type AssetLevel } from "../seed";
 import type { AssetProfile } from "../data";
-import { attachStandard, attachTag, detachStandard, detachTag, setGoldenRecord } from "../actions";
+import { attachStandard, attachTag, detachStandard, detachTag, setDatasetClassification, setGoldenRecord } from "../actions";
+
+const ASSET_LEVELS: AssetLevel[] = ["public", "internal", "sensitive", "core"];
 
 function domainIcon(domain: string | null): PIconName {
   return (domain && DOMAINS[domain]?.icon) || "stack";
@@ -110,6 +112,11 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
   const toggleGolden = () => {
     startTagTransition(async () => {
       await setGoldenRecord(asset.id, !asset.goldenRecord);
+    });
+  };
+  const changeLevel = (level: string) => {
+    startTagTransition(async () => {
+      await setDatasetClassification(asset.id, level);
     });
   };
 
@@ -393,8 +400,23 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
               </div>
               <div>
                 <dt>{t("info.level")}</dt>
-                <dd>
+                <dd style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <StatusBadge tone={LEVEL_TONE[asset.level]}>{t("level." + asset.level)}</StatusBadge>
+                  {isAdmin && (
+                    <NativeSelect
+                      aria-label={t("info.level")}
+                      value={asset.level}
+                      disabled={tagPending}
+                      onChange={(e) => changeLevel(e.target.value)}
+                      style={{ maxWidth: 130 }}
+                    >
+                      {ASSET_LEVELS.map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          {t("level." + lvl)}
+                        </option>
+                      ))}
+                    </NativeSelect>
+                  )}
                 </dd>
               </div>
             </dl>

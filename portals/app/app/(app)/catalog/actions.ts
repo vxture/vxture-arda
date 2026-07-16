@@ -6,8 +6,11 @@ import { canUseFeature } from "../../entitlement/capability";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
+import type { AssetLevel } from "./seed";
 
 export type TagActionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "invalid" };
+
+const ASSET_LEVELS: readonly AssetLevel[] = ["public", "internal", "sensitive", "core"];
 
 /** Attach a tag to a dataset, creating the tag on first use (MD-BL3 curation;
  *  audited per MD-BL6). Everything workspace-scoped from the session. */
@@ -109,6 +112,41 @@ export async function setGoldenRecord(datasetId: string, golden: boolean): Promi
   revalidatePath(`/catalog/${datasetId}`);
   revalidatePath("/catalog");
   revalidatePath("/masterdata");
+  return { ok: true };
+}
+
+/** Change a dataset's classification level (Sec-BL2 input, gated
+ *  arda.governance.classification). */
+export async function setDatasetClassification(datasetId: string, level: string): Promise<TagActionResult> {
+  const session = await getSession();
+  if (!session) return { ok: false, error: "unauthenticated" };
+  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
+
+  const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
+  if (!canUseFeature(subscription, "arda.governance.classification")) return { ok: false, error: "tier" };
+
+  if (!ASSET_LEVELS.includes(level as AssetLevel)) return { ok: false, error: "invalid" };
+  const newLevel = level as AssetLevel;
+
+  const dataset = await prisma.dataset.findFirst({ where: { workspaceId: session.workspaceId, id: datasetId } });
+  if (!dataset) return { ok: false, error: "invalid" };
+  if (dataset.classification === newLevel) return { ok: true };
+
+  await prisma.$transaction([
+    prisma.dataset.update({ where: { id: dataset.id }, data: { classification: newLevel } }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: "security.classification.set",
+        target: dataset.id,
+        metadata: { dataset: dataset.name, from: dataset.classification, to: newLevel },
+      },
+    }),
+  ]);
+  revalidatePath(`/catalog/${datasetId}`);
+  revalidatePath("/catalog");
+  revalidatePath("/security");
   return { ok: true };
 }
 

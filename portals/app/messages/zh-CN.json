@@ -566,8 +566,7 @@
       "coverage": "分级覆盖率",
       "coverageTrend": "环比 +0.4%",
       "masking": "脱敏规则",
-      "core": "核心资产",
-      "blocked": "越权拦截 · 今日"
+      "core": "核心资产"
     },
     "col": {
       "who": "申请方",
@@ -585,6 +584,23 @@
     "status": {
       "pending": "待审批",
       "approved": "已通过"
+    },
+    "accessTitle": "对外开放分级上限",
+    "accessHint": "分级高于该上限的数据集，将不会出现在对外数据服务中。",
+    "maskingTitle": "脱敏规则",
+    "maskingEmpty": "暂无脱敏规则。",
+    "maskAllDatasets": "全部数据集",
+    "maskFieldsPh": "字段1, 字段2",
+    "maskRemove": "删除规则",
+    "maskCol": {
+      "dataset": "数据集",
+      "fields": "字段",
+      "strategy": "策略"
+    },
+    "strategy": {
+      "redact": "遮蔽",
+      "hash": "哈希",
+      "partial": "部分掩码"
     }
   },
   "service": {
