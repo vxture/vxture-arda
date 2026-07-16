@@ -68,6 +68,35 @@ jobs:
           # in lockstep; seed must stay idempotent.
           node scripts/guardrails/check-data-architecture.mjs
 
+      - name: Cache actionlint binary
+        id: actionlint-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/actionlint-bin
+          key: actionlint-1.7.7-linux-amd64
+
+      - name: Download actionlint (cache miss only)
+        if: ${{ steps.actionlint-cache.outputs.cache-hit != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=1.7.7
+          url="https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_linux_amd64.tar.gz"
+          mkdir -p /tmp/actionlint-bin
+          curl -fsSL "$url" -o /tmp/actionlint.tar.gz
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp/actionlint-bin actionlint
+
+      # GitHub validates the WHOLE workflow file at trigger time; a single
+      # invalid construct (e.g. an empty choice option) startup-fails every
+      # trigger of that workflow, including tag deploys. actionlint catches
+      # this class at PR time (pinned binary, same idiom as gitleaks/osv).
+      - name: Workflow semantic lint (actionlint)
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x /tmp/actionlint-bin/actionlint
+          /tmp/actionlint-bin/actionlint -shellcheck= -pyflakes=
+
       - name: Docker Compose config validation
         shell: bash
         run: |

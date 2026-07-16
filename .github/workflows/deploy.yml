@@ -18,8 +18,12 @@ on:
         description: "Override environment detection (beta-*->beta, v*.*.*->production). Use only for debugging."
         required: false
         type: choice
+        # GitHub rejects an empty-string choice option at workflow validation
+        # time (the whole file startup-fails, killing tag deploys too) - use
+        # an explicit 'auto' sentinel for "no override" instead.
+        default: auto
         options:
-          - ""
+          - auto
           - beta
           - production
 
@@ -54,7 +58,7 @@ jobs:
           # Tag prefix -> GitHub Environment routing. Any other tag/ref must
           # never reach a deploy. workflow_dispatch can override via
           # explicit_environment input.
-          if [ -n "$EXPLICIT_ENV" ]; then
+          if [ -n "$EXPLICIT_ENV" ] && [ "$EXPLICIT_ENV" != "auto" ]; then
             environment="$EXPLICIT_ENV"
             echo "override: environment=$environment (explicit via workflow_dispatch)"
           else
