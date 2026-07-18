@@ -1,5 +1,5 @@
-import { DomainRoadmap } from "../../ui/placeholder";
+import { UnderConstruction } from "../../ui/placeholder";
 
 export default function OperationsPage() {
-  return <DomainRoadmap domainId="operations" icon="pulse" />;
+  return <UnderConstruction screenKey="operations" icon="gauge" />;
 }

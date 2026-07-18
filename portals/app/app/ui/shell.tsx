@@ -6,6 +6,7 @@ import { Drawer } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
+import { NAV_FLAT } from "./nav-config";
 import { Assistant, type AssistantMode } from "./assistant";
 import { PIcon, type PIconName } from "./phosphor-icon";
 import { useSubscription } from "../entitlement/gate";
@@ -52,7 +53,19 @@ export function Shell({ children, isAdmin = false }: { children: ReactNode; isAd
     setAssistantMode("narrow");
   };
 
-  const activeKey = useMemo(() => (pathname ?? "/").split("/").filter(Boolean)[0] ?? "dashboard", [pathname]);
+  // Longest-route-prefix match over the flat nav: exact route wins, otherwise
+  // the deepest ancestor route (so /catalog/[id] highlights "catalog" while
+  // /catalog/inventory highlights its own entry).
+  const activeKey = useMemo(() => {
+    const path = pathname ?? "/";
+    let best: { key: string; len: number } | null = null;
+    for (const item of NAV_FLAT) {
+      if (path === item.route || path.startsWith(item.route + "/")) {
+        if (!best || item.route.length > best.len) best = { key: item.key, len: item.route.length };
+      }
+    }
+    return best?.key ?? "dashboard";
+  }, [pathname]);
 
   const rootClass = "app" + (assistantOpen ? " vela-open vela-" + assistantMode : "");
 

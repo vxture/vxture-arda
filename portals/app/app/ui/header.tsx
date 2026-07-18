@@ -16,7 +16,7 @@ import { useLocale } from "@arda/shared/locale-provider";
 import { useTranslations } from "@arda/shared/i18n";
 import { ARDA_LOCALE_OPTIONS } from "@arda/shared/locales";
 import { PIcon } from "./phosphor-icon";
-import { BOARDS, PLAN_TAGS, USER_LEVELS } from "./nav-config";
+import { BOARDS, PLAN_TAGS, ROUTE_BY_KEY, USER_LEVELS } from "./nav-config";
 
 const PAGE_FULLSCREEN_ID = "arda-page-root";
 const THEME_OPTIONS: Theme[] = ["system", "light", "dark"];
@@ -87,9 +87,11 @@ export function Header({
   const tl = useTranslations("level");
   const [panel, setPanel] = useState<"launcher" | "user" | null>(null);
 
-  // Role-locked boards (admin) are hidden, not badge-locked: roles cannot be
-  // purchased, so the visible-but-locked pattern does not apply (biz-250 §6).
-  const boards = BOARDS.filter((b) => b.id !== "admin" || isAdmin);
+  // The admin board is visible to every member since it now hosts the
+  // approval center (my requests); its role-locked GROUPS stay hidden for
+  // non-admins in the sidebar (biz-250 §6 still applies at group level).
+  const boards = BOARDS;
+  void isAdmin;
   const activeBoard = boards.find((b) => b.screens.includes(activeKey)) ?? boards[0];
   const toggle = (p: "launcher" | "user") => setPanel((cur) => (cur === p ? null : p));
   const planTag = brandPlan ? PLAN_TAGS[brandPlan] : undefined;
@@ -116,7 +118,7 @@ export function Header({
                     className={"vxh-board" + (b.id === activeBoard.id ? " is-active" : "")}
                     onClick={() => {
                       setPanel(null);
-                      onSelect("/" + b.home);
+                      onSelect(ROUTE_BY_KEY[b.home] ?? "/" + b.home);
                     }}
                   >
                     <span className="vxh-board-ico">
