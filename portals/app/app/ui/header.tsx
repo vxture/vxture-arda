@@ -16,7 +16,7 @@ import { useLocale } from "@arda/shared/locale-provider";
 import { useTranslations } from "@arda/shared/i18n";
 import { ARDA_LOCALE_OPTIONS } from "@arda/shared/locales";
 import { PIcon } from "./phosphor-icon";
-import { BOARDS, PLAN_TAGS, ROUTE_BY_KEY, USER_LEVELS } from "./nav-config";
+import { BOARDS, LAUNCHER_GROUPS, PLAN_TAGS, ROUTE_BY_KEY, USER_LEVELS } from "./nav-config";
 
 const PAGE_FULLSCREEN_ID = "arda-page-root";
 const THEME_OPTIONS: Theme[] = ["system", "light", "dark"];
@@ -83,6 +83,7 @@ export function Header({
   const tb = useTranslations("brand");
   const th = useTranslations("header");
   const tboard = useTranslations("board");
+  const tlg = useTranslations("launcherGroup");
   const tu = useTranslations("user");
   const tl = useTranslations("level");
   const [panel, setPanel] = useState<"launcher" | "user" | null>(null);
@@ -110,26 +111,34 @@ export function Header({
             <PIcon name="dots-nine" />
           </button>
           {panel === "launcher" && (
-            <div className="vxh-panel vxh-launcher-panel">
-              <div className="vxh-board-list">
-                {boards.map((b) => (
-                  <button
-                    key={b.id}
-                    className={"vxh-board" + (b.id === activeBoard.id ? " is-active" : "")}
-                    onClick={() => {
-                      setPanel(null);
-                      onSelect(ROUTE_BY_KEY[b.home] ?? "/" + b.home);
-                    }}
-                  >
-                    <span className="vxh-board-ico">
-                      <PIcon name={b.icon} />
-                    </span>
-                    <span className="vxh-board-copy">
-                      <strong>{tboard(b.id)}</strong>
-                      <span>{tboard(b.id + "Desc")}</span>
-                    </span>
-                    {b.id === activeBoard.id && <PIcon className="vxh-board-check" name="check" />}
-                  </button>
+            <div className="vxh-panel vxh-launcher-panel is-grid">
+              <div className="vxh-launcher-grid">
+                {LAUNCHER_GROUPS.map((g) => (
+                  <div className="vxh-board-col" key={g.key}>
+                    <div className="vxh-board-col-title">{tlg(g.key)}</div>
+                    {boards
+                      .filter((b) => b.group === g.key)
+                      .map((b) => (
+                        <button
+                          key={b.id}
+                          className={"vxh-board" + (b.id === activeBoard.id ? " is-active" : "")}
+                          title={tboard(b.id + "Desc")}
+                          onClick={() => {
+                            setPanel(null);
+                            onSelect(ROUTE_BY_KEY[b.home] ?? "/" + b.home);
+                          }}
+                        >
+                          <span className="vxh-board-ico">
+                            <PIcon name={b.icon} />
+                          </span>
+                          <span className="vxh-board-copy">
+                            <strong>{tboard(b.id)}</strong>
+                            <span>{tboard(b.id + "Desc")}</span>
+                          </span>
+                          {b.id === activeBoard.id && <PIcon className="vxh-board-check" name="check" />}
+                        </button>
+                      ))}
+                  </div>
                 ))}
               </div>
             </div>

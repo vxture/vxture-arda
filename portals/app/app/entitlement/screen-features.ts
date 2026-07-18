@@ -37,7 +37,6 @@ export const SCREEN_FEATURES: Partial<Record<string, FeatureKey>> = {
   planStrategy: "arda.planning.workbench",
   planRoadmap: "arda.planning.workbench",
   planSystem: "arda.planning.workbench",
-  planPolicies: "arda.planning.workbench",
   planMaturity: "arda.planning.workbench",
   planScorecard: "arda.planning.workbench",
   archBusiness: "arda.architecture.workbench",
