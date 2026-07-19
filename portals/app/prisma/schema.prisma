@@ -177,6 +177,31 @@ model Policy {
   @@index([workspaceId])
 }
 
+/// Data access / sharing request (Sec-BL4): a workspace member asks for access
+/// to an asset; a workspace admin approves or rejects. Insert-once request
+/// body; only the decision columns (status/decidedBy/decidedAt/decisionNote)
+/// mutate - see 98_column_locks.sql.
+model AccessRequest {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  datasetId     String?
+  requesterSub  String
+  requesterName String?
+  useCase       String
+  scope         String?
+  justification String
+  duration      String?
+  method        String?
+  status        String    @default("pending") // pending | approved | rejected | cancelled
+  decidedBy     String?
+  decidedAt     DateTime?
+  decisionNote  String?
+  createdAt     DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+}
+
 model QualityRule {
   id          String   @id @default(cuid())
   workspaceId String

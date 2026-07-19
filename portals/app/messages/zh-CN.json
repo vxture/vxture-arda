@@ -452,7 +452,13 @@
       "durationDefault": "12 个月",
       "method": "调用方式",
       "draft": "存为草稿",
-      "submit": "提交审批"
+      "submit": "提交审批",
+      "submitted": "访问申请已提交，等待审批。",
+      "error": {
+        "unauthenticated": "会话已过期，请重新登录。",
+        "invalid": "请填写用途与理由。",
+        "not_found": "未找到该资产。"
+      }
     },
     "assetInfo": "资产信息",
     "info": {
@@ -1225,5 +1231,41 @@
       "invalid": "标签名称无效。",
       "duplicate": "标签已存在。"
     }
+  },
+  "approvals": {
+    "title": "审批中心",
+    "desc": "数据访问/共享申请的审批与跟踪；全平台审批统一在此。",
+    "tabPending": "待我审批",
+    "tabMine": "我的申请",
+    "mPending": "待审批",
+    "mMine": "我的申请",
+    "mMyOpen": "待处理",
+    "cRequester": "申请人 / 资产",
+    "cUseCase": "用途",
+    "cStatus": "状态",
+    "cWhen": "提交时间",
+    "cDuration": "期限",
+    "cAsset": "资产",
+    "noDataset": "（未指定资产）",
+    "approve": "批准",
+    "reject": "驳回",
+    "cancel": "撤回",
+    "approved": "已批准。",
+    "rejected": "已驳回。",
+    "cancelled": "已撤回。",
+    "status": {
+      "pending": "待审批",
+      "approved": "已批准",
+      "rejected": "已驳回",
+      "cancelled": "已撤回"
+    },
+    "error": {
+      "unauthenticated": "会话已过期，请重新登录。",
+      "forbidden": "需要工作区管理员角色。",
+      "not_found": "未找到该申请。",
+      "not_pending": "该申请已处理，无法重复操作。"
+    },
+    "emptyPending": "暂无待审批申请。",
+    "emptyMine": "你还没有提交过访问申请。"
   }
 }

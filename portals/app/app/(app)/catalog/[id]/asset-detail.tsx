@@ -19,7 +19,6 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  Textarea,
   type DataTableColumn,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
@@ -29,6 +28,7 @@ import { QUALITY_DIMS } from "../../dashboard/seed";
 import { DEPARTMENTS, DOMAINS, LEVEL_TONE, qualityTone, type AssetLevel } from "../seed";
 import type { AssetProfile } from "../data";
 import { attachStandard, attachTag, detachStandard, detachTag, setDatasetClassification, setGoldenRecord } from "../actions";
+import { AccessRequestForm } from "./access-request-form";
 
 const ASSET_LEVELS: AssetLevel[] = ["public", "internal", "sensitive", "core"];
 
@@ -310,46 +310,7 @@ export function AssetDetail({ asset, isAdmin = false }: { asset: AssetProfile; i
             </TabsContent>
 
             <TabsContent value="access">
-              <div className="con-card">
-                <div className="con-card-heading">{t("accessTitle", { name: asset.name })}</div>
-                <p className="form-hint">
-                  {t("accessHint", { level: t("level." + asset.level), owner: asset.owner ?? "-" })}
-                </p>
-                <div className="form-grid">
-                  <label className="field">
-                    <span>
-                      {t("access.useCase")}
-                      <i className="req">*</i>
-                    </span>
-                    <Input placeholder={t("access.useCasePh")} />
-                  </label>
-                  <label className="field">
-                    <span>{t("access.scope")}</span>
-                    <Input defaultValue={t("access.scopeDefault")} />
-                  </label>
-                  <label className="field span2">
-                    <span>
-                      {t("access.justification")}
-                      <i className="req">*</i>
-                    </span>
-                    <Textarea rows={3} placeholder={t("access.justificationPh")} />
-                  </label>
-                  <label className="field">
-                    <span>{t("access.duration")}</span>
-                    <Input defaultValue={t("access.durationDefault")} />
-                  </label>
-                  <label className="field">
-                    <span>{t("access.method")}</span>
-                    <Input defaultValue="API" />
-                  </label>
-                </div>
-                <div className="form-foot">
-                  <Button variant="secondary">{t("access.draft")}</Button>
-                  <Button>
-                    <PIcon name="check" /> {t("access.submit")}
-                  </Button>
-                </div>
-              </div>
+              <AccessRequestForm datasetId={asset.id} assetName={asset.name} level={asset.level} owner={asset.owner} />
             </TabsContent>
           </Tabs>
         </div>

@@ -452,7 +452,13 @@
       "durationDefault": "12 months",
       "method": "Access method",
       "draft": "Save draft",
-      "submit": "Submit for approval"
+      "submit": "Submit for approval",
+      "submitted": "Access request submitted for approval.",
+      "error": {
+        "unauthenticated": "Session expired, please sign in again.",
+        "invalid": "Fill in the use case and justification.",
+        "not_found": "Asset not found."
+      }
     },
     "assetInfo": "Asset info",
     "info": {
@@ -1225,5 +1231,41 @@
       "invalid": "Invalid tag name.",
       "duplicate": "Tag already exists."
     }
+  },
+  "approvals": {
+    "title": "Approval Center",
+    "desc": "Review and track data access / sharing requests; all approvals are single-homed here.",
+    "tabPending": "To approve",
+    "tabMine": "My requests",
+    "mPending": "Pending",
+    "mMine": "My requests",
+    "mMyOpen": "Open",
+    "cRequester": "Requester / asset",
+    "cUseCase": "Use case",
+    "cStatus": "Status",
+    "cWhen": "Submitted",
+    "cDuration": "Duration",
+    "cAsset": "Asset",
+    "noDataset": "(no asset)",
+    "approve": "Approve",
+    "reject": "Reject",
+    "cancel": "Withdraw",
+    "approved": "Approved.",
+    "rejected": "Rejected.",
+    "cancelled": "Withdrawn.",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Withdrawn"
+    },
+    "error": {
+      "unauthenticated": "Session expired, please sign in again.",
+      "forbidden": "Workspace admin role required.",
+      "not_found": "Request not found.",
+      "not_pending": "Already decided - cannot act again."
+    },
+    "emptyPending": "No pending requests.",
+    "emptyMine": "You have not submitted any access requests."
   }
 }
