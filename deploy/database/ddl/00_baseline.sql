@@ -110,6 +110,26 @@ CREATE TABLE "Policy" (
     CONSTRAINT "Policy_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "AccessRequest" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "datasetId" TEXT,
+    "requesterSub" TEXT NOT NULL,
+    "requesterName" TEXT,
+    "useCase" TEXT NOT NULL,
+    "scope" TEXT,
+    "justification" TEXT NOT NULL,
+    "duration" TEXT,
+    "method" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "decidedBy" TEXT,
+    "decidedAt" TIMESTAMP(3),
+    "decisionNote" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AccessRequest_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateTable
 CREATE TABLE "QualityRule" (
     "id" TEXT NOT NULL,
@@ -344,6 +364,8 @@ CREATE INDEX "DataSource_orgId_idx" ON "DataSource"("orgId");
 
 -- CreateIndex
 CREATE INDEX "Policy_workspaceId_idx" ON "Policy"("workspaceId");
+CREATE INDEX "AccessRequest_workspaceId_idx" ON "AccessRequest"("workspaceId");
+CREATE INDEX "AccessRequest_workspaceId_status_idx" ON "AccessRequest"("workspaceId", "status");
 
 -- CreateIndex
 CREATE INDEX "QualityRule_workspaceId_idx" ON "QualityRule"("workspaceId");

@@ -1,5 +1,7 @@
-import { UnderConstruction } from "../../../ui/placeholder";
+import { redirect } from "next/navigation";
 
+// Sharing approvals are single-homed in the admin approval center (biz-107
+// decision 2); the security domain's entry deep-links there.
 export default function SecApprovalsPage() {
-  return <UnderConstruction screenKey="secApprovals" icon="stamp" />;
+  redirect("/approvals");
 }

@@ -43,6 +43,10 @@ GRANT UPDATE ("name", "type", "connectionConfig", "status", "lastSyncedAt")
 GRANT UPDATE ("name", "type", "scope", "config", "enabled")
   ON "Policy" TO arda_svc;
 
+-- Access requests: the body is insert-once; only the decision mutates.
+GRANT UPDATE ("status", "decidedBy", "decidedAt", "decisionNote")
+  ON "AccessRequest" TO arda_svc;
+
 GRANT UPDATE ("datasetId", "code", "name", "dimension", "type", "config",
               "severity", "enabled")
   ON "QualityRule" TO arda_svc;
