@@ -786,7 +786,8 @@
     "status": {
       "running": "运行中",
       "review": "审核中",
-      "paused": "已暂停"
+      "paused": "已暂停",
+      "draft": "草稿"
     },
     "stat": {
       "calls": "今日调用",
@@ -801,6 +802,57 @@
       "forbidden": "发布服务需要工作区管理员角色。",
       "not_found": "服务不存在。",
       "tier": "发布服务需要更高订阅档位。"
+    },
+    "type": {
+      "rest_api": "REST API",
+      "query": "查询",
+      "export": "导出",
+      "share": "共享"
+    },
+    "pub": {
+      "title": "服务发布",
+      "desc": "创建、编辑数据服务并关联数据集；发布走质量门，下线停止对外出数。",
+      "mTotal": "服务总数",
+      "mRunning": "运行中",
+      "mDraft": "草稿",
+      "newTitle": "新建服务",
+      "editTitle": "编辑服务",
+      "listTitle": "服务清单",
+      "namePh": "服务名称",
+      "pathPh": "路径，如 /api/v2/customer",
+      "descPh": "描述（可选）",
+      "method": "方法",
+      "type": "类型",
+      "level": "分级",
+      "domain": "主题域",
+      "noDomain": "（不限主题域）",
+      "addDataset": "添加数据集…",
+      "removeDataset": "移除",
+      "create": "创建草稿",
+      "save": "保存",
+      "cancel": "取消",
+      "edit": "编辑",
+      "delete": "删除",
+      "unpublish": "下线",
+      "cService": "服务",
+      "cPath": "方法",
+      "cType": "类型",
+      "cLevel": "分级",
+      "cDatasets": "数据集",
+      "cStatus": "状态",
+      "created": "服务已创建为草稿。",
+      "updated": "服务已更新。",
+      "deleted": "服务已删除。",
+      "unpublished": "服务已下线。",
+      "empty": "暂无数据服务，用上方表单创建一个。",
+      "error": {
+        "unauthenticated": "会话已过期，请重新登录。",
+        "forbidden": "需要工作区管理员角色。",
+        "tier": "发布服务需要更高订阅档位。",
+        "invalid": "表单填写有误（检查名称与路径）。",
+        "not_found": "未找到该服务。",
+        "running": "运行中的服务需先下线才能编辑或删除。"
+      }
     }
   },
   "etl": {

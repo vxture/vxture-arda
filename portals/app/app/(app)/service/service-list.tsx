@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button, EmptyState, MetricGrid, StatusBadge, type MetricGridItem } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "../../ui/phosphor-icon";
@@ -11,6 +12,7 @@ import type { ServiceView } from "./data";
 
 export function ServiceList({ services, isAdmin = false }: { services: ServiceView[]; isAdmin?: boolean }) {
   const t = useTranslations("service");
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -57,9 +59,11 @@ export function ServiceList({ services, isAdmin = false }: { services: ServiceVi
             <Button variant="secondary">
               <PIcon name="book-open" /> {t("docs")}
             </Button>
-            <Button>
-              <PIcon name="plus" /> {t("publish")}
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => router.push("/service/publish")}>
+                <PIcon name="plus" /> {t("publish")}
+              </Button>
+            )}
           </>
         }
       />
