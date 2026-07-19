@@ -1086,5 +1086,72 @@
     "ingestDev": "Ingestion & Development",
     "governControl": "Governance & Control",
     "operateAdmin": "Operations & Administration"
+  },
+  "inventory": {
+    "title": "Asset Inventory",
+    "desc": "Dataset distribution by subject domain, team and classification, plus ownership and capacity.",
+    "mTotal": "Total assets",
+    "mBytes": "Total size",
+    "mOwner": "With owner",
+    "mGolden": "Golden records",
+    "byDomain": "By subject domain",
+    "byTeam": "By team",
+    "byLevel": "By classification",
+    "cLevel": "Level",
+    "cCount": "Count",
+    "none": "Uncategorized",
+    "empty": "No data assets yet."
+  },
+  "capacity": {
+    "title": "Capacity Profile",
+    "desc": "Storage occupancy across datasets - total, by subject domain, by classification and largest datasets.",
+    "mTotal": "Total used",
+    "mDatasets": "Datasets",
+    "mAvg": "Average size",
+    "mLargest": "Largest dataset",
+    "quotaNote": "Quota water-line and overage alerting are managed by the vxture platform; this page shows occupancy only - manage quota in the platform console.",
+    "byDomain": "Share by domain",
+    "byLevel": "Usage by classification",
+    "topTitle": "Largest datasets",
+    "cDataset": "Dataset",
+    "cSize": "Size",
+    "cShare": "Share",
+    "cLevel": "Level",
+    "none": "Uncategorized",
+    "empty": "No capacity data yet."
+  },
+  "srcHealth": {
+    "title": "Freshness Health",
+    "desc": "Source sync freshness: who is fresh, stale or failed.",
+    "mTotal": "Sources",
+    "mFresh": "Fresh",
+    "mStale": "Stale",
+    "mFailed": "Failed",
+    "cName": "Source",
+    "cType": "Type",
+    "cStatus": "Status",
+    "cSynced": "Last synced",
+    "cAge": "Age",
+    "bucket": {
+      "fresh": "Fresh",
+      "aging": "Aging",
+      "stale": "Stale",
+      "failed": "Failed",
+      "never": "Never"
+    },
+    "empty": "No sources yet - register one under Data Integration."
+  },
+  "svcMonitor": {
+    "title": "Invocation Monitoring",
+    "desc": "Call volume over the service-access audit trail (real telemetry is future).",
+    "mTotal": "Total calls",
+    "mServices": "Services called",
+    "mWindow": "Recent-window calls",
+    "byService": "Calls by service",
+    "recentTitle": "Recent calls",
+    "cService": "Service",
+    "cActor": "Caller",
+    "cAt": "Time",
+    "empty": "No invocations recorded yet."
   }
 }

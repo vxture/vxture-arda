@@ -93,7 +93,7 @@ export const SCREEN_FEATURES: Partial<Record<string, FeatureKey>> = {
   opsServiceStats: "arda.operations.dashboard",
   opsCost: "arda.operations.dashboard",
   opsReports: "arda.operations.dashboard",
-  opsCapacity: "arda.operations.dashboard",
+  // opsCapacity is a shipped, always-on screen (Wave A) - not future-gated.
   opsDisposal: "arda.operations.dashboard",
   opsMonitoring: "arda.operations.dashboard",
   opsLogs: "arda.operations.dashboard",
