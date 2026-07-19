@@ -32,7 +32,10 @@ runs:
     # connection to the deploy host BEFORE the caller's SSH steps run - fast
     # failure instead of a silent SSH timeout.
     - name: Connect to Tailscale
-      uses: tailscale/github-action@v4
+      # Pinned to a full commit SHA (supply-chain): this action receives the
+      # tailnet OAuth client-id/secret, so a moved tag must not be able to run
+      # new code. Dependabot bumps the SHA and updates the version comment.
+      uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
       with:
         oauth-client-id: ${{ inputs.tailscale-oauth-client-id }}
         oauth-secret: ${{ inputs.tailscale-oauth-secret }}

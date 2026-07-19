@@ -27,11 +27,15 @@ on:
           - beta
           - production
 
-# Serialize deploys per tag ref: an in-flight deploy is never cancelled.
-# Keying on the ref keeps beta and production in separate queues so a beta
-# deploy never blocks a production deploy.
+# Serialize deploys per TARGET ENVIRONMENT (not per tag): two different tags to
+# the same stack (e.g. beta-...1 then beta-...2), and a deploy vs a rollback of
+# the same env, must not run against one host concurrently. Keying on the tag
+# ref let them race; keying on the resolved environment matches rollback.yml /
+# db-init.yml (deploy-<env>). An in-flight deploy is never cancelled. Beta and
+# production stay in separate queues. The expression mirrors the detect job's
+# routing (explicit_environment override, else v* -> production, else beta).
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ (inputs.explicit_environment != '' && inputs.explicit_environment != 'auto' && inputs.explicit_environment) || (startsWith(github.ref_name, 'v') && 'production') || 'beta' }}
   cancel-in-progress: false
 
 permissions:
