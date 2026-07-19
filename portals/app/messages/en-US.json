@@ -1153,5 +1153,25 @@
     "cActor": "Caller",
     "cAt": "Time",
     "empty": "No invocations recorded yet."
+  },
+  "tags": {
+    "title": "Tags",
+    "desc": "Business-metadata tag maintenance and usage (labeling happens on the asset profile).",
+    "mTags": "Total tags",
+    "mTagged": "Tag links",
+    "mUnused": "Unused",
+    "cName": "Tag",
+    "cCount": "Datasets",
+    "delete": "Delete tag",
+    "add": "Add",
+    "namePh": "Tag name",
+    "empty": "No tags yet - add one to start.",
+    "error": {
+      "unauthenticated": "Session expired, please sign in again.",
+      "forbidden": "Workspace admin role required.",
+      "tier": "Tag management needs a higher plan.",
+      "invalid": "Invalid tag name.",
+      "duplicate": "Tag already exists."
+    }
   }
 }
