@@ -4,11 +4,13 @@ name: db-init
 # The regular deploy chain never runs migrations or seed - DB structure change
 # is an independently authorized action that goes through THIS workflow only:
 #
-#   action=verify -> read-only live audit (tables/enums vs DDL, service role)
-#   action=roles  -> apply 97_service_role + 98_column_locks only (adopt a
-#                    live prisma-created schema in place)
-#   action=apply  -> create-once full baseline on an EMPTY schema
-#   action=reset  -> DROP schema + full baseline  [DESTRUCTIVE]
+#   action=verify  -> read-only live audit (tables/enums vs DDL, service role)
+#   action=roles   -> apply 97_service_role + 98_column_locks only (adopt a
+#                     live prisma-created schema in place)
+#   action=migrate -> apply ddl/incr/*.sql (idempotent CREATE ... IF NOT EXISTS)
+#                     to a live non-empty schema - non-destructive new table/col
+#   action=apply   -> create-once full baseline on an EMPTY schema
+#   action=reset   -> DROP schema + full baseline  [DESTRUCTIVE]
 #
 # Safety gates: confirm=yes typed by hand; expected_sha pins the ref against
 # drift (required for every mutating action); environment routing means a
@@ -33,6 +35,7 @@ on:
         options:
           - verify
           - roles
+          - migrate
           - apply
           - reset
       ref:

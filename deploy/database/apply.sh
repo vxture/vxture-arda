@@ -10,6 +10,9 @@
 #   roles         apply 97_service_role.sql + 98_column_locks.sql only
 #                 (adopt-in-place path for a live prisma-created schema;
 #                 requires ARDA_SVC_PASSWORD in the environment)
+#   migrate       apply ddl/incr/*.sql in order (idempotent CREATE ... IF NOT
+#                 EXISTS increments) to a LIVE non-empty schema - the
+#                 non-destructive path for a new table/column between baselines
 #   apply         create-once full baseline (00 + roles) on an EMPTY schema;
 #                 refuses if business tables already exist
 #   reset         DROP SCHEMA public CASCADE + full apply  [DESTRUCTIVE]
@@ -75,6 +78,28 @@ apply_roles() {
   echo "[db] roles applied"
 }
 
+migrate() {
+  # Apply idempotent increments to a live schema (governance #7: structure
+  # change between baselines ships as a numbered CREATE ... IF NOT EXISTS file
+  # and is applied through db-init, never by the deploy chain or ad-hoc SSH).
+  local dir="$DDL_DIR/incr"
+  if [[ ! -d "$dir" ]]; then
+    echo "[db] no ddl/incr directory - nothing to migrate"
+    return 0
+  fi
+  shopt -s nullglob
+  local files=("$dir"/*.sql)
+  if [[ ${#files[@]} -eq 0 ]]; then
+    echo "[db] ddl/incr is empty - nothing to migrate"
+    return 0
+  fi
+  for f in "${files[@]}"; do
+    echo "[db] applying increment $(basename "$f")..."
+    psql_exec < "$f"
+  done
+  echo "[db] migrate done (${#files[@]} increment(s)); run 'verify' to confirm"
+}
+
 verify() {
   local et lt ee le re
   et="$(expected_tables)"; lt="$(live_tables)"
@@ -98,6 +123,9 @@ case "$ACTION" in
   roles)
     apply_roles
     ;;
+  migrate)
+    migrate
+    ;;
   apply)
     if [[ "$(live_tables)" != "0" ]]; then
       echo "[db] refusing: schema already holds tables (create-once baseline)." >&2
@@ -118,7 +146,7 @@ case "$ACTION" in
     verify
     ;;
   *)
-    echo "usage: apply.sh {verify|roles|apply|reset}" >&2
+    echo "usage: apply.sh {verify|roles|migrate|apply|reset}" >&2
     exit 2
     ;;
 esac
