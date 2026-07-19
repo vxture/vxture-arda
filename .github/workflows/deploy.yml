@@ -117,7 +117,7 @@ jobs:
       # rsync pushes the deploy subset from the runner checkout (no git on the
       # server), so the deploy job must check out the built revision first.
       - name: Checkout deploy sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
 
