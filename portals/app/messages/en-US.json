@@ -786,7 +786,8 @@
     "status": {
       "running": "Running",
       "review": "In review",
-      "paused": "Paused"
+      "paused": "Paused",
+      "draft": "Draft"
     },
     "stat": {
       "calls": "Calls today",
@@ -801,6 +802,57 @@
       "forbidden": "Publishing requires a workspace admin role.",
       "not_found": "Service not found.",
       "tier": "Publishing services requires a higher plan."
+    },
+    "type": {
+      "rest_api": "REST API",
+      "query": "Query",
+      "export": "Export",
+      "share": "Share"
+    },
+    "pub": {
+      "title": "Service Publishing",
+      "desc": "Create and edit data services, link datasets; publishing is quality-gated, unpublishing stops external egress.",
+      "mTotal": "Services",
+      "mRunning": "Running",
+      "mDraft": "Drafts",
+      "newTitle": "New service",
+      "editTitle": "Edit service",
+      "listTitle": "Services",
+      "namePh": "Service name",
+      "pathPh": "Path, e.g. /api/v2/customer",
+      "descPh": "Description (optional)",
+      "method": "Method",
+      "type": "Type",
+      "level": "Level",
+      "domain": "Subject domain",
+      "noDomain": "(any domain)",
+      "addDataset": "Add dataset...",
+      "removeDataset": "Remove",
+      "create": "Create draft",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "unpublish": "Unpublish",
+      "cService": "Service",
+      "cPath": "Method",
+      "cType": "Type",
+      "cLevel": "Level",
+      "cDatasets": "Datasets",
+      "cStatus": "Status",
+      "created": "Service created as draft.",
+      "updated": "Service updated.",
+      "deleted": "Service deleted.",
+      "unpublished": "Service unpublished.",
+      "empty": "No data services yet - create one with the form above.",
+      "error": {
+        "unauthenticated": "Session expired, please sign in again.",
+        "forbidden": "Workspace admin role required.",
+        "tier": "Publishing services needs a higher plan.",
+        "invalid": "Invalid form (check name and path).",
+        "not_found": "Service not found.",
+        "running": "Unpublish a running service before editing or deleting it."
+      }
     }
   },
   "etl": {

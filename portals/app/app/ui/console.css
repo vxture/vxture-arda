@@ -1866,3 +1866,10 @@
     min-width: 150px;
   }
 }
+
+/* Service authoring form (Svc-BL5): responsive field grid. */
+.pub-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--vx-space-sm);
+}
