@@ -112,4 +112,4 @@
 1. **scope 名残留**：`10-identity-app-integration-standard.md` 本体与 `plat-110` 已同步修正为 `openid profile email phone arda`（真源：`auth/lib/config.ts`）。
 2. **通道 B 版本冲突**：采用"保留旧 JSON + 显式标注已过期"的方式（而非删除），在 `20-vxture-platform-integration-requirements.md` §3.1 原地加了"本节格式已过期"提示并指向 [`ent-120`](arda-ent-120-consumption-contract.md)；`plat-300` §2 同步记录。
 
-核对代码真源时还发现一处此前任何文档都未记录的机制：`appOrigin` 派生自注册的 `redirectUri` 而非请求 host，专门用来防止内部 bind 地址（如 `0.0.0.0:3230`）泄漏进跳转 `Location` header——与 `10-fix-01.md` 记录的生产登录 bug 背景相关，见 [`plat-110`](arda-plat-110-oidc-contract.md) §3.1。
+核对代码真源时还发现一处此前任何文档都未记录的机制：`appOrigin` 派生自注册的 `redirectUri` 而非请求 host，专门用来防止内部 bind 地址（如 `0.0.0.0:3230`）泄漏进跳转 `Location` header——与此前的生产登录 bug 背景相关，见 [`plat-110`](arda-plat-110-oidc-contract.md) §3.1。

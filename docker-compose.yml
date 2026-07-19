@@ -54,7 +54,7 @@ services:
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-arda}"
       OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
       OIDC_REDIRECT_URI: "${OIDC_REDIRECT_URI:-}"
-      OIDC_SCOPES: "${OIDC_SCOPES:-openid profile email arda:subscription}"
+      OIDC_SCOPES: "${OIDC_SCOPES:-openid profile email phone arda:subscription}"
       OIDC_POST_LOGOUT_REDIRECT_URI: "${OIDC_POST_LOGOUT_REDIRECT_URI:-}"
       # -- Server-side RP session store (this stack's redis container) --------
       REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"

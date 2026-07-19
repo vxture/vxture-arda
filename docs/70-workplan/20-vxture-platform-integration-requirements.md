@@ -17,7 +17,7 @@ arda 当前能力与缺口：
 
 因此「打通」需要平台侧提供三件东西：**(1) 身份 token 里的 workspace/org 上下文**、**(2) 只读权益端点**、**(3) 服务间指令/失效通道**。下面逐项给出契约。
 
-> 另注：当前登录失败 `https://arda.vxture.com/?sso=failed`（fix-01 的 Bug A）经判定为 arda 侧 worker-02 环境变量问题（`DEFAULT_RETURN_TO` / `ALLOWED_RETURN_ORIGINS`），不在本对接要求范围；本文件只列**平台侧**需提供/确认的内容。
+> 另注：曾出现的登录失败 `https://arda.vxture.com/?sso=failed` 经判定为 arda 侧 worker-02 环境变量问题（`DEFAULT_RETURN_TO` / `ALLOWED_RETURN_ORIGINS`），不在本对接要求范围；本文件只列**平台侧**需提供/确认的内容。
 
 ---
 
