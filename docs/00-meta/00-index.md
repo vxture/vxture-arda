@@ -14,7 +14,7 @@ in CI quality-gate.
 | 30 | `30-design/` | Architecture, ADRs (`decisions/`), domain design (`arda-{plat,biz,data,ent}-NNN` series) |
 | 40 | `40-implementation/` | Repository layout, scripts, coding guides |
 | 50 | `50-deployment/` | Deployment, checklists, infra |
-| 60 | `60-operations/` | Operations, GitHub Actions, operator runbook |
+| 60 | `60-operations/` | Operations, GitHub Actions, operator runbook, tech-debt register (`40-tech-debt.md`, TD-NNN) |
 | 70 | `70-workplan/` | Plans and roadmaps |
 | 80 | `80-liaison/` | Cross-org correspondence with the vxture platform (replies/handoffs, `YYMMDDHHMM`-stamped) |
 | 90 | `90-memory/` | In-repo AI handoff (agent entry point) |
@@ -25,5 +25,7 @@ Domain-doc naming in this repo uses the hyphen variant
 to the org `{kind}_{domain}_{NNN}_{slug}` form - kept per owner decision
 (2026-07-17); the guardrail accepts both.
 
-Type registers: `30-design/decisions/ADR-NNN-*.md` - append-only, stable IDs,
-never renumbered (current: ADR-001, ADR-011; the gap is intentional).
+Type registers (append-only, stable IDs, never renumbered):
+- `30-design/decisions/ADR-NNN-*.md` - architecture decisions (current:
+  ADR-001, ADR-011; the gap is intentional).
+- `60-operations/40-tech-debt.md` - tech-debt register, TD-NNN (current: TD-001).

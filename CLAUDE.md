@@ -98,8 +98,9 @@ reference). Deploy internals live under `deploy/`.
 Additional workflows: `rollback.yml` (manual, `workflow_dispatch`) re-points a
 stack at a previously built `sha-<short>` image without rebuilding - same
 production approval gate as a normal deploy. `db-init.yml` (manual) is the
-ONLY pipeline allowed to touch DB structure: `verify`/`roles`/`apply`/`reset`
-actions, `confirm=yes` + `expected_sha` pin, routed through the target
+ONLY pipeline allowed to touch DB structure: `verify`/`roles`/`migrate`/
+`apply`/`reset` actions (`migrate` applies idempotent `ddl/incr/*.sql`
+increments to a live schema), `confirm=yes` + `expected_sha` pin, routed through the target
 GitHub Environment so production runs pause for approval. `codeql.yml` runs SAST on the
 TypeScript/JavaScript source (PR/push to `main` + weekly schedule).
 `seed-demo-data.yml` (manual) loads demo/sample catalog data into a workspace

@@ -54,7 +54,11 @@
 |---|---|---|---|
 | `biz-000` | [索引与编号法](arda-biz-000-index.md)（本文件） | - | 完成 |
 | `biz-100` | [业务能力总体架构](arda-biz-100-architecture.md) | 1 | 完成（待评审） |
+| `biz-105` | [能力地图与三层功能域模型](arda-biz-105-capability-map.md) | 1 | 完成 |
+| `biz-106` | [15 域 L2 菜单规划与骨架落地](arda-biz-106-domain-menus.md) | 1 | 完成 |
+| `biz-107` | [Launcher 归集与域聚合](arda-biz-107-launcher-clustering.md) | 1 | 完成 |
 | `biz-110` | [功能域详细梳理（应用/用户视角 · 两轴）](arda-biz-110-domains.md) | 1 | 完成（待评审） |
+| `biz-120` | [领域实体与 feature-key 目录（v1）](arda-biz-120-domain-entities-and-feature-keys.md) | 1 | 完成 |
 | `biz-210` | [数据资产 详细设计](arda-biz-210-assets.md) | 2 | 待按 biz-110 两轴重排 |
 | `biz-220` | [数据集成 详细设计](arda-biz-220-integration.md) | 2 | 完成（待评审） |
 | `biz-230` | [数据治理 详细设计](arda-biz-230-governance.md) | 2 | 完成（待评审） |

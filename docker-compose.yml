@@ -59,8 +59,9 @@ services:
       # -- Server-side RP session store (this stack's redis container) --------
       REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"
       # -- Domain data store (this stack's postgres container) ----------------
-      # Used by the Prisma client (pg driver adapter) and by `migrate deploy` at
-      # container start. Host is ${PROJECT_NAME}-db so prod/beta never collide.
+      # Used by the Prisma client (pg driver adapter). Schema is DDL-owned and
+      # only ever changed via the db-init pipeline; the entrypoint never
+      # migrates. Host is ${PROJECT_NAME}-db so prod/beta never collide.
       DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/arda?schema=public}"
       RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
@@ -74,7 +75,7 @@ services:
       # -- Platform provisioning webhook (C3) --------------------------------
       PROVISION_WEBHOOK_SECRET: "${PROVISION_WEBHOOK_SECRET:-}"
       # -- App config --------------------------------------------------------
-      DEFAULT_LANDING: "${DEFAULT_LANDING:-/data-assets/overview}"
+      DEFAULT_LANDING: "${DEFAULT_LANDING:-/dashboard}"
       MOCK_STATE: "${MOCK_STATE:-subscribed}"
       MOCK_TIER: "${MOCK_TIER:-pro}"
       # First-entry seed: when "true", a workspace arda has never recorded is

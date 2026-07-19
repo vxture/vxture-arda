@@ -202,7 +202,8 @@ Arda does not own the shared public edge. To update the vhost config:
 
 1. Modify `configs/edge/arda.vxture.com.conf` or
    `configs/edge/beta-arda.vxture.com.conf` in this repo
-2. Open a PR, merge to develop (for beta vhost) or promote to main (for prod vhost)
+2. Open a PR and squash-merge to `main` (the single trunk; vhost source is not
+   tied to a release tag)
 3. An operator copies the updated `.conf` files into the vxture project repo
 4. Run `20-sync-nginx-config.sh` on the edge host
 5. Verify: `curl -I https://arda.vxture.com/api/health`
