@@ -1086,5 +1086,72 @@
     "ingestDev": "接入与开发",
     "governControl": "治理与管控",
     "operateAdmin": "运营与管理"
+  },
+  "inventory": {
+    "title": "资产盘点",
+    "desc": "工作区数据资产的数量分布：按主题域、团队、分级，以及归属与容量。",
+    "mTotal": "资产总数",
+    "mBytes": "总容量",
+    "mOwner": "已指派负责人",
+    "mGolden": "金记录",
+    "byDomain": "按主题域",
+    "byTeam": "按团队",
+    "byLevel": "按分级",
+    "cLevel": "分级",
+    "cCount": "数量",
+    "none": "未分类",
+    "empty": "暂无数据资产。"
+  },
+  "capacity": {
+    "title": "容量画像",
+    "desc": "数据资产的存储占用分布——总量、按主题域、按分级与最大数据集。",
+    "mTotal": "总占用",
+    "mDatasets": "数据集数",
+    "mAvg": "平均大小",
+    "mLargest": "最大数据集",
+    "quotaNote": "配额水位与超额告警由 vxture 平台统一管理，本页仅展示占用，配额管理请前往平台控制台。",
+    "byDomain": "按主题域占比",
+    "byLevel": "按分级占用",
+    "topTitle": "占用最大的数据集",
+    "cDataset": "数据集",
+    "cSize": "大小",
+    "cShare": "占比",
+    "cLevel": "分级",
+    "none": "未分类",
+    "empty": "暂无容量数据。"
+  },
+  "srcHealth": {
+    "title": "更新健康度",
+    "desc": "数据源的同步新鲜度：谁新鲜、谁滞后、谁失败。",
+    "mTotal": "数据源",
+    "mFresh": "新鲜",
+    "mStale": "滞后",
+    "mFailed": "失败",
+    "cName": "数据源",
+    "cType": "类型",
+    "cStatus": "状态",
+    "cSynced": "最近同步",
+    "cAge": "距今",
+    "bucket": {
+      "fresh": "新鲜",
+      "aging": "渐旧",
+      "stale": "滞后",
+      "failed": "失败",
+      "never": "未同步"
+    },
+    "empty": "暂无数据源，先在数据集成登记。"
+  },
+  "svcMonitor": {
+    "title": "调用监测",
+    "desc": "基于服务访问审计流水的调用量统计（真实遥测为后续）。",
+    "mTotal": "累计调用",
+    "mServices": "被调服务",
+    "mWindow": "近窗口调用",
+    "byService": "按服务调用量",
+    "recentTitle": "最近调用",
+    "cService": "服务",
+    "cActor": "调用方",
+    "cAt": "时间",
+    "empty": "暂无调用记录。"
   }
 }
