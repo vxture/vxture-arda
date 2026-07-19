@@ -194,6 +194,9 @@ jobs:
           done
           remote_cmd+="bash /tmp/rollback.sh"
 
-          ssh -i ~/.ssh/deploy_key -p "$port" \
+          # Feed the env-prefixed command to a remote `bash -s` over stdin, not
+          # ssh argv, so ALIYUN_ACR_PASSWORD / GHCR_TOKEN never land in the
+          # deploy host's process argv (ps/proc). Matches deploy.yml / db-init.
+          printf '%s\n' "$remote_cmd" | ssh -i ~/.ssh/deploy_key -p "$port" \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o ConnectTimeout=30 \
-            "$DEPLOY_USER@$DEPLOY_HOST" "$remote_cmd"
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s

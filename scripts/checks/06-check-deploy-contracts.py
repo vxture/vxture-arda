@@ -99,7 +99,9 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         [
             "name: docker-build",
             "arda-app",
-            "NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}",
+            # Private npm PAT is passed as a BuildKit secret (not a build-arg)
+            # so it never persists into the exported layer cache.
+            "node_auth_token=${{ secrets.NODE_AUTH_TOKEN }}",
             "vars.ALIYUN_ACR_REGISTRY",
             "vars.ALIYUN_ACR_NAMESPACE",
             "ALIYUN_ACR_USERNAME",

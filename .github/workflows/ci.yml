@@ -20,9 +20,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-
 jobs:
   # Repo-global checks that do not depend on portal node_modules. Runs in
   # parallel with the portal-build job.
@@ -113,6 +110,10 @@ jobs:
     name: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Scope the @vxture registry PAT to the only job that installs npm deps;
+    # static-checks and audit never need it, so it should not be workflow-wide.
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
     steps:
       - name: Checkout

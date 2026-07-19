@@ -6,19 +6,19 @@ ARG NODE_BASE_IMAGE=node:22-alpine
 FROM ${NODE_BASE_IMAGE} AS deps
 WORKDIR /app
 ARG VXTURE_NPM_REGISTRY=https://npm.pkg.github.com
-ARG NODE_AUTH_TOKEN
 # Root manifest + single lockfile + every workspace member manifest (npm ci
 # needs them all to resolve the workspace).
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
-# Write the actual token value directly into .npmrc (shell expands $NODE_AUTH_TOKEN
-# from the build-arg). npm's own ${...} substitution from .npmrc does not reliably
-# resolve build-arg values inside the Docker BuildKit container driver, causing
-# persistent 401 errors. The file is deleted after npm ci; the deps stage is
-# intermediate and never pushed, so the token does not leak to production.
-RUN printf '@vxture:registry=%s\n//npm.pkg.github.com/:_authToken=%s\n' \
-      "$VXTURE_NPM_REGISTRY" "$NODE_AUTH_TOKEN" > .npmrc \
+# The @vxture registry PAT rides a BuildKit secret mount, not a build-arg: a
+# build-arg is recorded in image/build metadata and can persist into the
+# exported layer cache (cache-to gha,mode=max), leaking the token. The secret
+# is mounted as a file for this RUN only, read into .npmrc, and the .npmrc is
+# deleted in the same layer (the deps stage is intermediate and never pushed).
+RUN --mount=type=secret,id=node_auth_token \
+    printf '@vxture:registry=%s\n//npm.pkg.github.com/:_authToken=%s\n' \
+      "$VXTURE_NPM_REGISTRY" "$(cat /run/secrets/node_auth_token)" > .npmrc \
     && npm ci \
     && rm -f .npmrc
 

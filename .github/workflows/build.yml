@@ -199,9 +199,13 @@ jobs:
           # (they live under a different repo). Use NODE_AUTH_TOKEN PAT instead.
           # If Docker build fails with 401, the PAT has likely expired and
           # needs to be renewed with read:packages scope.
+          # The PAT rides a BuildKit secret (mounted at /run/secrets in the
+          # Dockerfile deps stage), NOT a build-arg: a build-arg would persist
+          # into the exported gha layer cache (mode=max), leaking the token.
           build-args: |
             VXTURE_NPM_REGISTRY=${{ env.VXTURE_NPM_REGISTRY }}
-            NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}
+          secrets: |
+            node_auth_token=${{ secrets.NODE_AUTH_TOKEN }}
           tags: |
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.image_tag }}
             ghcr.io/${{ env.GHCR_NAMESPACE }}/${{ matrix.image }}:${{ steps.meta.outputs.ref_tag }}

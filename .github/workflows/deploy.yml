@@ -339,11 +339,17 @@ jobs:
           done
           remote_cmd+="bash /tmp/deploy.sh"
 
-          ssh -i ~/.ssh/deploy_key -p "$port" \
+          # Feed the env-prefixed command to a remote `bash -s` over stdin
+          # instead of passing it as ssh argv. The secret assignments
+          # (ALIYUN_ACR_PASSWORD / GHCR_TOKEN) then never appear in the deploy
+          # host's process argv (visible via `ps`/`/proc` for the command's
+          # lifetime); only `bash -s` does. Same idea as db-init.yml piping the
+          # DB password over stdin.
+          printf '%s\n' "$remote_cmd" | ssh -i ~/.ssh/deploy_key -p "$port" \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=20 \
             -o ConnectTimeout=30 \
-            "$DEPLOY_USER@$DEPLOY_HOST" "$remote_cmd"
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s
 
       # beta deploys have no approval gate and nobody is necessarily watching
       # the Actions tab, so a silent failure could sit unnoticed. Zero-config

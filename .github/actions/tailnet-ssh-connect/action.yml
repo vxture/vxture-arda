@@ -60,6 +60,12 @@ runs:
         if [ -n "${DEPLOY_KNOWN_HOSTS:-}" ]; then
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
         else
-          ssh-keyscan -p "$port" "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          # Fail closed: an empty DEPLOY_KNOWN_HOSTS previously fell back to
+          # ssh-keyscan, which trusts whatever key the network returns (TOFU /
+          # MITM). Require the pinned host key instead.
+          echo "::error::DEPLOY_KNOWN_HOSTS is empty - refusing trust-on-first-use via ssh-keyscan." >&2
+          echo "Populate the DEPLOY_KNOWN_HOSTS secret with the deploy host's SSH host key(s), e.g." >&2
+          echo "  ssh-keyscan -p <port> <host>   # run once from a trusted network, then store the output" >&2
+          exit 1
         fi
         chmod 600 ~/.ssh/known_hosts
