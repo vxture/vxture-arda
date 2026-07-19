@@ -70,7 +70,7 @@ jobs:
 
       - name: Cache actionlint binary
         id: actionlint-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/actionlint-bin
           key: actionlint-1.7.7-linux-amd64
@@ -173,7 +173,7 @@ jobs:
 
       - name: Restore Next.js build cache
         if: ${{ steps.changes.outputs.run_build == 'true' }}
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: portals/app/.next/cache
           key: nextcache-app-${{ hashFiles('portals/package-lock.json') }}-${{ github.sha }}
@@ -236,7 +236,7 @@ jobs:
 
       - name: Cache osv-scanner binary
         id: osv-scanner-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/osv-scanner-bin
           key: osv-scanner-2.4.0-linux-amd64
