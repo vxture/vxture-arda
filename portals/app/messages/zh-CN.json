@@ -561,7 +561,10 @@
       "pass": "通过率",
       "issues": "问题数",
       "trend": "趋势",
-      "enabled": "启用状态"
+      "enabled": "启用状态",
+      "status": "状态",
+      "score": "得分",
+      "ranAt": "运行时间"
     },
     "dim": {
       "completeness": "完整性",
@@ -609,6 +612,43 @@
     "severity": {
       "warning": "警告",
       "critical": "致命"
+    },
+    "status": {
+      "pass": "通过",
+      "warn": "预警",
+      "fail": "失败"
+    },
+    "r": {
+      "title": "质检结果",
+      "desc": "近期质检运行明细，按运行时间倒序。",
+      "mTotal": "运行条数",
+      "mPass": "通过",
+      "mWarn": "预警",
+      "mFail": "失败",
+      "empty": "暂无质检结果，先在质量规则页发起稽核。"
+    },
+    "a": {
+      "title": "质量告警",
+      "desc": "仅列出预警与失败的质检结果，需关注处理。",
+      "mOpen": "未处理告警",
+      "mCritical": "失败",
+      "mWarning": "预警",
+      "mDatasets": "影响数据集",
+      "empty": "暂无告警，数据质量良好。"
+    },
+    "rep": {
+      "title": "质量报告",
+      "desc": "基于每条规则最新结果的六维评估、结果分布与分域质量。",
+      "mScore": "质量总分",
+      "mRules": "稽核规则",
+      "mPassRate": "通过率",
+      "mFail": "失败项",
+      "sixDimTitle": "六维质量评估",
+      "distTitle": "结果分布",
+      "distCaption": "规则数",
+      "byDomainTitle": "按主题域质量",
+      "noDomain": "未分域",
+      "empty": "暂无数据，先发起质检。"
     }
   },
   "lineage": {

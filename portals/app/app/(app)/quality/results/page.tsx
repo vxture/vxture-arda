@@ -1,5 +1,12 @@
-import { UnderConstruction } from "../../../ui/placeholder";
+import { getSession } from "../../../auth/lib/session";
+import { getQualityResults } from "../outcomes-data";
+import { ResultsList } from "../results-list";
 
-export default function QaResultsPage() {
-  return <UnderConstruction screenKey="qaResults" icon="list-checks" />;
+// Server component: load recent quality check results for the workspace.
+export const dynamic = "force-dynamic";
+
+export default async function QualityResultsPage() {
+  const session = await getSession();
+  const rows = session ? await getQualityResults(session.workspaceId) : [];
+  return <ResultsList rows={rows} />;
 }
