@@ -107,7 +107,7 @@ jobs:
       issues: write  # deploy-failure/deploy-recovered issue notifications
     # Tag-routed environment: beta-* -> beta, v*.*.* -> production. The
     # environment supplies its own DEPLOY_HOST/DEPLOY_USER/DEPLOY_SSH_KEY/
-    # DEPLOY_KNOWN_HOSTS/DEPLOY_REPO_DIR, so the same job deploys to the right
+    # DEPLOY_KNOWN_HOSTS/DEPLOY_DIR, so the same job deploys to the right
     # host with the right credentials. production also carries a required
     # human-reviewer protection rule - the job pauses here until approved.
     environment:
@@ -200,7 +200,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_REPO_DIR: ${{ secrets.DEPLOY_REPO_DIR }}
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
           PASSED_SHA: ${{ github.sha }}
           IMAGE_TAG: ${{ needs.call-build.outputs.image_tag }}
           ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
@@ -214,14 +214,14 @@ jobs:
         run: |
           set -euo pipefail
           port="${DEPLOY_PORT:-22}"
-          # Per-environment default deploy directory; the DEPLOY_REPO_DIR
+          # Per-environment default deploy directory; the DEPLOY_DIR
           # environment secret overrides it when set.
           case "$DEPLOY_ENV" in
             production) default_dir="/srv/md0/arda/deploy" ;;
             beta)       default_dir="/srv/md1/arda-beta/deploy" ;;
             *) echo "unknown environment: $DEPLOY_ENV" >&2; exit 1 ;;
           esac
-          deploy_dir="${DEPLOY_REPO_DIR:-$default_dir}"
+          deploy_dir="${DEPLOY_DIR:-$default_dir}"
           # Deploy pulls by the immutable sha-<short> tag call-build's own
           # meta step computed and published as a job output - reading it
           # here instead of recomputing from PASSED_SHA keeps the tag format
