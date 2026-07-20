@@ -55,16 +55,18 @@ export async function handleProvisioningEvent(
   }
 
   // Step 2: idempotency check - has this delivery id already been processed?
-  const existing = await prisma.provisioningEvent.findUnique({ where: { id } });
+  // (vx_provision.webhook_delivery is the per-delivery ledger; ADR-012.)
+  const existing = await prisma.webhookDelivery.findUnique({ where: { id } });
   if (existing) return { outcome: "duplicate" };
 
-  // Step 3: seq check - ignore events older than the newest we have seen for this workspace
-  const latestEvent = await prisma.provisioningEvent.findFirst({
-    where: { workspaceId: workspace_id },
-    orderBy: { seq: "desc" },
+  // Step 3: seq check - ignore events older than the processed-seq watermark for
+  // this (workspace, product). The watermark row (vx_provision.provision_seq)
+  // replaces the old MAX(seq)-over-the-ledger scan (ADR-012).
+  const watermark = await prisma.provisionSeq.findUnique({
+    where: { workspaceId_productCode: { workspaceId: workspace_id, productCode: "arda" } },
   });
-  if (latestEvent && seq <= latestEvent.seq) {
-    return { outcome: "stale", existingSeq: latestEvent.seq };
+  if (watermark && seq <= watermark.lastSeq) {
+    return { outcome: "stale", existingSeq: watermark.lastSeq };
   }
 
   // Step 4: apply event semantics
@@ -110,10 +112,17 @@ export async function handleProvisioningEvent(
       });
     }
     // subscription_changed and grant.invalidated: no WorkspaceRef mutation needed.
-    // Both are stored in ProvisioningEvent below for idempotency.
+    // Both are still recorded in webhook_delivery below for idempotency.
 
-    await tx.provisioningEvent.create({
+    // Record the delivery (idempotency ledger) and advance the seq watermark in
+    // the same transaction (ADR-012 split of the old ProvisioningEvent table).
+    await tx.webhookDelivery.create({
       data: { id, workspaceId: workspace_id, tenantId: tenant_id, eventType: type, seq, plan },
+    });
+    await tx.provisionSeq.upsert({
+      where: { workspaceId_productCode: { workspaceId: workspace_id, productCode: "arda" } },
+      create: { workspaceId: workspace_id, productCode: "arda", lastSeq: seq },
+      update: { lastSeq: seq },
     });
   });
 

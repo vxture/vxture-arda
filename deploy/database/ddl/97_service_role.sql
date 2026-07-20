@@ -25,14 +25,16 @@ BEGIN
 END
 $$;
 
-GRANT USAGE ON SCHEMA public TO arda_svc;
+-- Multi-schema (ADR-012): usage on every schema arda owns. local_authz is
+-- empty today but granted so future product-RBAC tables inherit access.
+GRANT USAGE ON SCHEMA vx_provision, local_usage, local_authz, catalog TO arda_svc;
 
--- Row-level DML floor: SELECT / INSERT / DELETE on every table. UPDATE is
--- deliberately absent here - 98_column_locks.sql grants it per-column.
--- (DELETE stays broad: the ADR 5.1 workspace wipe deletes rows across all
--- business tables and runs as the service role.)
-GRANT SELECT, INSERT, DELETE ON ALL TABLES IN SCHEMA public TO arda_svc;
+-- Row-level DML floor: SELECT / INSERT / DELETE on every table across the
+-- non-empty schemas. UPDATE is deliberately absent here - 98_column_locks.sql
+-- grants it per-column. (DELETE stays broad: the ADR 5.1 workspace wipe deletes
+-- rows across all business tables and runs as the service role.)
+GRANT SELECT, INSERT, DELETE ON ALL TABLES IN SCHEMA vx_provision, local_usage, catalog TO arda_svc;
 
 -- Future tables created by the owner role inherit the same floor.
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA vx_provision, local_usage, local_authz, catalog
   GRANT SELECT, INSERT, DELETE ON TABLES TO arda_svc;

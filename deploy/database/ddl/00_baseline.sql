@@ -12,8 +12,20 @@
 -- ADD COLUMN IF NOT EXISTS forms (governance #7 live-db increments).
 -- Service role + column locks live in 97_service_role.sql / 98_column_locks.sql.
 
--- CreateSchema
+-- CreateSchema (ADR-012 physical split: contract schemas + domain schema).
+-- Contract-facing (platform-constrained): vx_provision, local_usage, local_authz
+-- (local_authz is EMPTY today - no product RBAC yet). Domain schema: catalog.
 CREATE SCHEMA IF NOT EXISTS "public";
+CREATE SCHEMA IF NOT EXISTS "vx_provision";
+CREATE SCHEMA IF NOT EXISTS "local_authz";
+CREATE SCHEMA IF NOT EXISTS "local_usage";
+CREATE SCHEMA IF NOT EXISTS "catalog";
+
+-- Domain objects below are created UNQUALIFIED and land in `catalog` via this
+-- search_path (single psql session per file); only the four contract tables are
+-- schema-qualified explicitly. Prisma queries are always fully qualified from
+-- @@schema, so the running app never relies on this search_path.
+SET search_path TO "catalog", "vx_provision", "local_usage", "public";
 
 -- CreateEnum
 CREATE TYPE "AssetLevel" AS ENUM ('public', 'internal', 'sensitive', 'core');
@@ -271,8 +283,8 @@ CREATE TABLE "AuditLog" (
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "WorkspaceRef" (
+-- CreateTable (vx_provision.app_instance <- WorkspaceRef; ADR-012)
+CREATE TABLE "vx_provision"."app_instance" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
     "tenantId" TEXT,
@@ -283,11 +295,11 @@ CREATE TABLE "WorkspaceRef" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "WorkspaceRef_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "app_instance_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ProvisioningEvent" (
+-- CreateTable (vx_provision.webhook_delivery <- ProvisioningEvent dedup ledger; ADR-012)
+CREATE TABLE "vx_provision"."webhook_delivery" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -296,7 +308,17 @@ CREATE TABLE "ProvisioningEvent" (
     "plan" TEXT,
     "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "ProvisioningEvent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "webhook_delivery_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable (vx_provision.provision_seq: per (workspaceId, productCode) seq watermark; ADR-012)
+CREATE TABLE "vx_provision"."provision_seq" (
+    "workspaceId" TEXT NOT NULL,
+    "productCode" TEXT NOT NULL DEFAULT 'arda',
+    "lastSeq" INTEGER NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "provision_seq_pkey" PRIMARY KEY ("workspaceId","productCode")
 );
 
 -- CreateTable
@@ -319,8 +341,8 @@ CREATE TABLE "TemplateVersion" (
     CONSTRAINT "TemplateVersion_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "UsageRaw" (
+-- CreateTable (local_usage.raw <- UsageRaw; ADR-012)
+CREATE TABLE "local_usage"."raw" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "product" TEXT NOT NULL DEFAULT 'arda',
@@ -333,7 +355,7 @@ CREATE TABLE "UsageRaw" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "flushedAt" TIMESTAMP(3),
 
-    CONSTRAINT "UsageRaw_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "raw_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -449,29 +471,29 @@ CREATE INDEX "AuditLog_workspaceId_idx" ON "AuditLog"("workspaceId");
 -- CreateIndex
 CREATE INDEX "AuditLog_workspaceId_createdAt_idx" ON "AuditLog"("workspaceId", "createdAt");
 
--- CreateIndex
-CREATE INDEX "WorkspaceRef_orgId_idx" ON "WorkspaceRef"("orgId");
+-- CreateIndex (contract tables in vx_provision - qualified)
+CREATE INDEX "app_instance_orgId_idx" ON "vx_provision"."app_instance"("orgId");
 
 -- CreateIndex
-CREATE INDEX "WorkspaceRef_wipedAt_idx" ON "WorkspaceRef"("wipedAt");
+CREATE INDEX "app_instance_wipedAt_idx" ON "vx_provision"."app_instance"("wipedAt");
 
 -- CreateIndex
-CREATE INDEX "WorkspaceRef_status_idx" ON "WorkspaceRef"("status");
+CREATE INDEX "app_instance_status_idx" ON "vx_provision"."app_instance"("status");
 
 -- CreateIndex
-CREATE INDEX "ProvisioningEvent_workspaceId_idx" ON "ProvisioningEvent"("workspaceId");
+CREATE INDEX "webhook_delivery_workspaceId_idx" ON "vx_provision"."webhook_delivery"("workspaceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TemplateVersion_templateId_version_key" ON "TemplateVersion"("templateId", "version");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UsageRaw_idempotencyKey_key" ON "UsageRaw"("idempotencyKey");
+CREATE UNIQUE INDEX "raw_idempotencyKey_key" ON "local_usage"."raw"("idempotencyKey");
 
 -- CreateIndex
-CREATE INDEX "UsageRaw_flushed_createdAt_idx" ON "UsageRaw"("flushed", "createdAt");
+CREATE INDEX "raw_flushed_createdAt_idx" ON "local_usage"."raw"("flushed", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "UsageRaw_workspaceId_idx" ON "UsageRaw"("workspaceId");
+CREATE INDEX "raw_workspaceId_idx" ON "local_usage"."raw"("workspaceId");
 
 -- AddForeignKey
 ALTER TABLE "Dataset" ADD CONSTRAINT "Dataset_dataSourceId_fkey" FOREIGN KEY ("dataSourceId") REFERENCES "DataSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -12,6 +12,10 @@
 -- Standard_platform_code_key / Dataset_platform_code_key - which are the arbiters
 -- for workspaceId IS NULL rows). Apply as the DB owner into each stack's arda db.
 -- NOT the demo seed (prisma/seed.sql) - this is product reference data.
+--
+-- All targets (Standard/Dataset/DatasetStandard) are domain tables in `catalog`
+-- (ADR-012); resolve them unqualified via search_path.
+SET search_path TO "catalog", "public";
 
 -- 1) Standards (16: 10 code-sets + 6 data-elements) --------------------------
 INSERT INTO "Standard" (id, "workspaceId", code, name, type, ref, items, usage, status, scope, "createdAt", "updatedAt") VALUES

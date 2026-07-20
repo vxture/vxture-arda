@@ -11,6 +11,13 @@
 // `active_workspace`) and is force-filtered by it. It is a plain indexed column,
 // not a FK - workspace lifecycle is platform-owned, so rows must not depend on a
 // local WorkspaceRef existing first.
+//
+// Physical schemas (ADR-012 / data_platform_100 2.3.1): contract schemas
+// vx_provision (provisioning + webhook ledger), local_usage (usage buffer),
+// local_authz (product RBAC - EMPTY today, no models) + the product domain
+// schema `catalog` (all business tables). Prisma MODEL names are kept; only the
+// four contract tables are physically renamed via @@map. multiSchema requires
+// every model and enum to declare @@schema.
 
 // Prisma 7 Rust-free client (queryCompiler + driver adapter). Generated ESM
 // client lives under app/generated/prisma (gitignored, emitted at build).
@@ -21,6 +28,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["catalog", "local_authz", "local_usage", "vx_provision"]
 }
 
 /// Security classification of an asset (dataset-level in v1).
@@ -29,6 +37,8 @@ enum AssetLevel {
   internal
   sensitive
   core
+
+  @@schema("catalog")
 }
 
 /// Outcome of a single quality check run.
@@ -36,6 +46,8 @@ enum QualityStatus {
   pass
   warn
   fail
+
+  @@schema("catalog")
 }
 
 /// Data ownership scope - the EXPLICIT axis that distinguishes tenant data from
@@ -55,6 +67,8 @@ enum QualityStatus {
 enum AssetScope {
   workspace
   platform
+
+  @@schema("catalog")
 }
 
 // --------------------------------------------------------------- assets ------
@@ -108,6 +122,7 @@ model Dataset {
   @@index([workspaceId, dataSourceId])
   @@index([workspaceId, domain])
   @@index([workspaceId, ownerApp])
+  @@schema("catalog")
 }
 
 model Tag {
@@ -119,6 +134,7 @@ model Tag {
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model DatasetTag {
@@ -131,6 +147,7 @@ model DatasetTag {
 
   @@id([datasetId, tagId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model GlossaryTerm {
@@ -146,6 +163,7 @@ model GlossaryTerm {
 
   @@unique([workspaceId, term])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // ----------------------------------------------------------- integration -----
@@ -172,6 +190,7 @@ model DataSource {
 
   @@index([workspaceId])
   @@index([orgId])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------------- governance ----
@@ -187,6 +206,7 @@ model Policy {
   createdAt   DateTime @default(now())
 
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// Data access / sharing request (Sec-BL4): a workspace member asks for access
@@ -212,6 +232,7 @@ model AccessRequest {
 
   @@index([workspaceId])
   @@index([workspaceId, status])
+  @@schema("catalog")
 }
 
 model QualityRule {
@@ -232,6 +253,7 @@ model QualityRule {
   @@unique([workspaceId, code])
   @@index([workspaceId])
   @@index([datasetId])
+  @@schema("catalog")
 }
 
 model QualityResult {
@@ -251,6 +273,7 @@ model QualityResult {
   @@index([workspaceId])
   @@index([ruleId])
   @@index([datasetId])
+  @@schema("catalog")
 }
 
 /// Data standard: a code set or data element reference (metadata governance).
@@ -275,6 +298,7 @@ model Standard {
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model LineageEdge {
@@ -290,6 +314,7 @@ model LineageEdge {
 
   @@unique([upstreamDatasetId, downstreamDatasetId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // --------------------------------------------------------------- services ----
@@ -317,6 +342,7 @@ model DataService {
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// S-BL1 (biz-431): dataset-level standard-compliance association. Column-level
@@ -334,6 +360,7 @@ model DatasetStandard {
   @@id([datasetId, standardId])
   @@index([workspaceId])
   @@index([standardId])
+  @@schema("catalog")
 }
 
 model DataServiceDataset {
@@ -346,6 +373,7 @@ model DataServiceDataset {
 
   @@id([dataServiceId, datasetId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------------------ admin ----
@@ -365,6 +393,7 @@ model ApiKey {
   service DataService? @relation(fields: [dataServiceId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// Activity + platform-command audit (seed/wipe/invalidate, ADR section 5.1).
@@ -380,6 +409,7 @@ model AuditLog {
 
   @@index([workspaceId])
   @@index([workspaceId, createdAt])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------- infrastructure ------
@@ -388,6 +418,7 @@ model AuditLog {
 /// arda does NOT own workspace lifecycle (create/clone/delete = platform).
 /// tenantId and plan are set by the C3 provisioning webhook on first provisioning.
 /// status: provisioned | deprovisioned (deprovisioned rows retained for audit).
+/// Physical: vx_provision.app_instance (ADR-012).
 model WorkspaceRef {
   id         String   @id // = platform/IdP active_workspace
   orgId      String
@@ -406,14 +437,15 @@ model WorkspaceRef {
   @@index([orgId])
   @@index([wipedAt])
   @@index([status])
+  @@map("app_instance")
+  @@schema("vx_provision")
 }
 
-/// Idempotency + seq tracking for inbound C3 provisioning webhook events.
-/// Logical schema: context.
-/// Per-event dedup: id is the platform-assigned delivery uuid.
-/// Seq is per (workspaceId, product) monotonic; stale events (seq <= lastSeq) are
-/// ignored without error per handoff §2 wire contract.
-model ProvisioningEvent {
+/// Per-delivery idempotency ledger for inbound C3 provisioning webhook events
+/// (vx_provision.webhook_delivery). id = platform delivery uuid; a repeat
+/// delivery id is a duplicate. The processed-seq watermark lives in ProvisionSeq
+/// (provision_seq), split out per ADR-012 / data_platform_100 2.3.1.
+model WebhookDelivery {
   id          String   @id // platform delivery uuid (x-vxture-delivery header)
   workspaceId String
   tenantId    String
@@ -423,6 +455,23 @@ model ProvisioningEvent {
   processedAt DateTime @default(now())
 
   @@index([workspaceId])
+  @@map("webhook_delivery")
+  @@schema("vx_provision")
+}
+
+/// Processed-seq watermark per (workspaceId, productCode) for inbound C3
+/// provisioning events (vx_provision.provision_seq). Replaces the old
+/// MAX(seq)-over-the-ledger derivation with an explicit watermark row: an event
+/// with seq <= lastSeq is stale (handoff SS2 wire contract).
+model ProvisionSeq {
+  workspaceId String
+  productCode String   @default("arda")
+  lastSeq     Int
+  updatedAt   DateTime @updatedAt
+
+  @@id([workspaceId, productCode])
+  @@map("provision_seq")
+  @@schema("vx_provision")
 }
 
 /// Read-only, versioned sample-data templates (global, platform/ops-curated).
@@ -432,6 +481,8 @@ model SeedTemplate {
   name      String
   createdAt DateTime          @default(now())
   versions  TemplateVersion[]
+
+  @@schema("catalog")
 }
 
 model TemplateVersion {
@@ -444,13 +495,14 @@ model TemplateVersion {
   template SeedTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, version])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------- local_usage ----------
 
 /// C3 usage buffer: records are written on each billable action and flushed to
 /// the platform consume endpoint (POST /usage/consume) by the ConsumeFlushJob.
-/// Logical schema: local_usage.
+/// Physical: local_usage.raw (ADR-012).
 /// idempotencyKey: caller-supplied; replayed platform calls return replayed:true.
 /// flushed: false until the platform consume call returns 200 or 409 (quota
 /// exhausted counts as consumed). Failed calls remain flushed=false for retry.
@@ -469,4 +521,6 @@ model UsageRaw {
 
   @@index([flushed, createdAt])
   @@index([workspaceId])
+  @@map("raw")
+  @@schema("local_usage")
 }
