@@ -251,7 +251,7 @@ const maskingPolicies = await prisma.policy.findMany({
 
 | Secret（`.env` 键） | 用途 | 位置 / 约束（`.env.example` 为占位 schema） |
 |---|---|---|
-| `DATABASE_URL` | Prisma pg adapter + `migrate deploy` 的连接串（含库口令） | `.env`（服务器 `<ROOT_DIR>/etc/.env`）；`.env.example` 里是占位 `postgresql://arda:ChangeME@arda-db:5432/arda?schema=public` |
+| `DATABASE_URL` | Prisma pg adapter + `migrate deploy` 的连接串（含库口令） | `.env`（服务器 `<ROOT_DIR>/etc/.env`）；`.env.example` 里是占位 `postgresql://arda_svc:ChangeME@arda-db:5432/vxturebiz_arda_prod?schema=public` |
 | `POSTGRES_PASSWORD` | Postgres 口令 | 同上；`.env.example` 占位 `ChangeME` |
 | `OIDC_CLIENT_SECRET` | OIDC RP client secret（prod 用 `arda`、beta 用 `arda-beta`，各自独立） | 平台 secret manager 注入；`.env.example` 留空；从不 commit |
 | `NODE_AUTH_TOKEN` | `@vxture` 私有包读令牌 | `.env` 或 CI secret；`.env.example` 留空 |

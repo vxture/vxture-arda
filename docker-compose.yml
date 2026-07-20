@@ -61,8 +61,10 @@ services:
       # -- Domain data store (this stack's postgres container) ----------------
       # Used by the Prisma client (pg driver adapter). Schema is DDL-owned and
       # only ever changed via the db-init pipeline; the entrypoint never
-      # migrates. Host is ${PROJECT_NAME}-db so prod/beta never collide.
-      DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/arda?schema=public}"
+      # migrates. Host is ${PROJECT_NAME}-db so prod/beta never collide. The
+      # default here is the local-dev fallback (owner role, no arda_svc yet);
+      # deployed stacks set DATABASE_URL in etc/.env to connect as arda_svc.
+      DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/vxturebiz_arda_prod?schema=public}"
       RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
       # Host-only cookie (no leading dot): scoped to this exact domain.
@@ -135,13 +137,13 @@ services:
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-arda}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-arda}"
-      POSTGRES_DB: "${POSTGRES_DB:-arda}"
+      POSTGRES_DB: "${POSTGRES_DB:-vxturebiz_arda_prod}"
     volumes:
       - ${DATA_DIR}/postgres:/var/lib/postgresql/data
     networks:
       - arda-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-arda}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-vxturebiz_arda_prod}"]
       interval: 30s
       timeout: 5s
       retries: 5

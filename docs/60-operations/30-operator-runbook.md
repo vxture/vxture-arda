@@ -60,14 +60,14 @@ Fix (per environment, beta and prod):
 | `OIDC_CLIENT_ID` | `arda-beta` | Beta is a distinct IdP client; using `arda` causes `invalid_redirect_uri` and breaks logout fan-out. |
 | `OIDC_CLIENT_SECRET` | real `arda-beta` secret | Not `ChangeME`. |
 | `DEFAULT_LANDING` | `/dashboard` | Old `/data-assets/overview` route was removed; stale value 404s the post-login root. |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `arda` / a real secret / `arda` | DB creds. Internal-only DB; defaults work but set a real password. |
-| `DATABASE_URL` | `postgresql://arda:<pw>@arda-beta-db:5432/arda?schema=public` | Host MUST be `arda-beta-db` (this stack's db container). If unset, the compose default already resolves to `${PROJECT_NAME}-db`. |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `arda` / a real secret / `vxturebiz_arda_beta` | Owner-role DB creds + DB name (platform convention `vxturebiz_arda_{env}`). Set a real password. |
+| `DATABASE_URL` | `postgresql://arda_svc:<svc-pw>@arda-beta-db:5432/vxturebiz_arda_beta?schema=public` | RUNTIME connects as the least-privilege `arda_svc` role (see SS5), NOT the owner. Host MUST be `arda-beta-db` (this stack's db container); `<svc-pw>` = `ARDA_DB_SVC_PASSWORD`. |
 
 ### Prod (`/srv/md0/arda/etc/.env`)
 
 Same keys, with: `OIDC_CLIENT_ID=arda`, real `OIDC_CLIENT_SECRET`,
-`DEFAULT_LANDING=/dashboard`, `DATABASE_URL` host `arda-db`, and a real
-`POSTGRES_PASSWORD`.
+`DEFAULT_LANDING=/dashboard`, `POSTGRES_DB=vxturebiz_arda_prod`, `DATABASE_URL`
+host `arda-db` + db `vxturebiz_arda_prod`, and a real `POSTGRES_PASSWORD`.
 
 > Also update each environment's `ENV_FILE_B64` secret to match, so a future
 > fresh bootstrap seeds the correct `etc/.env`.
@@ -85,7 +85,7 @@ Same keys, with: `OIDC_CLIENT_ID=arda`, real `OIDC_CLIENT_SECRET`,
    - App: browser login lands on `/dashboard` (no `0.0.0.0`, no `sso=failed`).
    - Logout from `vxture.com` also signs out beta (client_id fix).
    - DB: `docker compose logs <stack>-app | grep -i migrate` shows migrations
-     applied; `docker exec <stack>-db psql -U arda -d arda -c '\dt'` lists tables.
+     applied; `docker exec <stack>-db psql -U arda -d vxturebiz_arda_<env> -c '\dt'` lists tables.
 
 ---
 
@@ -106,8 +106,11 @@ After `db-init` (`roles` action) has created `arda_svc` on the stack DB:
 
 1. Read the environment's `ARDA_DB_SVC_PASSWORD` (GitHub Environment secret).
 2. On the host, edit the stack `etc/.env`: set
-   `DATABASE_URL=postgresql://arda_svc:<password>@<stack>-db:5432/arda?schema=public`
-   (host is `arda-db` for prod, `arda-beta-db` for beta).
+   `DATABASE_URL=postgresql://arda_svc:<password>@<stack>-db:5432/<dbname>?schema=public`
+   (host is `arda-db` for prod, `arda-beta-db` for beta; `<dbname>` is
+   `vxturebiz_arda_prod` / `vxturebiz_arda_beta`). Note: the deploy-env template
+   already ships this arda_svc form, so on a fresh stack it is the default -
+   this step is the cutover for stacks still on the owner role.
 3. Restart the app container (`docker compose up -d arda-app` from the stack
    deploy dir, or rerun the release deploy).
 4. Verify: app healthy + a write path works (create/edit a catalog entity).

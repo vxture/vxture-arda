@@ -115,7 +115,7 @@ determined entirely by which `.env` is loaded:
 | `DATA_DIR` | `/srv/md0/arda/data` | `/srv/md1/arda-beta/data` |
 | `APEX_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |
 | `REDIS_URL` | `redis://arda-redis:6379` | `redis://arda-beta-redis:6379` |
-| `DATABASE_URL` | `postgresql://arda:...@arda-db:5432/arda?schema=public` | `postgresql://arda:...@arda-beta-db:5432/arda?schema=public` |
+| `DATABASE_URL` | `postgresql://arda_svc:...@arda-db:5432/vxturebiz_arda_prod?schema=public` | `postgresql://arda_svc:...@arda-beta-db:5432/vxturebiz_arda_beta?schema=public` |
 | `MOCK_STATE` | `subscribed` | `trial` |
 | `NEXT_PUBLIC_APP_ENV` | `prod` | `beta` |
 

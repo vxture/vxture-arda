@@ -248,5 +248,5 @@ Existing stacks created under the old prisma-migrate flow are ADOPTED in
 place: run `db-init` `roles` then `verify` (the leftover `_prisma_migrations`
 table is ignored by verify). Cutting the app over to the `arda_svc` role is
 an operator action: set `DATABASE_URL` in the stack's `etc/.env` to
-`postgresql://arda_svc:<ARDA_DB_SVC_PASSWORD>@<stack>-db:5432/arda?schema=public`
+`postgresql://arda_svc:<ARDA_DB_SVC_PASSWORD>@<stack>-db:5432/vxturebiz_arda_<env>?schema=public`
 and restart the app container - beta first, verify, then production.

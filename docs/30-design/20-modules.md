@@ -34,7 +34,7 @@ None. The app is stateless. All session state is in `arda-redis`.
 | `OIDC_SCOPES` | | `openid profile email phone arda` | Space-separated scopes |
 | `OIDC_POST_LOGOUT_REDIRECT_URI` | | | Post-logout redirect (app root) |
 | `REDIS_URL` | Yes | `redis://arda-redis:6379` | Redis connection string |
-| `DATABASE_URL` | Yes | `postgresql://arda:arda@arda-db:5432/arda?schema=public` | Postgres connection string (domain business data; see `arda-db` below) |
+| `DATABASE_URL` | Yes | `postgresql://arda_svc:...@arda-db:5432/vxturebiz_arda_prod?schema=public` | Postgres connection string (runtime = least-privilege `arda_svc`; domain business data; see `arda-db` below) |
 | `RP_SESSION_TTL` | | `2592000` | Session TTL in seconds (30 days) |
 | `RP_SESSION_COOKIE_NAME` | | `vx_rp_session` | Opaque session cookie name |
 | `RP_SESSION_COOKIE_DOMAIN` | Yes | | Exact host domain (no leading dot) |
@@ -140,12 +140,12 @@ is an open item, see [`data-300`](arda-data-300-migration.md) §5 #1.
 |---|---|---|---|
 | `POSTGRES_USER` | | `arda` | Database user |
 | `POSTGRES_PASSWORD` | Yes | | Database password |
-| `POSTGRES_DB` | | `arda` | Database name |
+| `POSTGRES_DB` | | `vxturebiz_arda_{env}` | Database name (platform convention) |
 
 ### Healthcheck
 
 ```
-pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-arda}
+pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-vxturebiz_arda_prod}
 ```
 
 ### Logging
