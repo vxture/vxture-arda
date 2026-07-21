@@ -118,7 +118,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_REPO_DIR: ${{ secrets.DEPLOY_REPO_DIR }}
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
           IMAGE_TAG: ${{ steps.sha.outputs.image_tag }}
           ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
           ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
@@ -134,7 +134,7 @@ jobs:
             beta)       default_dir="/srv/md1/arda-beta/deploy" ;;
             *) echo "unknown environment: $DEPLOY_ENV" >&2; exit 1 ;;
           esac
-          deploy_dir="${DEPLOY_REPO_DIR:-$default_dir}"
+          deploy_dir="${DEPLOY_DIR:-$default_dir}"
 
           cat > /tmp/rollback.sh <<'REMOTE_SCRIPT'
           set -euo pipefail

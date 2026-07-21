@@ -89,3 +89,34 @@ export async function verifyWebhookSignature(
   if (!matched) return { ok: false, reason: "signature mismatch" };
   return { ok: true };
 }
+
+/**
+ * Verify against any of several configured secrets (app-side rotation slot,
+ * 080-rp SS4 / rectification D3).
+ *
+ * Two rotation mechanisms coexist and are independent:
+ *   - header-side double-sign: the platform emits multiple `v1` values under
+ *     one secret window - handled inside verifyWebhookSignature above.
+ *   - app-side dual secret: the app holds PROVISION_WEBHOOK_SECRET and, during
+ *     a rotation, PROVISION_WEBHOOK_SECRET_NEXT; the platform may sign with
+ *     EITHER, so the app tries each secret and accepts if any verifies.
+ *
+ * Secrets are tried in order and the check short-circuits on the first pass
+ * (accepting is not secret-dependent leakage; the underlying MAC compare is
+ * constant-time). Returns the last failure reason when none verify.
+ */
+export async function verifyWebhookSignatureAny(
+  rawBody: Uint8Array,
+  signatureHeader: string | null,
+  secrets: readonly string[],
+): Promise<VerifyResult> {
+  if (secrets.length === 0) return { ok: false, reason: "no secret configured" };
+
+  let lastReason = "signature mismatch";
+  for (const secret of secrets) {
+    const result = await verifyWebhookSignature(rawBody, signatureHeader, secret);
+    if (result.ok) return { ok: true };
+    if (result.reason) lastReason = result.reason;
+  }
+  return { ok: false, reason: lastReason };
+}

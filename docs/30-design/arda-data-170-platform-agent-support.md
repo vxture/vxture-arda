@@ -176,8 +176,8 @@ enum AssetScope {
 平台层是 arda 运营策展、**全平台只读共享**的全局参考数据（数据标准、行政区划码表、币种码、全局术语）。
 
 - **在位只读、单一权威**：运营改一次，全平台生效。承载表如 `Standard`（`scope=platform`，如 ISO 3166 类代码集）、`GlossaryTerm`（`scope=platform` 的全局术语）。
-- **哨兵 workspaceId**：平台行用保留哨兵 `workspaceId = "__platform__"`。`workspaceId` 是**普通索引列、非 FK**，平台行无需先有 `WorkspaceRef` 行即可存在（见 [`data-110`](arda-data-110-isolation.md)）。
-- **只读叠加**：租户读取时叠加 `workspaceId IN (self, "__platform__")` - 既拿到本 workspace 的租户数据，又拿到平台全局参考，且平台行对租户只读。
+- **平台全局行 workspaceId**：平台行用显式轴 `workspaceId = NULL`（NULL=平台全局）。`workspaceId` 是**普通索引列、非 FK**，平台行无需先有 `WorkspaceRef` 行即可存在（见 [`data-110`](arda-data-110-isolation.md)）。
+- **只读叠加**：租户读取时叠加 `workspaceId = self OR workspaceId IS NULL` - 既拿到本 workspace 的租户数据，又拿到平台全局参考，且平台行对租户只读。
 - **写权限**：写 `scope=platform` 行需要运营/平台角色，**永不由租户用户**发起。
 - **升格流**：一条数据从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；这是数据进入 `platform` 层的**唯一路径**——跨 workspace 授权（[`data-160`](arda-data-160-cross-workspace-authorization.md)）是点对点访问，不使数据进入平台层。
 
@@ -186,7 +186,7 @@ enum AssetScope {
 | 维度 | Tier-P 全局参考（`scope=platform`） | SeedTemplate（租户样例 bootstrap） |
 |---|---|---|
 | 语义 | 在位只读、单一权威，运营改一次全平台生效 | onboarding 时**一次性拷入**新 workspace，拷后归租户**各一份** |
-| 归属 | 平台层，哨兵 `"__platform__"` | 拷贝后是 `scope=workspace` 的租户数据 |
+| 归属 | 平台层，`workspaceId=NULL` | 拷贝后是 `scope=workspace` 的租户数据 |
 | 表 | `Standard` / `GlossaryTerm`（`scope=platform`） | `SeedTemplate` / `TemplateVersion`（见 [`data-260`](arda-data-260-infrastructure.md)） |
 
 二者是**不同维度**：全局参考是共享的单一权威，样例模板是拷贝出的租户副本。

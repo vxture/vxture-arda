@@ -10,8 +10,12 @@
 -- Mirrors prisma/seed.ts (the local dev seed). Ids are md5(workspace||code) so
 -- they are deterministic and foreign keys resolve without round-trips.
 
--- Workspace mirror (isolation anchor).
-INSERT INTO "WorkspaceRef" (id, "orgId", "createdAt")
+-- Resolve unqualified domain tables to the `catalog` schema (ADR-012); the
+-- workspace mirror moved to vx_provision.app_instance and is qualified below.
+SET search_path TO "catalog", "vx_provision", "local_usage", "public";
+
+-- Workspace mirror (isolation anchor; vx_provision.app_instance <- WorkspaceRef).
+INSERT INTO "vx_provision"."app_instance" (id, "orgId", "createdAt")
 VALUES (:'workspace_id', 'demo-org', now())
 ON CONFLICT (id) DO NOTHING;
 

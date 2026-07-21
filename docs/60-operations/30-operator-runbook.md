@@ -19,7 +19,7 @@ NOT reload env - the container must be recreated; a redeploy does that).
 
 ---
 
-## 1. BLOCKER: `DEPLOY_REPO_DIR` must equal the host `REPO_DIR`
+## 1. BLOCKER: `DEPLOY_DIR` must equal the host `REPO_DIR`
 
 Symptom: CI is green and the deploy log shows
 `[deliver] docker-compose.yml has arda-db`, but the running stack still uses the
@@ -27,9 +27,9 @@ OLD compose/scripts (new services like `arda-db` never start; new deploy-script
 behavior never runs).
 
 Cause: CI rsyncs the fresh `deploy/` + `configs/` + `docker-compose.yml` to
-`$DEPLOY_REPO_DIR` (the GitHub Environment secret). But `deploy.sh` sources
+`$DEPLOY_DIR` (the GitHub Environment secret). But `deploy.sh` sources
 `etc/.env`, which sets `REPO_DIR`, and every step does `cd "$REPO_DIR"`. If
-`DEPLOY_REPO_DIR` (rsync dest) differs from `etc/.env`'s `REPO_DIR` (run dir),
+`DEPLOY_DIR` (rsync dest) differs from `etc/.env`'s `REPO_DIR` (run dir),
 the deploy runs from a different directory and reads stale files.
 
 Fix (per environment, beta and prod):
@@ -39,12 +39,12 @@ Fix (per environment, beta and prod):
    grep REPO_DIR /srv/md1/arda-beta/etc/.env   # beta
    grep REPO_DIR /srv/md0/arda/etc/.env        # prod
    ```
-2. Compare to the `DEPLOY_REPO_DIR` secret in the matching GitHub Environment
+2. Compare to the `DEPLOY_DIR` secret in the matching GitHub Environment
    (repo Settings -> Environments -> beta / production).
 3. Make them equal. Recommended canonical values:
    - beta: `/srv/md1/arda-beta/deploy`
    - prod: `/srv/md0/arda/deploy`
-   Either set `DEPLOY_REPO_DIR` to that exact value, or unset it (the workflow
+   Either set `DEPLOY_DIR` to that exact value, or unset it (the workflow
    defaults to the same path) AND ensure `etc/.env`'s `REPO_DIR` matches.
 4. Redeploy. Confirm in the deploy log: `arda-(beta-)db` appears in the container
    status table and the DB health-gate passes.

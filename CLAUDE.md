@@ -125,7 +125,10 @@ whatever is already at that commit on `main`, it does not re-verify the gates.
 - DS-usage check (`scripts/checks/09-check-ds-usage.py`, strict)
 - docs numbering guardrail (`scripts/guardrails/check-docs-numbering.mjs`,
   strict): every `.md` under `docs/` must carry a taxonomy number (`NN-`,
-  `arda-{sub}-NNN-`, `ADR-NNN`/`TD-NNN`); unnumbered = temporary = blocked
+  `{kind}_{domain}_{NNN}_`, `ADR-NNN`/`TD-NNN`); unnumbered = temporary =
+  blocked. The legacy `arda-{sub}-NNN-` hyphen form is grandfathered for the
+  existing docs frozen in `scripts/guardrails/docs-numbering-legacy.txt` only;
+  new domain docs must use the org underscore family (rectification E1)
 - `docker compose --env-file .env.example config` validation
 
 `audit` is a separate required check: `osv-scanner` (pinned binary) scans

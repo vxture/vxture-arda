@@ -10,18 +10,23 @@
  *
  * Legal numbered forms (any one suffices):
  *   00-index.md / NN-slug.md          - in-directory sequence (tens jumps)
- *   arda-{sub}-NNN-slug.md            - arda domain docs (hyphen variant of
- *                                       the org {kind}_{domain}_{NNN} form;
- *                                       kept per owner decision 2026-07-17)
- *   {prefix}_{NNN}_slug.md            - org underscore domain-doc form
+ *   {kind}_{domain}_{NNN}_slug.md     - org underscore domain-doc form (the
+ *                                       form NEW domain docs must use, E1)
  *   ADR-NNN* / TD-NNN*                - type registers (append-only IDs)
+ *
+ * Grandfathered (E1, rectification requirements): the pre-tightening
+ * arda-{sub}-NNN-slug.md hyphen form is NO LONGER a blanket-legal form. The
+ * existing hyphen-named docs are frozen in docs-numbering-legacy.txt and still
+ * pass by exact path; any NEW file using the hyphen form is a violation and
+ * must adopt the underscore family instead.
  *
  * Default = report mode (list violations, exit 0); --strict = hard gate
  * (wired into CI quality-gate static-checks).
  */
 
-import { readdirSync, statSync } from "node:fs";
-import { join, relative, basename } from "node:path";
+import { readdirSync, statSync, readFileSync } from "node:fs";
+import { join, relative, basename, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DOCS_ROOT = "docs";
 const STRICT = process.argv.includes("--strict");
@@ -29,9 +34,28 @@ const STRICT = process.argv.includes("--strict");
 // Root-level non-content whitelist (config/entry files).
 const WHITELIST = new Set(["README.md"]);
 
+// Frozen grandfather set of existing arda-{sub}-NNN hyphen-form docs (E1). Read
+// from the sibling freeze-list; entries are repo-relative, forward-slash paths.
+// A file passes ONLY if it is listed here by exact path - new hyphen-form files
+// are not, so they fail and must use the underscore family.
+const LEGACY_FILE = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "docs-numbering-legacy.txt",
+);
+let LEGACY = new Set();
+try {
+  LEGACY = new Set(
+    readFileSync(LEGACY_FILE, "utf8")
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#")),
+  );
+} catch {
+  // No freeze-list: treat as empty (every hyphen-form doc then flags).
+}
+
 const NUMBERED = [
   /^\d{2,3}-.+\.md$/u, // NN(N)-slug.md (includes 00-index.md)
-  /^arda-[a-z]+-\d{3}(-.+)?\.md$/u, // arda-{sub}-NNN-slug (hyphen domain docs)
   /^[a-z][a-z0-9-]*(_[a-z][a-z0-9-]*)?_\d{3}[_.-].*\.md$/u, // {prefix}(_{domain})?_{NNN}_slug
   /^(ADR|TD)-\d{3}.*\.md$/u, // type registers
 ];
@@ -52,6 +76,8 @@ function walk(dir) {
 function isNumbered(file) {
   const name = basename(file);
   if (WHITELIST.has(name)) return true;
+  const relPath = relative(".", file).replaceAll("\\", "/");
+  if (LEGACY.has(relPath)) return true; // grandfathered hyphen-form doc (E1)
   return NUMBERED.some((re) => re.test(name));
 }
 
@@ -80,7 +106,9 @@ for (const v of violations) console.log(`  ${v}`);
 
 if (STRICT) {
   console.error(
-    `\n[docs-numbering] STRICT: unnumbered file = violation - number it (NN-/domain-doc/ADR-.TD-) or delete it.`,
+    `\n[docs-numbering] STRICT: unnumbered file = violation - number it` +
+      ` (NN-slug / {kind}_{domain}_{NNN}_slug / ADR-NNN / TD-NNN) or delete it.` +
+      ` The arda-{sub}-NNN hyphen form is retired for new docs (E1).`,
   );
   process.exit(1);
 }

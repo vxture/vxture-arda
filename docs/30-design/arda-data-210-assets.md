@@ -13,14 +13,14 @@
 
 assets 是 catalog-first 的核心板块：把「本 workspace 有哪些数据资产」登记成可检索、可分级、可打标签、可挂治理的目录条目。它是整个 schema 的引用中心 - 集成（DataSource）、治理（QualityRule/QualityResult/LineageEdge/Policy/Standard）、服务（DataService）都围绕 `Dataset` 展开。
 
-本板块含四张表（均带 `workspaceId` 隔离键）。前三张纯按 workspace 自隔离；`GlossaryTerm` 因支持 `platform` 归属，隔离是哨兵 `workspaceId = "__platform__"` + `workspaceId IN (self, "__platform__")` 叠加读（见 §1.4），非纯 self-only 过滤：
+本板块含四张表（均带 `workspaceId` 隔离键）。前三张纯按 workspace 自隔离；`GlossaryTerm` 因支持 `platform` 归属，隔离是显式轴 `workspaceId = NULL`（NULL=平台全局）+ `workspaceId = self OR workspaceId IS NULL` 叠加读（见 §1.4），非纯 self-only 过滤：
 
 | 表 | ws 隔离 | 用途 |
 |---|---|---|
 | `Dataset` | self-only | 核心数据资产条目（目录主体） |
 | `Tag` | self-only | 标签定义（可复用的分类色签） |
 | `DatasetTag` | self-only | `Dataset` <-> `Tag` 的 M:N 连接表 |
-| `GlossaryTerm` | self + `__platform__` 叠加 | 业务术语表（词条 + 释义 + steward；`scope` 见 §1.4） |
+| `GlossaryTerm` | self + `workspaceId IS NULL` 叠加 | 业务术语表（词条 + 释义 + steward；`scope` 见 §1.4） |
 
 ### 1.2 v1 范围与边界
 
@@ -63,7 +63,7 @@ enum AssetScope {
 ```
 
 - `workspace`：租户自有，隔离在本 workspace 内、仅对该 workspace 内的多个 agent 共享（默认值）。
-- `platform`：arda 运营策展的全局参考数据（通过的数据标准、行政区划码表、币种码），对**所有** workspace 只读共享。平台行用保留哨兵 `workspaceId = "__platform__"`（`workspaceId` 是普通列非 FK，无需先有 `WorkspaceRef` 行）；租户读取经 `workspaceId IN (self, "__platform__")` 叠加；写 `platform` 行需运营/平台角色，租户用户不可写。升格流为 workspace-draft -> ops-approve -> platform-published。
+- `platform`：arda 运营策展的全局参考数据（通过的数据标准、行政区划码表、币种码），对**所有** workspace 只读共享。平台行用显式轴 `workspaceId = NULL`（NULL=平台全局，`workspaceId` 是普通列非 FK，无需先有 `WorkspaceRef` 行；`scope=platform` 与之由 CHECK 一致）；租户读取经 `workspaceId = self OR workspaceId IS NULL` 叠加；写 `platform` 行需运营/平台角色，租户用户不可写。升格流为 workspace-draft -> ops-approve -> platform-published。
 
 **属主/溯源轴 `Dataset.ownerApp`（非隔离）** - `String?`，标记 workspace 内**产出**该资产的 agent/app。agent 与 workspace 是 N-N（每个 agent 横跨多 workspace，每个 workspace 内可有多个 agent）；`ownerApp` 是归属 + 溯源标记，**不是**隔离轴（隔离仍由 `workspaceId` 兜底），作用是让同一 workspace 内的多个 agent 经 arda 共享数据时保留「谁产出的」为一等信息。它与消费方标记（`ApiKey.consumerApp`）、发布方标记（`DataService.ownerApp` / 可见性 `DataService.visibility`）同属一套属主轴，各字段的完整语义见 [`data-150`](arda-data-150-multiagent-sharing.md)。
 
@@ -196,8 +196,8 @@ model GlossaryTerm {
   term          String
   definition    String
   stewardUserId String?
-  // platform = ops-approved global glossary shared to all workspaces (sentinel
-  // workspaceId "__platform__"); workspace = tenant-local term.
+  // platform = ops-approved global glossary shared to all workspaces
+  // (workspaceId NULL); workspace = tenant-local term.
   scope         AssetScope @default(workspace)
 
   @@unique([workspaceId, term])
@@ -212,7 +212,7 @@ model GlossaryTerm {
 - `term` `String`：必填，术语词条，workspace 内唯一（见 §4）。
 - `definition` `String`：必填，术语释义。
 - `stewardUserId` `String?`：可选，术语 steward 用户 id（身份归 IdP，只存 id 引用、无本地 FK）。
-- `scope` `AssetScope @default(workspace)`：数据归属层，枚举 `AssetScope`，默认 `workspace`（租户本地术语）。`platform` 表示 arda 运营策展、对所有 workspace 只读共享的全局术语表（平台行用哨兵 `workspaceId = "__platform__"`）。取值与升格语义见 §1.4 与 [`data-150`](arda-data-150-multiagent-sharing.md)。
+- `scope` `AssetScope @default(workspace)`：数据归属层，枚举 `AssetScope`，默认 `workspace`（租户本地术语）。`platform` 表示 arda 运营策展、对所有 workspace 只读共享的全局术语表（平台行用显式轴 `workspaceId = NULL`）。取值与升格语义见 §1.4 与 [`data-150`](arda-data-150-multiagent-sharing.md)。
 - 本表独立存在，无关系字段。
 
 ---

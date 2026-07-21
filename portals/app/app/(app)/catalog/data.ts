@@ -1,9 +1,13 @@
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "./seed";
 
-/** Reserved sentinel workspaceId for arda-ops-curated platform reference data,
- *  overlaid read-only into every workspace (schema AssetScope). */
-const PLATFORM_WS = "__platform__";
+/** Read overlay for arda-ops-curated platform reference data: the caller's own
+ *  workspace PLUS platform-global rows (workspaceId NULL, scope=platform),
+ *  read-only. The explicit-axis replacement for the retired workspaceId
+ *  sentinel (data_platform_100 2.3.2). */
+function workspaceOrPlatform(workspaceId: string) {
+  return { OR: [{ workspaceId }, { workspaceId: null }] };
+}
 
 /**
  * Server-side catalog data access. Every query is scoped to the caller's
@@ -43,7 +47,7 @@ function formatCount(n: bigint | null): string {
 
 type DatasetRecord = {
   id: string;
-  workspaceId: string;
+  workspaceId: string | null;
   name: string;
   code: string;
   domain: string | null;
@@ -74,7 +78,7 @@ function toView(d: DatasetRecord): CatalogAssetView {
     quality: null,
     subs: null,
     fields: null,
-    platform: d.workspaceId === PLATFORM_WS,
+    platform: d.workspaceId === null,
   };
 }
 
@@ -105,14 +109,14 @@ async function qualityScores(workspaceId: string): Promise<Map<string, number>> 
 
 export async function getCatalogAssets(workspaceId: string): Promise<CatalogAssetView[]> {
   const [rows, scores] = await Promise.all([
-    prisma.dataset.findMany({ where: { workspaceId: { in: [workspaceId, PLATFORM_WS] } }, orderBy: [{ workspaceId: "asc" }, { name: "asc" }] }),
+    prisma.dataset.findMany({ where: workspaceOrPlatform(workspaceId), orderBy: [{ workspaceId: "asc" }, { name: "asc" }] }),
     qualityScores(workspaceId),
   ]);
   return rows.map((d) => ({ ...toView(d), quality: scores.get(d.id) ?? null }));
 }
 
 export async function getCatalogAsset(workspaceId: string, id: string): Promise<CatalogAssetView | null> {
-  const row = await prisma.dataset.findFirst({ where: { workspaceId: { in: [workspaceId, PLATFORM_WS] }, id } });
+  const row = await prisma.dataset.findFirst({ where: { id, ...workspaceOrPlatform(workspaceId) } });
   return row ? toView(row) : null;
 }
 
@@ -144,7 +148,7 @@ function formatBytes(n: bigint | null): string {
 
 export async function getAssetProfile(workspaceId: string, id: string): Promise<AssetProfile | null> {
   const row = await prisma.dataset.findFirst({
-    where: { workspaceId: { in: [workspaceId, PLATFORM_WS] }, id },
+    where: { id, ...workspaceOrPlatform(workspaceId) },
     include: {
       source: { select: { name: true, type: true, lastSyncedAt: true } },
       tags: { include: { tag: { select: { id: true, name: true } } } },
@@ -159,15 +163,17 @@ export async function getAssetProfile(workspaceId: string, id: string): Promise<
   if (!row) return null;
 
   // Scope the aggregates to the dataset's OWN workspace (platform reference
-  // assets live under __platform__); linkable standards keep the tenant+platform
+  // assets have workspaceId NULL); linkable standards keep the tenant+platform
   // overlay so a workspace can still bind its assets to platform standards.
+  // Platform reference assets (workspaceId NULL) carry no workspace-scoped
+  // lineage; LineageEdge.workspaceId is non-null, so skip those counts for them.
   const scope = row.workspaceId;
   const [upstream, downstream, totalAgg, linkable] = await Promise.all([
-    prisma.lineageEdge.count({ where: { workspaceId: scope, downstreamDatasetId: id } }),
-    prisma.lineageEdge.count({ where: { workspaceId: scope, upstreamDatasetId: id } }),
+    scope == null ? 0 : prisma.lineageEdge.count({ where: { workspaceId: scope, downstreamDatasetId: id } }),
+    scope == null ? 0 : prisma.lineageEdge.count({ where: { workspaceId: scope, upstreamDatasetId: id } }),
     prisma.dataset.aggregate({ where: { workspaceId: scope }, _sum: { sizeBytes: true } }),
     prisma.standard.findMany({
-      where: { workspaceId: { in: [workspaceId, PLATFORM_WS] } },
+      where: workspaceOrPlatform(workspaceId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
       take: 200,

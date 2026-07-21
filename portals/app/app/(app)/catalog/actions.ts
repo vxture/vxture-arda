@@ -163,7 +163,7 @@ export async function attachStandard(datasetId: string, standardId: string): Pro
   const [dataset, standard] = await Promise.all([
     prisma.dataset.findFirst({ where: { workspaceId: session.workspaceId, id: datasetId } }),
     prisma.standard.findFirst({
-      where: { workspaceId: { in: [session.workspaceId, "__platform__"] }, id: standardId },
+      where: { id: standardId, OR: [{ workspaceId: session.workspaceId }, { workspaceId: null }] },
     }),
   ]);
   if (!dataset || !standard) return { ok: false, error: "invalid" };

@@ -13,7 +13,7 @@ export interface GlossaryTermView {
  *  widening of the force-filter (data-110 2.4, single helper, read-only). */
 export async function getGlossary(workspaceId: string): Promise<GlossaryTermView[]> {
   const rows = await prisma.glossaryTerm.findMany({
-    where: { workspaceId: { in: [workspaceId, "__platform__"] } },
+    where: { OR: [{ workspaceId }, { workspaceId: null }] },
     orderBy: [{ scope: "desc" }, { term: "asc" }],
   });
   return rows.map((r) => ({

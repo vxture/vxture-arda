@@ -27,7 +27,7 @@ arda 的持久层**只为领域业务数据存在**，不承载身份 / 订阅 /
 
 | 层 | scope | 内容 | 隔离/共享 |
 |---|---|---|---|
-| **平台层** | `scope=platform` | arda 运营策展的全局参考（通过的数据标准、行政区划码表、币种码） | 全平台**只读**共享；仅运营/平台角色可写；平台行用保留哨兵 `workspaceId="__platform__"`（普通列非 FK），租户读叠加 `workspaceId IN (self, "__platform__")` |
+| **平台层** | `scope=platform` | arda 运营策展的全局参考（通过的数据标准、行政区划码表、币种码） | 全平台**只读**共享；仅运营/平台角色可写；平台行用显式轴 `workspaceId=NULL`（NULL=平台全局）+ `scope=platform`（普通列非 FK），租户读叠加 `workspaceId = self OR workspaceId IS NULL` |
 | **租户层** | `scope=workspace` | 租户 / agent 所产的业务数据 | 隔离在 workspace 内；workspace 内跨多个 agent 共享 |
 | **agent 私有** | - | agent 运行态 / 草稿 / 会话 / 向量 / RAG | **完全不进 arda** |
 

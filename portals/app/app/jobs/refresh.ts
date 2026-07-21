@@ -36,7 +36,9 @@ export async function refreshAll(): Promise<RefreshResult> {
     prisma.dataSource.findMany({ select: { workspaceId: true }, distinct: ["workspaceId"] }),
     prisma.qualityRule.findMany({ where: { enabled: true }, select: { workspaceId: true }, distinct: ["workspaceId"] }),
   ]);
-  const all = [...new Set([...sourceWs, ...ruleWs].map((w) => w.workspaceId))].filter((w) => w !== "__platform__");
+  // DataSource / QualityRule are tenant-only (non-null workspaceId); drop any
+  // empty defensively. Platform reference data carries no source/rules to refresh.
+  const all = [...new Set([...sourceWs, ...ruleWs].map((w) => w.workspaceId))].filter((w): w is string => Boolean(w));
   const batch = all.slice(0, WORKSPACE_CAP);
 
   const result: RefreshResult = {

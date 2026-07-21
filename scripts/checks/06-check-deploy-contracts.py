@@ -221,7 +221,9 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         "DDL authority artifacts exist (baseline + service role + column locks)",
         Path("deploy/database/ddl/98_column_locks.sql"),
         [
-            "REVOKE UPDATE ON ALL TABLES IN SCHEMA public FROM arda_svc",
+            # Multi-schema layout (ADR-012): the whole-table UPDATE revoke now
+            # spans the arda-owned schemas instead of a single public schema.
+            "REVOKE UPDATE ON ALL TABLES IN SCHEMA vx_provision, local_usage, catalog FROM arda_svc",
         ],
     ),
 ]

@@ -24,7 +24,7 @@ arda 是单产品数据面：一套 schema、一套 Postgres，按 `workspaceId`
 
 **两个不改变隔离主轴的补充（本轮新增）**：隔离主轴恒为 `workspaceId`，下面两点都**不动它**，只是在其之上 / 之内叠加语义，详见 §2.4 / §2.5：
 
-1. **平台全局参考的只读叠加**（§2.4）：`scope=platform` 的全局参考行（`Standard` / `GlossaryTerm`）用保留哨兵 `workspaceId = "__platform__"`，租户读取时叠加 `workspaceId IN (self, "__platform__")`。这是对上面不变量 2「服务端收口」的**受控放开**（只读、只叠平台哨兵、收敛在单一 helper），不是打开跨租户口子。
+1. **平台全局参考的只读叠加**（§2.4）：`scope=platform` 的全局参考行（`Standard` / `GlossaryTerm`）用显式轴 `workspaceId = NULL`（NULL=平台全局）+ `scope=platform`，租户读取时叠加 `workspaceId = self OR workspaceId IS NULL`。这是对上面不变量 2「服务端收口」的**受控放开**（只读、只叠平台全局行、收敛在单一 helper），不是打开跨租户口子。
 2. **`ownerApp` 等是 workspace 内软属主 / 溯源轴，非隔离轴**（§2.5）：隔离永远由 `workspaceId` 兜底；`ownerApp` / `DataService.visibility` / `ApiKey.consumerApp` 只在同一 workspace 内区分产出 / 可见 / 消费的 agent，支撑多 agent 经 arda 共享（见 [`data-150`](arda-data-150-multiagent-sharing.md)）。
 
 **为什么 `workspaceId` 是普通列而不是 FK**：workspace 生命周期归平台所有（create / clone / delete 都在平台侧）。若把 `workspaceId` 建成指向本地 `WorkspaceRef` 的外键，业务行就必须等本地镜像行先存在才能写入，这与「平台先建 workspace、arda 只镜像」的所有权边界冲突。因此 `WorkspaceRef` 只是隔离锚点的本地镜像，业务行不依赖它先存在（见 schema 顶部注释 L10-13）。
@@ -175,7 +175,7 @@ org / workspace 切换后，`active_workspace` 变化经令牌刷新重新求值
 
 ### 2.4 平台全局参考的只读叠加（对 force-filter 不变量的受控放开）
 
-§2.2 的硬约束是「每个查询的 `where` 必含 `workspaceId`」。唯一被有意放开的口子是**平台层全局参考数据**：arda 运营策展、全平台只读共享的参考集（通过审核的数据标准、行政区划码表、币种码等）。它们由 SoT 的 `AssetScope` 轴标记，行落在保留哨兵 `workspaceId = "__platform__"` 上。
+§2.2 的硬约束是「每个查询的 `where` 必含 `workspaceId`（等于自身或 IS NULL 的平台叠加）」。唯一被有意放开的口子是**平台层全局参考数据**：arda 运营策展、全平台只读共享的参考集（通过审核的数据标准、行政区划码表、币种码等）。它们由 SoT 的 `AssetScope` 轴标记，行落在显式轴 `workspaceId = NULL`（NULL=平台全局）上。
 
 **枚举与承载列（SoT 原样）**：`AssetScope` 只有两个取值；`Standard` 与 `GlossaryTerm` 各带一个 `scope` 列，默认 `workspace`（即租户既有数据默认仍是纯 workspace 隔离，加列向后兼容）：
 
@@ -202,22 +202,22 @@ model Standard {
 }
 ```
 
-**读取语义（受控放开，收敛在单一 helper）**：对 `Standard` / `GlossaryTerm` 这类可含平台参考的表，租户读取不再是纯 `where: { workspaceId }`，而是叠加平台哨兵：
+**读取语义（受控放开，收敛在单一 helper）**：对 `Standard` / `GlossaryTerm` 这类可含平台参考的表，租户读取不再是纯 `where: { workspaceId }`，而是叠加平台全局行（`workspaceId IS NULL`）：
 
 ```ts
-// Only relaxation point: read-only, only for tables that may hold platform rows, only overlays the platform sentinel.
-where: { workspaceId: { in: [session.workspaceId, "__platform__"] } }
+// Only relaxation point: read-only, only for tables that may hold platform rows, only overlays platform-global (workspaceId NULL) rows.
+where: { OR: [{ workspaceId: session.workspaceId }, { workspaceId: null }] }
 ```
 
 这条叠加**必须收敛在一个 workspace-scoped 读 helper 里**，不散落到各处 `findMany`。它守住三条边界：
 
-- **只读**：叠加只用于读；任何写路径的 `where` 仍是纯 `{ workspaceId }`，租户永远写不到 `"__platform__"` 行。
-- **只加平台哨兵**：`in` 列表恒为 `[self, "__platform__"]` 两项，绝不出现第三个 workspace。跨 workspace 授权访问（[`data-160`](arda-data-160-cross-workspace-authorization.md)）**不经此叠加**——它走独立的 grant-join helper，绝不通过扩大这个 `in` 列表实现。
-- **`"__platform__"` 是普通列值、非 FK**：与 §1 一致，无需先存在 `WorkspaceRef` 行；平台行照常受 `@@unique([workspaceId, code|term])` 约束（在平台命名空间内 code / term 唯一）。
+- **只读**：叠加只用于读；任何写路径的 `where` 仍是纯 `{ workspaceId }`，租户永远写不到平台全局（`workspaceId IS NULL`）行。
+- **只加平台全局行**：`OR` 恒为 `[self, workspaceId IS NULL]` 两项，绝不出现第三个 workspace。跨 workspace 授权访问（[`data-160`](arda-data-160-cross-workspace-authorization.md)）**不经此叠加**——它走独立的 grant-join helper，绝不通过扩大这个叠加实现。
+- **`workspaceId=NULL` 是显式轴、非 FK**：与 §1 一致，无需先存在 `WorkspaceRef` 行；平台命名空间内的 code / term 唯一性由 `WHERE workspaceId IS NULL` 的局部唯一索引保证（`scope=platform` 与 `workspaceId IS NULL` 由 CHECK 约束保持一致）。
 
-**写入语义**：写 `scope=platform`（`workspaceId="__platform__"`）的行只允许 ops / 平台角色，永不来自租户用户；升格流是 workspace 草稿 -> ops 审核 -> platform 发布（配合 `Standard.status` 的 draft / review / published，治理工程点见 [`data-230`](arda-data-230-governance.md)）。
+**写入语义**：写 `scope=platform`（`workspaceId=NULL`）的行只允许 ops / 平台角色，永不来自租户用户；升格流是 workspace 草稿 -> ops 审核 -> platform 发布（配合 `Standard.status` 的 draft / review / published，治理工程点见 [`data-230`](arda-data-230-governance.md)）。
 
-> 边界重述：这不是把 force-filter 变松，而是给「全平台单一权威、在位只读」的参考数据开一条**白名单式只读叠加**。隔离主轴仍是 `workspaceId`；平台哨兵是它的一个保留取值，不是绕过它。
+> 边界重述：这不是把 force-filter 变松，而是给「全平台单一权威、在位只读」的参考数据开一条**白名单式只读叠加**。隔离主轴仍是 `workspaceId`；平台全局行以 `workspaceId IS NULL` + `scope=platform` 显式表达，不是绕过它。
 
 ### 2.5 `ownerApp` / `visibility` / `consumerApp`：workspace 内软轴，非隔离轴
 
@@ -435,7 +435,7 @@ model TemplateVersion {
 2. 新增业务表时：加 `workspaceId String`（置于 `id` 之后）、至少 `@@index([workspaceId])`、展示码类唯一性用 `@@unique([workspaceId, <code>])`；热点查询的复合索引以 `workspaceId` 为前导列。默认**不**为 `workspaceId` 建 FK。
 3. 新增数据访问代码时：`where` 必含 `workspaceId`，单条取值用 `findFirst({ where: { workspaceId, id } })`，`workspaceId` 仅来自 `getSession().workspaceId`；客户端组件不 import `prisma`。
 4. 改动隔离方式（如某表是否带 `workspaceId`、某唯一约束是否 workspace 前缀）须同步更新本文件 §3 表格、[`data-100`](arda-data-100-architecture.md) §4-5 总览、对应板块 schema（[`data-210`](arda-data-210-assets.md)..[`data-260`](arda-data-260-infrastructure.md)）。
-5. 平台全局参考（`scope=platform`）：行用哨兵 `workspaceId="__platform__"`，租户**只读**叠加 `workspaceId IN (self, "__platform__")` 且必须收敛在单一读 helper；写 platform 行只允许 ops 角色。改动此叠加规则须同步 §2.4 与 SoT 的 `AssetScope` 注释。
+5. 平台全局参考（`scope=platform`）：行用显式轴 `workspaceId=NULL`，租户**只读**叠加 `workspaceId = self OR workspaceId IS NULL` 且必须收敛在单一读 helper；写 platform 行只允许 ops 角色。改动此叠加规则须同步 §2.4 与 SoT 的 `AssetScope` 注释。
 6. `ownerApp` / `DataService.visibility` / `ApiKey.consumerApp` 是 workspace 内软属主 / 可见性 / 消费方轴，**非隔离轴**；新增此类列不得替代或削弱 `workspaceId` force-filter。多 agent 共享语义以 [`data-150`](arda-data-150-multiagent-sharing.md) 为准。
 7. 索引选型的完整清单见 [`data-120`](arda-data-120-indexing.md)；审计 / 幂等键工程见 [`data-140`](arda-data-140-audit.md)；迁移执行与现状差距见 [`data-300`](arda-data-300-migration.md)。
 8. 跨 workspace 授权访问（同 org 内、资源级 `WorkspaceGrant`）的模型与读路径见 [`data-160`](arda-data-160-cross-workspace-authorization.md)；它不修改本文件的默认范式——任何"为跨 ws 放宽默认过滤"的改动都是违规，跨 ws 读取只允许经 data-160 §3 的 grant-join helper。

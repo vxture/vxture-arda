@@ -1,0 +1,66 @@
+# Frozen grandfather list for the arda-{sub}-NNN hyphen-form docs (E1).
+# These predate the org underscore-family tightening and are NOT forced to
+# rename (rectification E1). NEW docs must use {kind}_{domain}_{NNN}_{slug}.
+# Do NOT add new entries here - a new file needing an entry means it used
+# the retired hyphen form and should be renamed instead. Paths are repo-
+# relative, forward-slash, one per line.
+docs/30-design/arda-biz-000-index.md
+docs/30-design/arda-biz-100-architecture.md
+docs/30-design/arda-biz-105-capability-map.md
+docs/30-design/arda-biz-106-domain-menus.md
+docs/30-design/arda-biz-107-launcher-clustering.md
+docs/30-design/arda-biz-110-domains.md
+docs/30-design/arda-biz-120-domain-entities-and-feature-keys.md
+docs/30-design/arda-biz-210-assets.md
+docs/30-design/arda-biz-220-integration.md
+docs/30-design/arda-biz-230-governance.md
+docs/30-design/arda-biz-240-services.md
+docs/30-design/arda-biz-250-admin.md
+docs/30-design/arda-biz-260-billing.md
+docs/30-design/arda-biz-300-implementation.md
+docs/30-design/arda-biz-400-functions.md
+docs/30-design/arda-biz-410-ingestion.md
+docs/30-design/arda-biz-421-assets.md
+docs/30-design/arda-biz-422-metadata.md
+docs/30-design/arda-biz-431-standards.md
+docs/30-design/arda-biz-432-master-data.md
+docs/30-design/arda-biz-433-quality.md
+docs/30-design/arda-biz-434-lineage.md
+docs/30-design/arda-biz-435-security.md
+docs/30-design/arda-biz-441-services.md
+docs/30-design/arda-biz-451-lifecycle.md
+docs/30-design/arda-data-000-index.md
+docs/30-design/arda-data-100-architecture.md
+docs/30-design/arda-data-110-isolation.md
+docs/30-design/arda-data-120-indexing.md
+docs/30-design/arda-data-130-encryption.md
+docs/30-design/arda-data-140-audit.md
+docs/30-design/arda-data-150-multiagent-sharing.md
+docs/30-design/arda-data-160-cross-workspace-authorization.md
+docs/30-design/arda-data-170-platform-agent-support.md
+docs/30-design/arda-data-210-assets.md
+docs/30-design/arda-data-220-integration.md
+docs/30-design/arda-data-230-governance.md
+docs/30-design/arda-data-240-services.md
+docs/30-design/arda-data-250-admin.md
+docs/30-design/arda-data-260-infrastructure.md
+docs/30-design/arda-data-300-migration.md
+docs/30-design/arda-ent-000-index.md
+docs/30-design/arda-ent-100-architecture.md
+docs/30-design/arda-ent-110-local-implementation.md
+docs/30-design/arda-ent-120-consumption-contract.md
+docs/30-design/arda-ent-300-migration.md
+docs/30-design/arda-plat-000-index.md
+docs/30-design/arda-plat-100-architecture.md
+docs/30-design/arda-plat-110-oidc-contract.md
+docs/30-design/arda-plat-300-tracking.md
+docs/80-liaison/arda-plat-200-impl-handoff-2607120135.md
+docs/80-liaison/arda-plat-210-catalog-reply-2607120135.md
+docs/80-liaison/arda-plat-220-boundary-reply-2607120135.md
+docs/80-liaison/arda-plat-230-mesh-optimization-reply-2607120135.md
+docs/80-liaison/arda-plat-240-had-trial-reply-2607121733.md
+docs/80-liaison/arda-plat-250-loose-coupling-reply-2607132030.md
+docs/80-liaison/arda-plat-260-303-ack-progress-2607140100.md
+docs/80-liaison/arda-plat-270-cutover-verify-2607140250.md
+docs/80-liaison/arda-plat-280-deeplink-p32-2607141540.md
+docs/80-liaison/arda-plat-290-taxonomy-hyphen-variant-2607170300.md

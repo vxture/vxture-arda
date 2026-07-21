@@ -140,7 +140,7 @@ Deploy sequence:
 1. Join tailnet (ephemeral tailscale node for the CI runner)
 2. Wait for `DEPLOY_HOST` to be reachable (ping step)
 3. Bootstrap `.env` if absent (`ENV_FILE_BASE64` secret -> base64 decode -> `etc/.env`)
-4. rsync `deploy/`, `configs/`, `docker-compose.yml` to `DEPLOY_REPO_DIR`
+4. rsync `deploy/`, `configs/`, `docker-compose.yml` to `DEPLOY_DIR`
 5. Stamp `VERSION` with `$GITHUB_SHA`
 6. SSH: `bash deploy.sh all` + `bash deploy.sh verify`
 
@@ -234,7 +234,7 @@ Each environment carries:
 | `DEPLOY_SSH_KEY` | SSH private key for the deploy user |
 | `DEPLOY_PORT` | SSH port (default 22) |
 | `DEPLOY_KNOWN_HOSTS` | SSH host key (optional; if absent, `ssh-keyscan` is used) |
-| `DEPLOY_REPO_DIR` | Override for the rsync target directory on the server |
+| `DEPLOY_DIR` | Override for the rsync target directory on the server |
 | `ENV_FILE_BASE64` | Base64-encoded `.env` for bootstrap deploy |
 | `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth client ID for CI ephemeral node |
 | `TAILSCALE_OAUTH_CLIENT_SECRET` | Tailscale OAuth secret |

@@ -62,9 +62,10 @@ enum QualityStatus {
 /// within its workspace (across the agents present in that workspace). `platform`
 /// = arda-ops-curated global reference data (approved standards, admin-division
 /// code tables, currency codes), read-only to ALL workspaces. Platform rows carry
-/// the reserved sentinel workspaceId "__platform__" (workspaceId is a plain column,
-/// not a FK, so no WorkspaceRef row is required); a tenant read overlays them via
-/// workspaceId IN (self, "__platform__"). Writing a `platform` row requires the
+/// workspaceId = NULL (NULL = platform-global) together with scope = platform
+/// (workspaceId is a plain column, not a FK, so no WorkspaceRef row is required;
+/// the two are tied by a CHECK); a tenant read overlays them via
+/// workspaceId = self OR workspaceId IS NULL. Writing a `platform` row requires the
 /// ops/platform role, never a tenant user. See docs/30-design/arda-data-150-multiagent-sharing.md.
 enum AssetScope {
   workspace
@@ -202,7 +203,7 @@ model Standard {
   usage       Int      @default(0)
   status      String   @default("draft") // published | draft | review
   // platform = ops-approved global reference (e.g. code sets like admin-division
-  // codes), read-only to all workspaces via the "__platform__" sentinel; workspace
+  // codes), read-only to all workspaces (workspaceId NULL); workspace
   // = tenant-local draft. Promotion workspace->platform is an ops action.
   scope       AssetScope @default(workspace)
   createdAt   DateTime @default(now())
@@ -226,14 +227,14 @@ model Standard {
 - `status`：发布状态，默认 `"draft"`（自由文本）；语义取值 `published | draft | review`。
 - `scope`：数据归属层，`AssetScope` 枚举，默认 `workspace`。取值：
   - `workspace`（默认）= 租户本地草稿：由某个 workspace 产出、隔离在该 workspace 内（叠加 `workspaceId` force-filter），只对本 workspace 可见。
-  - `platform` = 运营（arda-ops）通过的全局参考数据：如代码集 / 行政区划码表 / 币种码等**单一权威**的参照物，全平台**只读共享**。平台行用保留哨兵 `workspaceId="__platform__"`（`workspaceId` 是普通列非 FK，无需 `WorkspaceRef` 行），租户读经 `workspaceId IN (self, "__platform__")` 叠加取得；写平台行只允许 ops / 平台角色，**永不**由租户用户写。
+  - `platform` = 运营（arda-ops）通过的全局参考数据：如代码集 / 行政区划码表 / 币种码等**单一权威**的参照物，全平台**只读共享**。平台行用显式轴 `workspaceId=NULL`（NULL=平台全局，`workspaceId` 是普通列非 FK，无需 `WorkspaceRef` 行；`scope=platform` 与之由 CHECK 一致），租户读经 `workspaceId = self OR workspaceId IS NULL` 叠加取得；写平台行只允许 ops / 平台角色，**永不**由租户用户写。
   - **升格流**：一条标准从租户草稿升为全局参考走 `workspace-draft -> ops-approve -> platform-published`（租户起草 -> 运营审核 -> 平台发布）；进入 `platform` 层只经此运营升格路径（跨 workspace 授权访问是另一条点对点机制，见 [`data-160`](arda-data-160-cross-workspace-authorization.md)，不使数据进入平台层）。详见 [`data-150`](arda-data-150-multiagent-sharing.md)。
 - `createdAt`：创建时间，默认 `now()`。
 - `updatedAt`：更新时间，`@updatedAt` 自动维护。
 
 > `Standard` 是独立元数据表，**无 dataset FK**：数据标准（代码集 / 数据元）是可被多处引用的参照物，与主数据同属治理域（见 [`biz-230`](arda-biz-230-governance.md) 关于参考数据与主数据的归属）。
 >
-> `scope` 是**数据归属轴**（`AssetScope`，与 `GlossaryTerm.scope` 同枚举），不是隔离轴，隔离仍由 `workspaceId` force-filter 兜底。`platform` 承载 arda 运营策展的全局只读参考（运营改一次全平台生效），`workspace` 承载租户草稿；两者靠哨兵 `workspaceId="__platform__"` + `workspaceId IN (self, "__platform__")` 叠加读区分。三层归属与共享模型（arda 作 broker、内容字节从不在 arda 静置、跨 workspace 不流动）详见 [`data-150`](arda-data-150-multiagent-sharing.md)。
+> `scope` 是**数据归属轴**（`AssetScope`，与 `GlossaryTerm.scope` 同枚举），不是隔离轴，隔离仍由 `workspaceId` force-filter 兜底。`platform` 承载 arda 运营策展的全局只读参考（运营改一次全平台生效），`workspace` 承载租户草稿；两者靠显式轴 `workspaceId=NULL`（NULL=平台全局）+ `workspaceId = self OR workspaceId IS NULL` 叠加读区分。三层归属与共享模型（arda 作 broker、内容字节从不在 arda 静置、跨 workspace 不流动）详见 [`data-150`](arda-data-150-multiagent-sharing.md)。
 
 ### 2.5 LineageEdge
 

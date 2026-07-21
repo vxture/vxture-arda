@@ -11,6 +11,13 @@
 // `active_workspace`) and is force-filtered by it. It is a plain indexed column,
 // not a FK - workspace lifecycle is platform-owned, so rows must not depend on a
 // local WorkspaceRef existing first.
+//
+// Physical schemas (ADR-012 / data_platform_100 2.3.1): contract schemas
+// vx_provision (provisioning + webhook ledger), local_usage (usage buffer),
+// local_authz (product RBAC - EMPTY today, no models) + the product domain
+// schema `catalog` (all business tables). Prisma MODEL names are kept; only the
+// four contract tables are physically renamed via @@map. multiSchema requires
+// every model and enum to declare @@schema.
 
 // Prisma 7 Rust-free client (queryCompiler + driver adapter). Generated ESM
 // client lives under app/generated/prisma (gitignored, emitted at build).
@@ -21,6 +28,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["catalog", "local_authz", "local_usage", "vx_provision"]
 }
 
 /// Security classification of an asset (dataset-level in v1).
@@ -29,6 +37,8 @@ enum AssetLevel {
   internal
   sensitive
   core
+
+  @@schema("catalog")
 }
 
 /// Outcome of a single quality check run.
@@ -36,26 +46,38 @@ enum QualityStatus {
   pass
   warn
   fail
+
+  @@schema("catalog")
 }
 
-/// Data ownership scope. `workspace` = tenant-owned, isolated to and shared only
-/// within its workspace (across the agents present in that workspace). `platform`
-/// = arda-ops-curated global reference data (approved standards, admin-division
-/// code tables, currency codes), read-only to ALL workspaces. Platform rows carry
-/// the reserved sentinel workspaceId "__platform__" (workspaceId is a plain column,
-/// not a FK, so no WorkspaceRef row is required); a tenant read overlays them via
-/// workspaceId IN (self, "__platform__"). Writing a `platform` row requires the
-/// ops/platform role, never a tenant user. See docs/30-design/arda-data-150-multiagent-sharing.md.
+/// Data ownership scope - the EXPLICIT axis that distinguishes tenant data from
+/// platform-global reference data (data_platform_100 2.3.2: a product must NOT
+/// fabricate a workspace_id sentinel; workspace_id is platform-issued). `workspace`
+/// = tenant-owned, isolated to and shared only within its workspace (across the
+/// agents present in that workspace). `platform` = arda-ops-curated global
+/// reference data (approved standards, admin-division code tables, currency
+/// codes), read-only to ALL workspaces.
+///
+/// Platform rows carry `workspaceId = NULL` (NULL = platform-global; they belong
+/// to no workspace) together with `scope = platform`; the two are kept in lockstep
+/// (scope=platform iff workspaceId IS NULL). A tenant read overlays them via
+/// `workspaceId = self OR workspaceId IS NULL`. Writing a `platform` row requires
+/// the ops/platform role, never a tenant user. See
+/// docs/30-design/arda-data-150-multiagent-sharing.md.
 enum AssetScope {
   workspace
   platform
+
+  @@schema("catalog")
 }
 
 // --------------------------------------------------------------- assets ------
 
 model Dataset {
   id            String      @id @default(cuid())
-  workspaceId   String
+  // NULL = platform-global reference asset (scope=platform); otherwise the
+  // owning workspace. Plain indexed column, not a FK (data-110 1).
+  workspaceId   String?
   dataSourceId  String?
   name          String
   // Technical slug shown in the catalog (e.g. dw_customer_master).
@@ -80,6 +102,9 @@ model Dataset {
   // governance; lightweight v1 - matching/merge engines stay future.
   goldenRecord  Boolean     @default(false)
   classification AssetLevel @default(internal)
+  // platform = ops-curated global reference asset (workspaceId NULL), read-only
+  // overlay into every workspace; workspace = tenant-owned.
+  scope         AssetScope  @default(workspace)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -97,6 +122,7 @@ model Dataset {
   @@index([workspaceId, dataSourceId])
   @@index([workspaceId, domain])
   @@index([workspaceId, ownerApp])
+  @@schema("catalog")
 }
 
 model Tag {
@@ -108,6 +134,7 @@ model Tag {
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model DatasetTag {
@@ -120,20 +147,23 @@ model DatasetTag {
 
   @@id([datasetId, tagId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model GlossaryTerm {
   id            String  @id @default(cuid())
-  workspaceId   String
+  // NULL = platform-global term (scope=platform); otherwise the owning workspace.
+  workspaceId   String?
   term          String
   definition    String
   stewardUserId String?
-  // platform = ops-approved global glossary shared to all workspaces (sentinel
-  // workspaceId "__platform__"); workspace = tenant-local term.
+  // platform = ops-approved global glossary shared to all workspaces
+  // (workspaceId NULL); workspace = tenant-local term.
   scope         AssetScope @default(workspace)
 
   @@unique([workspaceId, term])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // ----------------------------------------------------------- integration -----
@@ -160,6 +190,7 @@ model DataSource {
 
   @@index([workspaceId])
   @@index([orgId])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------------- governance ----
@@ -175,6 +206,7 @@ model Policy {
   createdAt   DateTime @default(now())
 
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// Data access / sharing request (Sec-BL4): a workspace member asks for access
@@ -200,6 +232,7 @@ model AccessRequest {
 
   @@index([workspaceId])
   @@index([workspaceId, status])
+  @@schema("catalog")
 }
 
 model QualityRule {
@@ -220,6 +253,7 @@ model QualityRule {
   @@unique([workspaceId, code])
   @@index([workspaceId])
   @@index([datasetId])
+  @@schema("catalog")
 }
 
 model QualityResult {
@@ -239,12 +273,14 @@ model QualityResult {
   @@index([workspaceId])
   @@index([ruleId])
   @@index([datasetId])
+  @@schema("catalog")
 }
 
 /// Data standard: a code set or data element reference (metadata governance).
 model Standard {
   id          String   @id @default(cuid())
-  workspaceId String
+  // NULL = platform-global standard (scope=platform); otherwise owning workspace.
+  workspaceId String?
   code        String // e.g. STD-001
   name        String
   type        String // code-set | data-element
@@ -253,8 +289,8 @@ model Standard {
   usage       Int      @default(0)
   status      String   @default("draft") // published | draft | review
   // platform = ops-approved global reference (e.g. code sets like admin-division
-  // codes), read-only to all workspaces via the "__platform__" sentinel; workspace
-  // = tenant-local draft. Promotion workspace->platform is an ops action.
+  // codes), read-only to all workspaces (workspaceId NULL); workspace =
+  // tenant-local draft. Promotion workspace->platform is an ops action.
   scope       AssetScope @default(workspace)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -262,6 +298,7 @@ model Standard {
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 model LineageEdge {
@@ -277,6 +314,7 @@ model LineageEdge {
 
   @@unique([upstreamDatasetId, downstreamDatasetId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // --------------------------------------------------------------- services ----
@@ -304,16 +342,17 @@ model DataService {
 
   @@unique([workspaceId, code])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// S-BL1 (biz-431): dataset-level standard-compliance association. Column-level
 /// compliance rides the future Field model. workspaceId is a denormalized carry
-/// column (data-110 3.2); platform-scope standards may be referenced by any
-/// workspace (read-only overlay).
+/// column (data-110 3.2), NULL for platform-global links; platform-scope
+/// standards may be referenced by any workspace (read-only overlay).
 model DatasetStandard {
   datasetId   String
   standardId  String
-  workspaceId String
+  workspaceId String?
 
   dataset  Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
   standard Standard @relation(fields: [standardId], references: [id], onDelete: Cascade)
@@ -321,6 +360,7 @@ model DatasetStandard {
   @@id([datasetId, standardId])
   @@index([workspaceId])
   @@index([standardId])
+  @@schema("catalog")
 }
 
 model DataServiceDataset {
@@ -333,6 +373,7 @@ model DataServiceDataset {
 
   @@id([dataServiceId, datasetId])
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------------------ admin ----
@@ -352,6 +393,7 @@ model ApiKey {
   service DataService? @relation(fields: [dataServiceId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId])
+  @@schema("catalog")
 }
 
 /// Activity + platform-command audit (seed/wipe/invalidate, ADR section 5.1).
@@ -367,6 +409,7 @@ model AuditLog {
 
   @@index([workspaceId])
   @@index([workspaceId, createdAt])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------- infrastructure ------
@@ -375,6 +418,7 @@ model AuditLog {
 /// arda does NOT own workspace lifecycle (create/clone/delete = platform).
 /// tenantId and plan are set by the C3 provisioning webhook on first provisioning.
 /// status: provisioned | deprovisioned (deprovisioned rows retained for audit).
+/// Physical: vx_provision.app_instance (ADR-012).
 model WorkspaceRef {
   id         String   @id // = platform/IdP active_workspace
   orgId      String
@@ -393,14 +437,15 @@ model WorkspaceRef {
   @@index([orgId])
   @@index([wipedAt])
   @@index([status])
+  @@map("app_instance")
+  @@schema("vx_provision")
 }
 
-/// Idempotency + seq tracking for inbound C3 provisioning webhook events.
-/// Logical schema: context.
-/// Per-event dedup: id is the platform-assigned delivery uuid.
-/// Seq is per (workspaceId, product) monotonic; stale events (seq <= lastSeq) are
-/// ignored without error per handoff §2 wire contract.
-model ProvisioningEvent {
+/// Per-delivery idempotency ledger for inbound C3 provisioning webhook events
+/// (vx_provision.webhook_delivery). id = platform delivery uuid; a repeat
+/// delivery id is a duplicate. The processed-seq watermark lives in ProvisionSeq
+/// (provision_seq), split out per ADR-012 / data_platform_100 2.3.1.
+model WebhookDelivery {
   id          String   @id // platform delivery uuid (x-vxture-delivery header)
   workspaceId String
   tenantId    String
@@ -410,6 +455,23 @@ model ProvisioningEvent {
   processedAt DateTime @default(now())
 
   @@index([workspaceId])
+  @@map("webhook_delivery")
+  @@schema("vx_provision")
+}
+
+/// Processed-seq watermark per (workspaceId, productCode) for inbound C3
+/// provisioning events (vx_provision.provision_seq). Replaces the old
+/// MAX(seq)-over-the-ledger derivation with an explicit watermark row: an event
+/// with seq <= lastSeq is stale (handoff SS2 wire contract).
+model ProvisionSeq {
+  workspaceId String
+  productCode String   @default("arda")
+  lastSeq     Int
+  updatedAt   DateTime @updatedAt
+
+  @@id([workspaceId, productCode])
+  @@map("provision_seq")
+  @@schema("vx_provision")
 }
 
 /// Read-only, versioned sample-data templates (global, platform/ops-curated).
@@ -419,6 +481,8 @@ model SeedTemplate {
   name      String
   createdAt DateTime          @default(now())
   versions  TemplateVersion[]
+
+  @@schema("catalog")
 }
 
 model TemplateVersion {
@@ -431,13 +495,14 @@ model TemplateVersion {
   template SeedTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, version])
+  @@schema("catalog")
 }
 
 // ------------------------------------------------------- local_usage ----------
 
 /// C3 usage buffer: records are written on each billable action and flushed to
 /// the platform consume endpoint (POST /usage/consume) by the ConsumeFlushJob.
-/// Logical schema: local_usage.
+/// Physical: local_usage.raw (ADR-012).
 /// idempotencyKey: caller-supplied; replayed platform calls return replayed:true.
 /// flushed: false until the platform consume call returns 200 or 409 (quota
 /// exhausted counts as consumed). Failed calls remain flushed=false for retry.
@@ -456,4 +521,6 @@ model UsageRaw {
 
   @@index([flushed, createdAt])
   @@index([workspaceId])
+  @@map("raw")
+  @@schema("local_usage")
 }

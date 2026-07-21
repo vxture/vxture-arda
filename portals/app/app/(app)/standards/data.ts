@@ -1,9 +1,5 @@
 import { prisma } from "../../lib/db";
 
-/** Reserved sentinel workspaceId for arda-ops-curated platform reference data,
- *  overlaid read-only into every workspace (schema AssetScope). */
-const PLATFORM_WS = "__platform__";
-
 /** Workspace-scoped data access for Data Standards, overlaid with the
  *  platform-provided standards (read-only). Metrics are computed from the rows,
  *  so they stay honest to what is actually catalogued. */
@@ -32,8 +28,9 @@ export interface StandardsData {
 }
 
 export async function getStandards(workspaceId: string): Promise<StandardsData> {
+  // Overlay: own workspace + platform-global rows (workspaceId NULL), read-only.
   const rows = await prisma.standard.findMany({
-    where: { workspaceId: { in: [workspaceId, PLATFORM_WS] } },
+    where: { OR: [{ workspaceId }, { workspaceId: null }] },
     orderBy: [{ workspaceId: "asc" }, { code: "asc" }],
   });
   const standards: StandardView[] = rows.map((s) => ({
@@ -45,7 +42,7 @@ export async function getStandards(workspaceId: string): Promise<StandardsData> 
     items: s.items,
     usage: s.usage,
     status: s.status,
-    platform: s.workspaceId === PLATFORM_WS,
+    platform: s.workspaceId === null,
   }));
   const metrics: StandardsMetrics = {
     elements: standards.filter((s) => s.type === "data-element").length,

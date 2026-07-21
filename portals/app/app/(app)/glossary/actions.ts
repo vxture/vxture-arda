@@ -13,7 +13,7 @@ export type CreateTermResult =
 
 /**
  * Create a workspace glossary term (MD-BL3 curation). Writes are always
- * tenant-local: the platform overlay row ("__platform__") is ops-only and
+ * tenant-local: the platform overlay rows (workspaceId NULL) are ops-only and
  * unreachable from here by construction (workspaceId comes from the session).
  * Audited (MD-BL6 metadata-change audit point).
  */

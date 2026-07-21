@@ -12,8 +12,20 @@
 -- ADD COLUMN IF NOT EXISTS forms (governance #7 live-db increments).
 -- Service role + column locks live in 97_service_role.sql / 98_column_locks.sql.
 
--- CreateSchema
+-- CreateSchema (ADR-012 physical split: contract schemas + domain schema).
+-- Contract-facing (platform-constrained): vx_provision, local_usage, local_authz
+-- (local_authz is EMPTY today - no product RBAC yet). Domain schema: catalog.
 CREATE SCHEMA IF NOT EXISTS "public";
+CREATE SCHEMA IF NOT EXISTS "vx_provision";
+CREATE SCHEMA IF NOT EXISTS "local_authz";
+CREATE SCHEMA IF NOT EXISTS "local_usage";
+CREATE SCHEMA IF NOT EXISTS "catalog";
+
+-- Domain objects below are created UNQUALIFIED and land in `catalog` via this
+-- search_path (single psql session per file); only the four contract tables are
+-- schema-qualified explicitly. Prisma queries are always fully qualified from
+-- @@schema, so the running app never relies on this search_path.
+SET search_path TO "catalog", "vx_provision", "local_usage", "public";
 
 -- CreateEnum
 CREATE TYPE "AssetLevel" AS ENUM ('public', 'internal', 'sensitive', 'core');
@@ -27,7 +39,8 @@ CREATE TYPE "AssetScope" AS ENUM ('workspace', 'platform');
 -- CreateTable
 CREATE TABLE "Dataset" (
     "id" TEXT NOT NULL,
-    "workspaceId" TEXT NOT NULL,
+    -- NULL = platform-global reference asset (scope=platform); see AssetScope.
+    "workspaceId" TEXT,
     "dataSourceId" TEXT,
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
@@ -43,10 +56,14 @@ CREATE TABLE "Dataset" (
     "ownerApp" TEXT,
     "goldenRecord" BOOLEAN NOT NULL DEFAULT false,
     "classification" "AssetLevel" NOT NULL DEFAULT 'internal',
+    "scope" "AssetScope" NOT NULL DEFAULT 'workspace',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Dataset_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Dataset_pkey" PRIMARY KEY ("id"),
+    -- Explicit-axis invariant (data_platform_100 2.3.2): a platform-global row
+    -- carries NULL workspaceId, a workspace row a non-null one; the two agree.
+    CONSTRAINT "Dataset_scope_ws_ck" CHECK (("scope" = 'platform') = ("workspaceId" IS NULL))
 );
 
 -- CreateTable
@@ -71,13 +88,15 @@ CREATE TABLE "DatasetTag" (
 -- CreateTable
 CREATE TABLE "GlossaryTerm" (
     "id" TEXT NOT NULL,
-    "workspaceId" TEXT NOT NULL,
+    -- NULL = platform-global term (scope=platform); see AssetScope.
+    "workspaceId" TEXT,
     "term" TEXT NOT NULL,
     "definition" TEXT NOT NULL,
     "stewardUserId" TEXT,
     "scope" "AssetScope" NOT NULL DEFAULT 'workspace',
 
-    CONSTRAINT "GlossaryTerm_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "GlossaryTerm_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "GlossaryTerm_scope_ws_ck" CHECK (("scope" = 'platform') = ("workspaceId" IS NULL))
 );
 
 -- CreateTable
@@ -164,7 +183,8 @@ CREATE TABLE "QualityResult" (
 -- CreateTable
 CREATE TABLE "Standard" (
     "id" TEXT NOT NULL,
-    "workspaceId" TEXT NOT NULL,
+    -- NULL = platform-global standard (scope=platform); see AssetScope.
+    "workspaceId" TEXT,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
@@ -176,7 +196,8 @@ CREATE TABLE "Standard" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Standard_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Standard_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "Standard_scope_ws_ck" CHECK (("scope" = 'platform') = ("workspaceId" IS NULL))
 );
 
 -- CreateTable
@@ -217,7 +238,8 @@ CREATE TABLE "DataService" (
 CREATE TABLE "DatasetStandard" (
     "datasetId" TEXT NOT NULL,
     "standardId" TEXT NOT NULL,
-    "workspaceId" TEXT NOT NULL,
+    -- NULL for platform-global links (carry column, denormalized; data-110 3.2).
+    "workspaceId" TEXT,
 
     CONSTRAINT "DatasetStandard_pkey" PRIMARY KEY ("datasetId","standardId")
 );
@@ -261,8 +283,8 @@ CREATE TABLE "AuditLog" (
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "WorkspaceRef" (
+-- CreateTable (vx_provision.app_instance <- WorkspaceRef; ADR-012)
+CREATE TABLE "vx_provision"."app_instance" (
     "id" TEXT NOT NULL,
     "orgId" TEXT NOT NULL,
     "tenantId" TEXT,
@@ -273,11 +295,11 @@ CREATE TABLE "WorkspaceRef" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "WorkspaceRef_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "app_instance_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "ProvisioningEvent" (
+-- CreateTable (vx_provision.webhook_delivery <- ProvisioningEvent dedup ledger; ADR-012)
+CREATE TABLE "vx_provision"."webhook_delivery" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
@@ -286,7 +308,17 @@ CREATE TABLE "ProvisioningEvent" (
     "plan" TEXT,
     "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "ProvisioningEvent_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "webhook_delivery_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable (vx_provision.provision_seq: per (workspaceId, productCode) seq watermark; ADR-012)
+CREATE TABLE "vx_provision"."provision_seq" (
+    "workspaceId" TEXT NOT NULL,
+    "productCode" TEXT NOT NULL DEFAULT 'arda',
+    "lastSeq" INTEGER NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "provision_seq_pkey" PRIMARY KEY ("workspaceId","productCode")
 );
 
 -- CreateTable
@@ -309,8 +341,8 @@ CREATE TABLE "TemplateVersion" (
     CONSTRAINT "TemplateVersion_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "UsageRaw" (
+-- CreateTable (local_usage.raw <- UsageRaw; ADR-012)
+CREATE TABLE "local_usage"."raw" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "product" TEXT NOT NULL DEFAULT 'arda',
@@ -323,7 +355,7 @@ CREATE TABLE "UsageRaw" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "flushedAt" TIMESTAMP(3),
 
-    CONSTRAINT "UsageRaw_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "raw_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -341,6 +373,12 @@ CREATE INDEX "Dataset_workspaceId_ownerApp_idx" ON "Dataset"("workspaceId", "own
 -- CreateIndex
 CREATE UNIQUE INDEX "Dataset_workspaceId_code_key" ON "Dataset"("workspaceId", "code");
 
+-- Platform namespace uniqueness: workspaceId IS NULL rows are all-distinct under
+-- the composite index above (NULLs never conflict), so a partial unique index
+-- enforces per-code uniqueness across platform-global reference assets. This is
+-- the ON CONFLICT arbiter platform-seed.sql targets.
+CREATE UNIQUE INDEX "Dataset_platform_code_key" ON "Dataset"("code") WHERE "workspaceId" IS NULL;
+
 -- CreateIndex
 CREATE INDEX "Tag_workspaceId_idx" ON "Tag"("workspaceId");
 
@@ -355,6 +393,9 @@ CREATE INDEX "GlossaryTerm_workspaceId_idx" ON "GlossaryTerm"("workspaceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "GlossaryTerm_workspaceId_term_key" ON "GlossaryTerm"("workspaceId", "term");
+
+-- Platform namespace uniqueness (see Dataset_platform_code_key rationale).
+CREATE UNIQUE INDEX "GlossaryTerm_platform_term_key" ON "GlossaryTerm"("term") WHERE "workspaceId" IS NULL;
 
 -- CreateIndex
 CREATE INDEX "DataSource_workspaceId_idx" ON "DataSource"("workspaceId");
@@ -390,6 +431,9 @@ CREATE INDEX "Standard_workspaceId_idx" ON "Standard"("workspaceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Standard_workspaceId_code_key" ON "Standard"("workspaceId", "code");
+
+-- Platform namespace uniqueness (see Dataset_platform_code_key rationale).
+CREATE UNIQUE INDEX "Standard_platform_code_key" ON "Standard"("code") WHERE "workspaceId" IS NULL;
 
 -- CreateIndex
 CREATE INDEX "LineageEdge_workspaceId_idx" ON "LineageEdge"("workspaceId");
@@ -427,29 +471,29 @@ CREATE INDEX "AuditLog_workspaceId_idx" ON "AuditLog"("workspaceId");
 -- CreateIndex
 CREATE INDEX "AuditLog_workspaceId_createdAt_idx" ON "AuditLog"("workspaceId", "createdAt");
 
--- CreateIndex
-CREATE INDEX "WorkspaceRef_orgId_idx" ON "WorkspaceRef"("orgId");
+-- CreateIndex (contract tables in vx_provision - qualified)
+CREATE INDEX "app_instance_orgId_idx" ON "vx_provision"."app_instance"("orgId");
 
 -- CreateIndex
-CREATE INDEX "WorkspaceRef_wipedAt_idx" ON "WorkspaceRef"("wipedAt");
+CREATE INDEX "app_instance_wipedAt_idx" ON "vx_provision"."app_instance"("wipedAt");
 
 -- CreateIndex
-CREATE INDEX "WorkspaceRef_status_idx" ON "WorkspaceRef"("status");
+CREATE INDEX "app_instance_status_idx" ON "vx_provision"."app_instance"("status");
 
 -- CreateIndex
-CREATE INDEX "ProvisioningEvent_workspaceId_idx" ON "ProvisioningEvent"("workspaceId");
+CREATE INDEX "webhook_delivery_workspaceId_idx" ON "vx_provision"."webhook_delivery"("workspaceId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "TemplateVersion_templateId_version_key" ON "TemplateVersion"("templateId", "version");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UsageRaw_idempotencyKey_key" ON "UsageRaw"("idempotencyKey");
+CREATE UNIQUE INDEX "raw_idempotencyKey_key" ON "local_usage"."raw"("idempotencyKey");
 
 -- CreateIndex
-CREATE INDEX "UsageRaw_flushed_createdAt_idx" ON "UsageRaw"("flushed", "createdAt");
+CREATE INDEX "raw_flushed_createdAt_idx" ON "local_usage"."raw"("flushed", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "UsageRaw_workspaceId_idx" ON "UsageRaw"("workspaceId");
+CREATE INDEX "raw_workspaceId_idx" ON "local_usage"."raw"("workspaceId");
 
 -- AddForeignKey
 ALTER TABLE "Dataset" ADD CONSTRAINT "Dataset_dataSourceId_fkey" FOREIGN KEY ("dataSourceId") REFERENCES "DataSource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
