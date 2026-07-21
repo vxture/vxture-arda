@@ -178,6 +178,9 @@ jobs:
           remote_env=(
             "REPO_DIR=$deploy_dir"
             "IMAGE_TAG=$IMAGE_TAG"
+            # A rollback has no release tag; mark APP_VERSION honestly so the
+            # /api/health block reads "rollback" rather than a stale/dev value.
+            "APP_VERSION=rollback"
             "ALIYUN_ACR_REGISTRY=$ALIYUN_ACR_REGISTRY"
             "ALIYUN_ACR_NAMESPACE=$ALIYUN_ACR_NAMESPACE"
             "ALIYUN_ACR_USERNAME=$ALIYUN_ACR_USERNAME"

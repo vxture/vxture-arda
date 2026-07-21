@@ -56,17 +56,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3230
 # Build provenance for the /api/health identity block (org standard 025).
-# CI passes these as build-args from the release tag / commit / build date;
-# honest defaults ("dev"/"unknown") when absent - never hardcoded. buildTime is
-# an ISO-8601 image build timestamp. DEPLOY_STAGE (the runtime environment) is
-# NOT baked here: it is set per stack at runtime (compose/etc.env) so the same
-# image reports its true stage and a retagged prod image never inherits a beta
-# stage.
-ARG APP_VERSION=dev
+# GIT_SHA + BUILD_TIME are IMAGE properties, baked from CI build-args (commit /
+# ISO-8601 build date), correct even when the image is retagged; honest
+# "unknown" default. APP_VERSION (deploy git tag) and DEPLOY_STAGE (runtime
+# environment) are deliberately NOT baked - they are injected per deployment via
+# compose (deploy.yml passes APP_VERSION; etc.env sets DEPLOY_STAGE), so a
+# retagged image reports its true release + stage rather than the build tag.
 ARG GIT_SHA=unknown
 ARG BUILD_TIME=unknown
-ENV APP_VERSION=${APP_VERSION} \
-    GIT_SHA=${GIT_SHA} \
+ENV GIT_SHA=${GIT_SHA} \
     BUILD_TIME=${BUILD_TIME}
 # No prisma CLI in the runtime image: DB structure is owned by the hand-written
 # DDL under deploy/database/ddl/ and applied only via the db-init workflow

@@ -206,7 +206,6 @@ jobs:
           # into the exported gha layer cache (mode=max), leaking the token.
           build-args: |
             VXTURE_NPM_REGISTRY=${{ env.VXTURE_NPM_REGISTRY }}
-            APP_VERSION=${{ steps.meta.outputs.ref_tag }}
             GIT_SHA=${{ steps.meta.outputs.short_sha }}
             BUILD_TIME=${{ steps.meta.outputs.build_time }}
           secrets: |

@@ -49,10 +49,13 @@ services:
       - "${APP_PUBLISH_PORT:-3230}:3230"
     environment:
       PORT: "3230"
-      # Runtime environment for the /api/health identity block (025): production
-      # | beta | dev. Set per stack (deploy/env/*.env); NOT baked into the image,
-      # so the same image reports its true stage. Honest fallback is dev.
+      # Runtime provenance for the /api/health identity block (025), set per
+      # deployment - NOT baked into the image, so a retagged image always reports
+      # its true stage/release. DEPLOY_STAGE is per-stack (deploy/env/*.env);
+      # APP_VERSION is the deploy git tag, injected by deploy.yml at `up` time.
+      # Both fall back honestly to dev.
       DEPLOY_STAGE: "${DEPLOY_STAGE:-dev}"
+      APP_VERSION: "${APP_VERSION:-dev}"
       # -- OIDC RP (Vxture App Integration Standard v1.0) --------------------
       OIDC_ISSUER: "${OIDC_ISSUER:-}"
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-arda}"

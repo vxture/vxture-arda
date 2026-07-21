@@ -203,6 +203,10 @@ jobs:
           DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
           PASSED_SHA: ${{ github.sha }}
           IMAGE_TAG: ${{ needs.call-build.outputs.image_tag }}
+          # The pushed release tag (beta-YYYYMMDD.N / vX.Y.Z) -> APP_VERSION for
+          # the /api/health identity block, injected at runtime so a retagged
+          # image reports its true deploy tag (025 version = deploy git tag).
+          RELEASE_TAG: ${{ github.ref_name }}
           ALIYUN_ACR_REGISTRY: ${{ vars.ALIYUN_ACR_REGISTRY }}
           ALIYUN_ACR_NAMESPACE: ${{ vars.ALIYUN_ACR_NAMESPACE }}
           ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
@@ -321,6 +325,7 @@ jobs:
             "REPO_DIR=$deploy_dir"
             "PASSED_SHA=$PASSED_SHA"
             "IMAGE_TAG=$image_tag"
+            "APP_VERSION=$RELEASE_TAG"
             "ALIYUN_ACR_REGISTRY=$ALIYUN_ACR_REGISTRY"
             "ALIYUN_ACR_NAMESPACE=$ALIYUN_ACR_NAMESPACE"
             "ALIYUN_ACR_USERNAME=$ALIYUN_ACR_USERNAME"
