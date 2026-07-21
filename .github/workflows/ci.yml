@@ -166,7 +166,7 @@ jobs:
 
       - name: Set up pnpm
         if: ${{ steps.changes.outputs.run_build == 'true' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: "10.30.3"
 
@@ -280,7 +280,7 @@ jobs:
 
       - name: Set up pnpm
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: "10.30.3"
 
