@@ -26,8 +26,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0(@phosphor-icons/react@2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next-themes@0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss@4.3.3)
       '@vxture/shared':
-        specifier: ^1.4.0
-        version: 1.4.0
+        specifier: ^1.5.0
+        version: 1.5.0
       ioredis:
         specifier: ^5.4.1
         version: 5.11.1
@@ -81,8 +81,8 @@ importers:
         specifier: '*'
         version: 2.0.0(@phosphor-icons/react@2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(next-themes@0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss-animate@1.0.7(tailwindcss@4.3.3))(tailwindcss@4.3.3)
       '@vxture/shared':
-        specifier: '*'
-        version: 1.4.0
+        specifier: ^1.5.0
+        version: 1.5.0
       next:
         specifier: ^16.2.10
         version: 16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1282,8 +1282,8 @@ packages:
       tailwindcss: ^4.2.1
       tailwindcss-animate: ^1.0.7
 
-  '@vxture/shared@1.4.0':
-    resolution: {integrity: sha512-ZzftVEI3JVGyzEw61Zs6+L1e/hKH1eQ0cUA7TXmpxCit/JoDlfoQkf+owF873g9X/eI1larDeOsLac85oP4Qpw==, tarball: https://npm.pkg.github.com/download/@vxture/shared/1.4.0/628cf36444059561840456d9c4fc85206f306d05}
+  '@vxture/shared@1.5.0':
+    resolution: {integrity: sha512-CWvPB6Rua/QLvR9NODSpjJS+Absi7XeuV4+Zr6Uduqa2Xz61CGJ5ku/PRA0CV1jDcZtl20DvS45rnFPSPmZP9A==, tarball: https://npm.pkg.github.com/download/@vxture/shared/1.5.0/7b3aede526045dff4fc91e852343e579548ff420}
     engines: {node: '>=22.0.0'}
 
   ajv@8.20.0:
@@ -3062,7 +3062,7 @@ snapshots:
       '@radix-ui/react-switch': 1.3.4(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-tabs': 1.1.18(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-tooltip': 1.2.13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@vxture/shared': 1.4.0
+      '@vxture/shared': 1.5.0
       clsx: 2.1.1
       next-themes: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
@@ -3074,7 +3074,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@vxture/shared@1.4.0': {}
+  '@vxture/shared@1.5.0': {}
 
   ajv@8.20.0:
     dependencies:
