@@ -93,12 +93,12 @@ The repo is an npm workspace rooted at `portals/` (members `app` and
 `packages/shared`). Design-system and shared packages `@vxture/design-system`
 and `@vxture/shared` are pulled from GitHub Packages; the local shared package
 is `@arda/shared`. A `NODE_AUTH_TOKEN` with read access to GitHub Packages must
-be set so `npm ci` can resolve the `@vxture` scope (see root `.npmrc`).
+be set so `pnpm install` can resolve the `@vxture` scope (see `portals/.npmrc`).
 
 ```bash
 cd portals
-npm ci
-npm run dev -w @arda/app   # http://localhost:3230
+pnpm install
+pnpm --filter @arda/app run dev   # http://localhost:3230
 ```
 
 If local Vxture SSO origin checks are enabled, allow `http://localhost:3230` as

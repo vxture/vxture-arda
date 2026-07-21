@@ -9,7 +9,7 @@
 .npmrc
 # The workspace .npmrc files only declare the @vxture GitHub Packages registry
 # and reference ${NODE_AUTH_TOKEN} (no literal secret). They MUST be committed so
-# CI `npm ci` can resolve @vxture/* packages.
+# CI `pnpm install` can resolve @vxture/* packages.
 !.npmrc
 !portals/.npmrc
 

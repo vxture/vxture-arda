@@ -1,0 +1,5 @@
+# pnpm workspace (migrated from npm workspaces; rectification D4).
+# Members mirror the former package.json "workspaces" field.
+packages:
+  - app
+  - packages/*

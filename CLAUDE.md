@@ -110,7 +110,7 @@ image (SARIF -> Security tab, never blocks). `deploy.yml`/`seed-demo-data.yml`/
 `rollback.yml` share their tailnet-join + SSH-key-prep steps via the
 `.github/actions/tailnet-ssh-connect` composite action - it takes every value
 as an input from the caller's own secrets/vars, never stores credentials
-itself. `.github/dependabot.yml` covers the npm workspace (`@vxture/*` grouped
+itself. `.github/dependabot.yml` covers the pnpm workspace (`@vxture/*` grouped
 and excluded from auto-bump - that moves on its own release cadence) and
 GitHub Actions versions.
 
@@ -132,7 +132,7 @@ whatever is already at that commit on `main`, it does not re-verify the gates.
 - `docker compose --env-file .env.example config` validation
 
 `audit` is a separate required check: `osv-scanner` (pinned binary) scans
-`portals/package-lock.json` for known dependency vulnerabilities, hard-blocking
+`portals/pnpm-lock.yaml` for known dependency vulnerabilities, hard-blocking
 on any new finding. Exceptions (dev-only/build-time-only transitive deps that
 never reach the deployed image) are recorded in `.osv-scanner.toml` with a
 reason, per-package-version - never suppressed by removing the check.

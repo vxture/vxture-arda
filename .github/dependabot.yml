@@ -1,6 +1,7 @@
 version: 2
 updates:
-  # npm workspace root (portals/ - covers @arda/app and @arda/shared members).
+  # pnpm workspace root (portals/ - covers @arda/app and @arda/shared members).
+  # Dependabot's "npm" ecosystem reads pnpm-lock.yaml too.
   - package-ecosystem: npm
     directory: /portals
     schedule:

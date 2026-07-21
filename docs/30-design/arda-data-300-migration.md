@@ -57,7 +57,7 @@
 
 | 项 | 现状 | 目标态（ADR §4） |
 |---|---|---|
-| 填充方式 | `prisma/seed.ts` + `npm run db:seed`，硬编码 `SEED_WORKSPACE_ID=dev-ws-001` | 平台建 workspace + 标记 `seedStatus` -> arda 首次进入按 `SeedTemplate` 克隆进真实 `workspaceId` |
+| 填充方式 | `prisma/seed.ts` + `pnpm --filter @arda/app run db:seed`，硬编码 `SEED_WORKSPACE_ID=dev-ws-001` | 平台建 workspace + 标记 `seedStatus` -> arda 首次进入按 `SeedTemplate` 克隆进真实 `workspaceId` |
 | 是否在部署跑 | **否**（仅本地/CI 手动） | 由用户首次进入触发，非部署时机 |
 | 结果 | beta/prod 的真实 workspace **当前是空态** | 有数据可视 |
 | Schema 就位度 | `WorkspaceRef.seedStatus`、`SeedTemplate`/`TemplateVersion` 已建表 | 克隆执行逻辑待实现 |

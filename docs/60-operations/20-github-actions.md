@@ -55,10 +55,10 @@ Four parallel jobs (`audit` is an independent required check, not part of the
 - First step diffs against the PR base to decide if the build is needed at
   all - skipped (job still succeeds) when every changed path is docs/root-meta
   only; fails open (runs the build) if the diff can't be determined
-- `npm ci` (workspace install from `portals/`, with co-located `.npmrc` workaround)
-- `npm run type-check -w ./app` (TypeScript type check)
-- `npm run build -w ./app` (Next.js production build)
-- Next.js build cache keyed by `package-lock.json` hash + SHA for incremental builds
+- `pnpm install --frozen-lockfile` (workspace install from `portals/`, committed `.npmrc`)
+- `pnpm --filter @arda/app run type-check` (TypeScript type check)
+- `pnpm --filter @arda/app run build` (Next.js production build)
+- Next.js build cache keyed by `pnpm-lock.yaml` hash + SHA for incremental builds
 
 ### `secret-scan`
 
@@ -68,7 +68,7 @@ Four parallel jobs (`audit` is an independent required check, not part of the
 
 ### `audit` - SCA (dependency vulnerability) gate
 
-- `osv-scanner scan -L portals/package-lock.json --config .osv-scanner.toml`
+- `osv-scanner scan -L portals/pnpm-lock.yaml --config .osv-scanner.toml`
   (pinned binary v2.4.0, cached across runs by version)
 - Hard-blocks on any new finding - fix (upgrade/override) or explicitly accept
   in `.osv-scanner.toml` with a `[[PackageOverrides]]` entry (name+version

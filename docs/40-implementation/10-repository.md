@@ -58,10 +58,11 @@ vxture-arda/
 |   |-- 50-deployment/
 |   |-- 60-operations/
 |   `-- 90-memory/
-|-- portals/                      # npm workspace root (Node.js 22+)
-|   |-- package.json              # Workspace: app, packages/shared
-|   |-- package-lock.json
-|   |-- .npmrc                    # GitHub Packages auth (copied per CI workaround)
+|-- portals/                      # pnpm workspace root (Node.js 22+)
+|   |-- package.json              # Root manifest (packageManager: pnpm)
+|   |-- pnpm-workspace.yaml       # Workspace members: app, packages/shared
+|   |-- pnpm-lock.yaml
+|   |-- .npmrc                    # GitHub Packages auth + node-linker=hoisted
 |   |-- .dockerignore
 |   |-- app/                      # @arda/app - the Next.js application
 |   `-- packages/

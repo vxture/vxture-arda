@@ -194,7 +194,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
         [
             "name: audit",
             "osv-scanner scan",
-            "-L portals/package-lock.json",
+            "-L portals/pnpm-lock.yaml",
             "--config .osv-scanner.toml",
         ],
     ),

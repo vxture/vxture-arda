@@ -164,41 +164,43 @@ jobs:
             echo "decide: source-relevant change - running build"
           fi
 
+      - name: Set up pnpm
+        if: ${{ steps.changes.outputs.run_build == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.30.3"
+
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: portals/package-lock.json
+          cache: pnpm
+          cache-dependency-path: portals/pnpm-lock.yaml
 
       - name: Restore Next.js build cache
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         uses: actions/cache@v6
         with:
           path: portals/app/.next/cache
-          key: nextcache-app-${{ hashFiles('portals/package-lock.json') }}-${{ github.sha }}
+          key: nextcache-app-${{ hashFiles('portals/pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
-            nextcache-app-${{ hashFiles('portals/package-lock.json') }}-
+            nextcache-app-${{ hashFiles('portals/pnpm-lock.yaml') }}-
             nextcache-app-
 
-      # Install the whole npm workspace once from the portals/ root with a
-      # co-located .npmrc (no --prefix), mirroring the app Dockerfile.
-      # A co-located .npmrc is required because npm authenticates the package
-      # metadata request but drops the token on the GitHub Packages /download/
-      # tarball fetch, so @vxture downloads fail 401 ("authentication token not
-      # provided") without it. The placeholder is written literally; npm
-      # substitutes NODE_AUTH_TOKEN from the environment, so the secret never
-      # passes through the shell.
+      # Install the whole pnpm workspace from portals/. The committed
+      # portals/.npmrc declares the @vxture registry, node-linker=hoisted, and a
+      # `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` line pnpm expands
+      # from the job env - so the secret never passes through the shell and no
+      # .npmrc is written at build time. A co-located .npmrc is required because
+      # the token is dropped on the GitHub Packages tarball fetch otherwise.
       - name: Install dependencies
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         shell: bash
         working-directory: portals
         run: |
           set -euo pipefail
-          printf '@vxture:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
-          trap 'rm -f .npmrc' EXIT
-          npm ci
+          pnpm install --frozen-lockfile
 
       - name: Type check
         if: ${{ steps.changes.outputs.run_build == 'true' }}
@@ -206,7 +208,7 @@ jobs:
         working-directory: portals
         run: |
           set -euo pipefail
-          npm run type-check -w ./app
+          pnpm --filter @arda/app run type-check
 
       - name: Production build
         if: ${{ steps.changes.outputs.run_build == 'true' }}
@@ -214,7 +216,7 @@ jobs:
         working-directory: portals
         run: |
           set -euo pipefail
-          npm run build -w ./app
+          pnpm --filter @arda/app run build
 
   # Unit test gate. Independent required check (org standard 140 SS1 five-check
   # set; rectification A2), not folded into quality-gate - it gets its own
@@ -227,7 +229,7 @@ jobs:
     name: test-coverage
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Same @vxture registry PAT scoping as `build`: npm ci pulls @vxture/*.
+    # Same @vxture registry PAT scoping as `build`: pnpm install pulls @vxture/*.
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -276,25 +278,29 @@ jobs:
             echo "decide: source-relevant change - running tests"
           fi
 
+      - name: Set up pnpm
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.30.3"
+
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: portals/package-lock.json
+          cache: pnpm
+          cache-dependency-path: portals/pnpm-lock.yaml
 
-      # Same co-located .npmrc idiom as the build job (see its comment): npm
-      # drops the token on the GitHub Packages tarball fetch without it.
+      # Install via the committed portals/.npmrc (registry + node-linker + the
+      # NODE_AUTH_TOKEN-expanded auth line); see the build job's comment.
       - name: Install dependencies
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
         shell: bash
         working-directory: portals
         run: |
           set -euo pipefail
-          printf '@vxture:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
-          trap 'rm -f .npmrc' EXIT
-          npm ci
+          pnpm install --frozen-lockfile
 
       # `--if-present` keeps this evergreen (140 SS1: the context must report
       # green even before any test script exists), while still hard-failing a
@@ -305,7 +311,7 @@ jobs:
         working-directory: portals
         run: |
           set -euo pipefail
-          npm run test --if-present -w ./app
+          pnpm --filter @arda/app run test --if-present
 
   # Secret scanning lives in .github/workflows/secret-scan.yml as its own
   # `gitleaks` required check (org standard layer 2): full-history detect,
@@ -356,7 +362,7 @@ jobs:
           # the ignore-list silently does nothing. Exit code 1 on any finding
           # propagates and fails this step (no special handling needed).
           /tmp/osv-scanner-bin/osv-scanner scan \
-            -L portals/package-lock.json \
+            -L portals/pnpm-lock.yaml \
             --config .osv-scanner.toml
 
   # Aggregator that preserves the required status-check name. Branch rulesets

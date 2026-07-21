@@ -3,7 +3,7 @@
  * DB-backed catalog has content locally. NOT run in deploy - on real stacks the
  * catalog is filled via the platform-triggered template seed (ADR section 4).
  *
- * Run: DATABASE_URL=... npm run db:seed  (optionally SEED_WORKSPACE_ID=...)
+ * Run: DATABASE_URL=... pnpm --filter @arda/app run db:seed  (optionally SEED_WORKSPACE_ID=...)
  */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";

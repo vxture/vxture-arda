@@ -1,5 +1,5 @@
 # Config for the `audit` required check (ci.yml) - osv-scanner reads this
-# when scanning portals/package-lock.json. Per the org-wide SCA policy
+# when scanning portals/pnpm-lock.yaml. Per the org-wide SCA policy
 # (vxture-platform docs/10-standards/140-repo-governance-standard.md #9): every new
 # finding must be fixed (upgrade/override) or explicitly accepted here with a
 # reason - never suppressed by removing the check or adding continue-on-error.
