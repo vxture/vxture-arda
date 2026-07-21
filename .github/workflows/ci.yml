@@ -175,8 +175,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "22"
-          cache: pnpm
-          cache-dependency-path: portals/pnpm-lock.yaml
 
       - name: Restore Next.js build cache
         if: ${{ steps.changes.outputs.run_build == 'true' }}
@@ -200,7 +198,15 @@ jobs:
         working-directory: portals
         run: |
           set -euo pipefail
-          pnpm install --frozen-lockfile
+          pnpm install --no-frozen-lockfile
+
+      - name: Upload regenerated pnpm-lock.yaml (health-identity bootstrap - temporary)
+        if: ${{ steps.changes.outputs.run_build == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock
+          path: portals/pnpm-lock.yaml
+          if-no-files-found: error
 
       - name: Type check
         if: ${{ steps.changes.outputs.run_build == 'true' }}
