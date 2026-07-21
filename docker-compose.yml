@@ -54,7 +54,7 @@ services:
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-arda}"
       OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
       OIDC_REDIRECT_URI: "${OIDC_REDIRECT_URI:-}"
-      OIDC_SCOPES: "${OIDC_SCOPES:-openid profile email phone arda:subscription}"
+      OIDC_SCOPES: "${OIDC_SCOPES:-openid profile email phone}"
       OIDC_POST_LOGOUT_REDIRECT_URI: "${OIDC_POST_LOGOUT_REDIRECT_URI:-}"
       # -- Server-side RP session store (this stack's redis container) --------
       REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"
@@ -74,6 +74,8 @@ services:
       INTERNAL_JOB_TOKEN: "${INTERNAL_JOB_TOKEN:-}"
       # -- Platform provisioning webhook (C3) --------------------------------
       PROVISION_WEBHOOK_SECRET: "${PROVISION_WEBHOOK_SECRET:-}"
+      # Rotation slot (080-rp sec 4): verified alongside the current secret.
+      PROVISION_WEBHOOK_SECRET_NEXT: "${PROVISION_WEBHOOK_SECRET_NEXT:-}"
       # -- App config --------------------------------------------------------
       DEFAULT_LANDING: "${DEFAULT_LANDING:-/dashboard}"
       MOCK_STATE: "${MOCK_STATE:-subscribed}"

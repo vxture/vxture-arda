@@ -12,15 +12,22 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { verifyWebhookSignature } from "../lib/verify";
+import { verifyWebhookSignatureAny } from "../lib/verify";
 import { handleProvisioningEvent, type ProvisioningPayload } from "../lib/handler";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const secret = process.env.PROVISION_WEBHOOK_SECRET;
-  if (!secret) {
+  // Dual rotation slot (080-rp SS4 / D3): the current secret plus an optional
+  // PROVISION_WEBHOOK_SECRET_NEXT. During a platform-side rotation either may
+  // sign the payload, so verify against each and accept on any match. Order
+  // (current first) is a minor fast-path, not a security property.
+  const secrets = [
+    process.env.PROVISION_WEBHOOK_SECRET,
+    process.env.PROVISION_WEBHOOK_SECRET_NEXT,
+  ].filter((s): s is string => typeof s === "string" && s.length > 0);
+  if (secrets.length === 0) {
     console.error("[provisioning/webhook] PROVISION_WEBHOOK_SECRET not set");
     return NextResponse.json({ error: "misconfigured" }, { status: 500 });
   }
@@ -28,7 +35,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const rawBody = new Uint8Array(await request.arrayBuffer());
   const sigHeader = request.headers.get("x-vxture-signature");
 
-  const { ok, reason } = await verifyWebhookSignature(rawBody, sigHeader, secret);
+  const { ok, reason } = await verifyWebhookSignatureAny(rawBody, sigHeader, secrets);
   if (!ok) {
     console.warn(`[provisioning/webhook] signature rejected: ${reason}`);
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });

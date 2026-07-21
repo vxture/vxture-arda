@@ -216,6 +216,97 @@ jobs:
           set -euo pipefail
           npm run build -w ./app
 
+  # Unit test gate. Independent required check (org standard 140 SS1 five-check
+  # set; rectification A2), not folded into quality-gate - it gets its own
+  # visible status like `audit`. Runs the app's node:test suite (tsx loader).
+  # It is evergreen on docs-only PRs (install/test steps skipped via `if:`, the
+  # job still succeeds so the `test-coverage` context is always reported); on
+  # source PRs a failing test blocks the merge. Named exactly `test-coverage`
+  # to match the main-ruleset required-check context.
+  test-coverage:
+    name: test-coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Same @vxture registry PAT scoping as `build`: npm ci pulls @vxture/*.
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Mirror the build job's docs-only skip: no need to install the workspace
+      # or run tests when the PR touches only docs / root meta files. The job
+      # itself always runs and always succeeds (steps gate on `if:`), so the
+      # required `test-coverage` context is reported on every PR.
+      - name: Determine if tests need to run
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_SHA" ] || ! files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" 2>&1)"; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "decide: no usable base SHA or diff failed - fail-open, running tests"
+            exit 0
+          fi
+          if [ -z "$files" ]; then
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "decide: no changed files - skipping tests"
+            exit 0
+          fi
+          docs_only=true
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              docs/*|*.md) ;;
+              .gitattributes|.editorconfig|.gitignore|.npmrc|.gitleaks.toml) ;;
+              *) docs_only=false ;;
+            esac
+          done <<<"$files"
+          if [ "$docs_only" = true ]; then
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "decide: docs-only change - skipping tests"
+          else
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "decide: source-relevant change - running tests"
+          fi
+
+      - name: Set up Node.js
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: portals/package-lock.json
+
+      # Same co-located .npmrc idiom as the build job (see its comment): npm
+      # drops the token on the GitHub Packages tarball fetch without it.
+      - name: Install dependencies
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        shell: bash
+        working-directory: portals
+        run: |
+          set -euo pipefail
+          printf '@vxture:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > .npmrc
+          trap 'rm -f .npmrc' EXIT
+          npm ci
+
+      # `--if-present` keeps this evergreen (140 SS1: the context must report
+      # green even before any test script exists), while still hard-failing a
+      # real test failure once the app defines a `test` script and test files.
+      - name: Run unit tests
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        shell: bash
+        working-directory: portals
+        run: |
+          set -euo pipefail
+          npm run test --if-present -w ./app
+
   # Secret scanning lives in .github/workflows/secret-scan.yml as its own
   # `gitleaks` required check (org standard layer 2): full-history detect,
   # pinned binary, rules in .gitleaks.toml.
