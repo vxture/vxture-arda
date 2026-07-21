@@ -8,6 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start -p 3230",
     "type-check": "prisma generate && tsc --noEmit",
+    "test": "node --import tsx --test \"app/**/*.test.ts\"",
     "prisma:generate": "prisma generate",
     "db:seed": "prisma generate && tsx prisma/seed.ts"
   },
