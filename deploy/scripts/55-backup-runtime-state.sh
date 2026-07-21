@@ -53,7 +53,7 @@ if docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
   DB_ARCHIVE="$BACKUP_DIR/postgres-${TIMESTAMP}.dump"
   DB_TMP="${DB_ARCHIVE}.partial"
   if docker exec -e PGPASSWORD="${POSTGRES_PASSWORD:-arda}" "$DB_CONTAINER" \
-       pg_dump -U "${POSTGRES_USER:-arda}" -d "${POSTGRES_DB:-arda}" -Fc > "$DB_TMP"; then
+       pg_dump -U "${POSTGRES_USER:-arda}" -d "${POSTGRES_DB:-vxturebiz_arda_prod}" -Fc > "$DB_TMP"; then
     # Integrity: pg_restore --list must parse the archive header/TOC.
     if docker exec -i "$DB_CONTAINER" pg_restore --list < "$DB_TMP" >/dev/null 2>&1; then
       mv "$DB_TMP" "$DB_ARCHIVE"

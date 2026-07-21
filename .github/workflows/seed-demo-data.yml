@@ -97,20 +97,21 @@ jobs:
           set -euo pipefail
           port="${DEPLOY_PORT:-22}"
           # container_name is ${PROJECT_NAME}-db: prod=arda-db, beta=arda-beta-db.
+          # Database name follows vxturebiz_arda_{env} (data_platform_100 2.3).
           case "$ENVIRONMENT" in
-            production) db="arda-db" ;;
-            beta)       db="arda-beta-db" ;;
+            production) db="arda-db";      dbname="vxturebiz_arda_prod" ;;
+            beta)       db="arda-beta-db"; dbname="vxturebiz_arda_beta" ;;
             *) echo "unknown environment: $ENVIRONMENT" >&2; exit 1 ;;
           esac
-          echo "Loading demo data for workspace '$WS' into $db on $DEPLOY_HOST ..."
-          # Pipe seed.sql to psql inside the db container (-i keeps stdin). The
-          # default postgres user/db are 'arda' (compose default); local docker
+          echo "Loading demo data for workspace '$WS' into $dbname ($db) on $DEPLOY_HOST ..."
+          # Pipe seed.sql to psql inside the db container (-i keeps stdin).
+          # Seeding runs as the OWNER role (arda), not arda_svc; local docker
           # exec connects without a password.
           ssh -i ~/.ssh/deploy_key -p "$port" \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=20 \
             -o ConnectTimeout=30 \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "docker exec -i $db psql -U arda -d arda -v ON_ERROR_STOP=1 -v workspace_id=$WS" \
+            "docker exec -i $db psql -U arda -d $dbname -v ON_ERROR_STOP=1 -v workspace_id=$WS" \
             < portals/app/prisma/seed.sql
           echo "Done."

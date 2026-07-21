@@ -27,7 +27,7 @@ source "$SCRIPT_DIR/../lib/01-env.sh"
 
 DB_CONTAINER="${PROJECT_NAME:-arda}-db"
 PSQL_USER="${POSTGRES_USER:-arda}"
-PSQL_DB="${POSTGRES_DB:-arda}"
+PSQL_DB="${POSTGRES_DB:-vxturebiz_arda_prod}"
 DDL_DIR="$SCRIPT_DIR/ddl"
 
 ACTION="${1:-verify}"
