@@ -16,7 +16,7 @@
   "peerDependencies": {
     "@vxture/design-system": "*",
     "@vxture/shared": "^1.5.0",
-    "next": "^16.2.10",
+    "next": "^16.2.12",
     "react": "*",
     "react-dom": "*"
   }

@@ -3,6 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@10.30.3",
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.35.0",
+      "@prisma/dev": "^0.24.16",
+      "valibot": "^1.4.2"
+    }
+  },
   "scripts": {
     "lint:docs-numbering": "cd .. && node scripts/guardrails/check-docs-numbering.mjs --strict",
     "lint:data-architecture": "cd .. && node scripts/guardrails/check-data-architecture.mjs"
