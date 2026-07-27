@@ -33,17 +33,17 @@
     "fontSize_small": "小",
     "fontSize_default": "默认",
     "fontSize_large": "大",
-    "assistant": "Varda 数据助手"
+    "assistant": "arda Curator"
   },
   "assistant": {
-    "title": "Varda 数据助手",
+    "title": "arda Curator",
     "subtitle": "数据中台助手",
     "widen": "加宽",
     "narrow": "还原窄版",
     "full": "全屏",
     "exitFull": "退出全屏",
     "close": "关闭",
-    "greeting": "你好，我是 Varda。可以帮你检索数据资产、解读质量指标，或用自然语言生成取数查询。",
+    "greeting": "你好，我是 arda Curator。可以帮你检索数据资产、解读质量指标，或用自然语言生成取数查询。",
     "q1": "上月哪些核心资产质量得分下降了？",
     "toolName": "quality.compare",
     "toolArg": "{\"level\":\"core\",\"period\":\"MoM\"}",
@@ -51,7 +51,7 @@
     "a1": "上月有 2 张核心资产质量下降，疑因刷新链路滞后导致及时性走低，建议优先核查上游加工任务。",
     "sug1": "查看加工任务",
     "sug2": "生成整改工单",
-    "inputPlaceholder": "向 Varda 提问，或输入自然语言取数…",
+    "inputPlaceholder": "向 arda Curator 提问，或输入自然语言取数…",
     "send": "发送",
     "authorized": "当前 workspace · 已授权"
   },

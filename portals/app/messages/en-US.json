@@ -33,17 +33,17 @@
     "fontSize_small": "S",
     "fontSize_default": "M",
     "fontSize_large": "L",
-    "assistant": "Varda assistant"
+    "assistant": "arda Curator"
   },
   "assistant": {
-    "title": "Varda assistant",
+    "title": "arda Curator",
     "subtitle": "Data console assistant",
     "widen": "Widen",
     "narrow": "Restore width",
     "full": "Fullscreen",
     "exitFull": "Exit fullscreen",
     "close": "Close",
-    "greeting": "Hi, I'm Varda. I can search data assets, explain quality metrics, or turn natural language into a query.",
+    "greeting": "Hi, I'm arda Curator. I can search data assets, explain quality metrics, or turn natural language into a query.",
     "q1": "Which core assets dropped in quality score last month?",
     "toolName": "quality.compare",
     "toolArg": "{\"level\":\"core\",\"period\":\"MoM\"}",
@@ -51,7 +51,7 @@
     "a1": "Two core assets declined last month. The likely cause is a slipping refresh pipeline; review the upstream job first.",
     "sug1": "View the pipeline",
     "sug2": "Open a remediation ticket",
-    "inputPlaceholder": "Ask Varda, or describe the data you need...",
+    "inputPlaceholder": "Ask arda Curator, or describe the data you need...",
     "send": "Send",
     "authorized": "Current workspace - authorized"
   },

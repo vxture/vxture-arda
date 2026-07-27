@@ -5,7 +5,8 @@ import { useTranslations } from "@arda/shared/i18n";
 import { PIcon } from "./phosphor-icon";
 
 /**
- * Varda assistant panel (design source `Assistant` / `vela-*`).
+ * arda Curator panel (design source `Assistant` / `vela-*`; renamed from
+ * "Varda" per ADR-013 2026-07-28 - see docs/30-design/arda_biz_270_curator.md).
  *
  * A first-class right-docked AI surface, not a mere entry button. Three display
  * modes mirror the design: `narrow` (default), `wide` (widens the panel, the

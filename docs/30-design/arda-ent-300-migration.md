@@ -23,7 +23,7 @@
 3. ~~**实现 `PlatformEntitlementResolver`**~~ **已完成（2026-07-07）**：`portals/app/app/entitlement/platform-resolver.ts`，`getEntitlementResolver()` 工厂函数当 `PLATFORM_API_URL` + `PLATFORM_INTERNAL_AUTH_TOKEN` 均设置时自动切换；接口不变，调用方无需改动。
 4. ~~**加短 TTL 缓存层**~~ **已完成（2026-07-07）**：进程内 `Map<workspaceId, CacheEntry>` 45s TTL（非 Redis；缓存 C2 响应是短时单机缓存，不需要跨实例一致性）。
 5. ~~**接 `invalidate` 接收端点**~~ **已完成（2026-07-07）**：`subscription_changed` provisioning 事件 → `invalidateCache(workspaceId)` 立即清除进程内缓存，下次请求重拉。复用 provisioning webhook 通道，不单独建 invalidate 端点。
-6. ~~**接 `POST /usage/consume` 上报**~~ **已完成（2026-07-07）**：`UsageRaw` 本地缓冲 + `flushUsage()` 异步 Job 上报。metric：`storage.bytes` / `service.api.call` / `quality.check.run` / `varda.credit`（见 `biz-260`）。
+6. ~~**接 `POST /usage/consume` 上报**~~ **已完成（2026-07-07）**：`UsageRaw` 本地缓冲 + `flushUsage()` 异步 Job 上报。metric：`storage.bytes` / `service.api.call` / `quality.check.run`（见 `biz-260`）。`ai.credit`（历史名 `varda.credit`）**不在此异步 flush 路径里**——它是 atomic 预扣，且按 **ADR-013（2026-07-28）**由 Atlas 在 arda Curator 调用时代为 consume，arda 从未有过、也不需要自己的调用点。
 7. **`MOCK_STATE`/`MOCK_TIER` 的去留**：`PlatformEntitlementResolver` 落地后，`MockEntitlementResolver` 的 mock 回退路径仍需保留给本地开发/无真实 IdP 的场景（CI、local dev）——不是要删除 mock，是要让 mock 与新 resolver 共存，按环境切换（现有 `getEntitlementResolver()` 工厂函数已经是切换点）。
 
 ---

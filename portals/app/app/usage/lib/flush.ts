@@ -15,8 +15,11 @@
  * Max attempts: MAX_ATTEMPTS (default 5). After that, log and give up
  * (mark flushed=true with error) to avoid an infinite retry loop.
  *
- * NOTE: varda.credit is ATOMIC pre-deduct (reply-01 R5) - it consumes
- * synchronously BEFORE the AI op, not through this async buffer/flush path.
+ * NOTE: ai.credit (historically varda.credit) is ATOMIC pre-deduct
+ * (reply-01 R5) - it consumes synchronously BEFORE the AI op, not through
+ * this async buffer/flush path. Per ADR-013 (2026-07-28), that pre-deduct
+ * consume is performed by Atlas, not arda - this flush job never had an
+ * ai.credit call site and does not need one.
  *
  * This job is triggered by GET /api/usage/flush (see route). Callers may
  * invoke it on startup, on a schedule, or after each significant operation.

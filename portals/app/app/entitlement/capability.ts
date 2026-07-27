@@ -155,18 +155,28 @@ export function minTierFor(key: FeatureKey): Tier | null {
 }
 
 // ---- Tier-derived capability levels (former platform booleans, re-homed) -----
-// These left the C2 contract on 2026-07-13 (biz-260 §1): varda access and sync
-// frequency are product capability levels keyed by tier, not platform config.
+// These left the C2 contract on 2026-07-13 (biz-260 §1): Curator access and
+// sync frequency are product capability levels keyed by tier, not platform
+// config.
+//
+// Renamed from VardaAccess/vardaAccessForTier (owner decision 2026-07-28,
+// ADR-013): "Varda" is a separately-registered, still-unbuilt vxture product
+// name (vxture-varda) reserved for a future independent product, not for
+// arda's own in-house data-management capability. The renamed "arda Curator"
+// is a business-role name chosen to also avoid any overlap with the
+// unrelated "agent" terminology used in arda-data-150/170 (which means
+// external products consuming arda's data via DataService, not this). See
+// docs/30-design/arda_biz_270_curator.md for the architecture.
 
-export interface VardaAccess {
+export interface CuratorAccess {
   enabled: boolean;
   /** true = restricted to read-only DataService calls (starter/pro). */
   readonly: boolean;
 }
 
-/** varda agent access per tier (biz-260 §0: opens at starter read-only,
+/** Curator access per tier (biz-260 §0: opens at starter read-only,
  *  business and above get read-write). */
-export function vardaAccessForTier(tier: Tier | null): VardaAccess {
+export function curatorAccessForTier(tier: Tier | null): CuratorAccess {
   if (tier === null || tier === "free") return { enabled: false, readonly: false };
   if (tier === "starter" || tier === "pro") return { enabled: true, readonly: true };
   return { enabled: true, readonly: false };

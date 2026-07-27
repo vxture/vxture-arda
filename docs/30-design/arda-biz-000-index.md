@@ -76,6 +76,7 @@
 | `biz-441` | [数据服务 功能设计](arda-biz-441-services.md) | 功能 | 完成（待评审） |
 | `biz-451` | [数据生命周期 功能设计](arda-biz-451-lifecycle.md) | 功能 | 完成（待评审） |
 | `biz-300` | [实施计划](arda-biz-300-implementation.md) | 3 | 完成（待评审） |
+| `biz-270` | [arda Curator 架构定位与骨架](arda_biz_270_curator.md) | 2 · 跨切面 | 架构占位（无功能矩阵） |
 | `biz-260` | [商业化/计费模型](arda-biz-260-billing.md) | 2 · 跨切面 | 完成（待平台配置） |
 
 ## 3. 板块划分（第 2 层）

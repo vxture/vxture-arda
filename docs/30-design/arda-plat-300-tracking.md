@@ -4,6 +4,11 @@
 > 层：第 3 层 · 迁移追踪（`plat` 系列，见 [`plat-000`](arda-plat-000-index.md) 索引）
 > 范围：现状阻塞 + 平台侧待确认清单 + 打通验收判据
 > 上游：[`plat-100`](arda-plat-100-architecture.md)（三通道全景）、[`plat-110`](arda-plat-110-oidc-contract.md)（OIDC 契约）
+> **2026-07-28 命名说明（ADR-013）**：本文下方历史条目里的 "varda" 指的是 arda
+> 当时对内 AI 面板的旧命名——"varda" 其实是平台预留给未来独立 vxture 产品
+> （`vxture-varda`）的名字，不该被 arda 挪用；该能力已改名 **arda Curator**（见
+> `arda_biz_270_curator.md`），模型能力改为经 **Atlas**（独立 vxture 产品）调用。
+> 历史条目原样保留，不追溯改写。
 
 ---
 

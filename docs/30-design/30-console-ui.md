@@ -30,11 +30,11 @@ arda = **智能数据中台**，一个数据资产 / 治理 / 服务的控制台
 
 ```
 ┌──────────────────────────── Header (vxh) ────────────────────────────┐
-│ launcher  logo+品牌+plan标签 | 分割 | 预留     [搜索]    Varda 帮助 告警 设置 用户 │
+│ launcher  logo+品牌+plan标签 | 分割 | 预留     [搜索]    Curator 帮助 告警 设置 用户 │
 ├────────────┬─────────────────────────────────────────┬───────────────┤
 │            │                                          │               │
 │  Sidebar   │            content-scroll                │   Assistant   │
-│ (rail+nav  │         (PageHeader + 屏内容)             │   (Varda,     │
+│ (rail+nav  │         (PageHeader + 屏内容)             │   (Curator,     │
 │  +footer)  │                                          │  narrow/wide/ │
 │            │                                          │   full)       │
 └────────────┴─────────────────────────────────────────┴───────────────┘
@@ -104,7 +104,7 @@ Sidebar 顶部 `side-domain` 显示「当前 route 所属 board」的名称。la
 5. **预留外链槽** `vxh-extslot`（一级外部链接预留）。
 6. **弹性留白**（grid 弹性列）。
 7. **全局搜索** `vxh-search`（`⌘K`，placeholder「搜索数据资产、服务、标准…」）。
-8. **Varda 智能体入口** `vxh-agent`（动态 gif 图标，toggle 助手面板）。
+8. **arda Curator 入口** `vxh-agent`（动态 gif 图标，toggle 助手面板）。
 9. **系统操作组** `vxh-group`：帮助 `ph-question` | 告警 `ph-bell`(badge 数) | 设置 `ph-gear-six`。
 11. **用户头像 + 用户面板** `vxh-user` -> `vxh-user-panel`。
 
@@ -131,12 +131,14 @@ Sidebar 顶部 `side-domain` 显示「当前 route 所属 board」的名称。la
 
 ---
 
-## 6. Varda 助手（`assistant`）—— 设计一等公民
+## 6. arda Curator 助手（`assistant`）—— 设计一等公民
 
-> 设计名 Vela，实现名 **Varda**。它是右侧常驻 AI 面板，不是可有可无的附属。
+> 设计名 Vela，实现名 **arda Curator**（原名 Varda；2026-07-28 依 ADR-013 改名——
+> Varda 是平台预留给未来独立 vxture 产品的名字，不该用在 arda 自己的能力上；见
+> `arda_biz_270_curator.md`）。它是右侧常驻 AI 面板，不是可有可无的附属。
 
 - 三态：`narrow`（默认窄）| `wide`（加宽，触发导航自动收起）| `full`（全屏）。Header 头按钮在三态间切换（`ph-arrow-line-left/right`、`ph-corners-out/in`）。
-- **结构**：`vela-hd`（sparkle 标 + 标题「Varda 数据助手」+ 模型徽标 `vela-mb` 显示 `claude-sonnet-4-5` + tools 计数 + 加宽/全屏/关闭按钮）、`vela-body`（消息流）、`vela-ft`（输入框 + 发送 + 模型脚注）。
+- **结构**：`vela-hd`（sparkle 标 + 标题「arda Curator」+ 模型徽标 `vela-mb` 显示 `claude-sonnet-4-5` + tools 计数 + 加宽/全屏/关闭按钮）、`vela-body`（消息流）、`vela-ft`（输入框 + 发送 + 模型脚注）。
 - **消息类型**：`user` 气泡、`ai` 气泡（可带 `suggest` 快捷追问）、`tool` 工具调用块 `vela-tool`（工具名 + 入参 + 结果 + 耗时 ms）。体现「自然语言取数 / 解读质量指标 / 检索资产 + 工具调用」的产品意图。
 - 模型徽标按 [[claude-api]] 用最新 Claude 模型 id（设计写的 `sonnet-4-5` 为占位，实现按当时最新）。
 
@@ -145,7 +147,7 @@ Sidebar 顶部 `side-domain` 显示「当前 route 所属 board」的名称。la
 ## 7. Drawer（抽屉）+ TweaksPanel（偏好）
 
 - **Drawer** `drawer-layer`：fixed 覆盖右侧。两类：`notifications`（消息中心，`dn-item` 列表，按 level 着色，点击跳到对应屏）、`settings`（系统设置 KV 列表）。告警入口在 Header `ph-bell`。
-- **TweaksPanel**（设计态调参）：密度(comfy/compact) · 资产展示(card/table) · 暗色 · 嵌入 Varda。**实现态**把这些并入用户面板「偏好设置」（§4.1）+ 资产目录视图切换（§9.2）。
+- **TweaksPanel**（设计态调参）：密度(comfy/compact) · 资产展示(card/table) · 暗色 · 嵌入 arda Curator。**实现态**把这些并入用户面板「偏好设置」（§4.1）+ 资产目录视图切换（§9.2）。
 
 ---
 
@@ -226,7 +228,7 @@ Sidebar 顶部 `side-domain` 显示「当前 route 所属 board」的名称。la
 
 实现与设计对齐时逐项核对（详见 §4–§9）。已知**易缺/易偏**项（实现重点优化方向）：
 
-1. **Varda 助手三态面板**（§6）—— 设计一等公民，勿停留在「入口按钮」。
+1. **arda Curator 三态面板**（§6）—— 设计一等公民，勿停留在「入口按钮」。
 2. **用户面板**（§4.1）—— 等级奖章槽 + 4 段偏好（语言/主题/密度/字号）+ 实名认证 + 租户管理入口。
 3. **launcher 功能域/应用中心双形态**（§3.2）+ Sidebar 当前域名 + 合规态势 footer。
 4. **plan 标签 vs 用户等级**两维度并存（§4.2）。
