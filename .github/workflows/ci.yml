@@ -166,13 +166,13 @@ jobs:
 
       - name: Set up pnpm
         if: ${{ steps.changes.outputs.run_build == 'true' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: "10.30.3"
 
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_build == 'true' }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -280,13 +280,13 @@ jobs:
 
       - name: Set up pnpm
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: "10.30.3"
 
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
