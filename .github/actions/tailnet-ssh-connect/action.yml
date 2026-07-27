@@ -20,6 +20,9 @@ inputs:
     default: ''
   deploy-ssh-key:
     required: true
+  deploy-ssh-key-passphrase:
+    required: false
+    default: ''
   deploy-known-hosts:
     required: false
     default: ''
@@ -48,6 +51,7 @@ runs:
         DEPLOY_HOST: ${{ inputs.deploy-host }}
         DEPLOY_PORT: ${{ inputs.deploy-port }}
         DEPLOY_SSH_KEY: ${{ inputs.deploy-ssh-key }}
+        DEPLOY_SSH_KEY_PASSPHRASE: ${{ inputs.deploy-ssh-key-passphrase }}
         DEPLOY_KNOWN_HOSTS: ${{ inputs.deploy-known-hosts }}
       run: |
         set -euo pipefail
@@ -69,3 +73,19 @@ runs:
           exit 1
         fi
         chmod 600 ~/.ssh/known_hosts
+
+        if [ -n "${DEPLOY_SSH_KEY_PASSPHRASE:-}" ]; then
+          # Encrypted key: load it into an ssh-agent up front, exported to
+          # GITHUB_ENV so every later `ssh -i deploy_key` call in this job
+          # authenticates via the agent instead of trying (and failing,
+          # non-interactively) to decrypt the file inline.
+          eval "$(ssh-agent -s)" >/dev/null
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+          askpass_script="$(mktemp)"
+          printf '#!/bin/sh\nprintf %%s "$DEPLOY_SSH_KEY_PASSPHRASE"\n' > "$askpass_script"
+          chmod 700 "$askpass_script"
+          SSH_ASKPASS="$askpass_script" SSH_ASKPASS_REQUIRE=force DISPLAY=none:0 \
+            ssh-add ~/.ssh/deploy_key < /dev/null
+          rm -f "$askpass_script"
+        fi
