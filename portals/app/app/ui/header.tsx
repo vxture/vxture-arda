@@ -17,6 +17,7 @@ import { useTranslations } from "@arda/shared/i18n";
 import { ARDA_LOCALE_OPTIONS } from "@arda/shared/locales";
 import { PIcon } from "./phosphor-icon";
 import { BOARDS, LAUNCHER_GROUPS, PLAN_TAGS, ROUTE_BY_KEY, USER_LEVELS } from "./nav-config";
+import { useSession } from "./api";
 
 const PAGE_FULLSCREEN_ID = "arda-page-root";
 const THEME_OPTIONS: Theme[] = ["system", "light", "dark"];
@@ -87,6 +88,12 @@ export function Header({
   const tu = useTranslations("user");
   const tl = useTranslations("level");
   const [panel, setPanel] = useState<"launcher" | "user" | null>(null);
+  const { session } = useSession();
+  const user = session && session.authenticated ? session.user : null;
+  const displayName = user?.displayName || user?.username || tu("name");
+  const email = user?.email || tu("email");
+  const initial = displayName.trim().charAt(0).toUpperCase() || tu("initial");
+  const verified = user?.emailVerified ?? false;
 
   // The admin board is visible to every member since it now hosts the
   // approval center (my requests); its role-locked GROUPS stay hidden for
@@ -204,22 +211,24 @@ export function Header({
 
         <div className="vxh-pop-anchor">
           <button className="vxh-user" aria-label={tu("menu")} onClick={() => toggle("user")}>
-            <span className="vxh-avatar">{tu("initial")}</span>
+            <span className="vxh-avatar">{initial}</span>
           </button>
           {panel === "user" && (
             <div className="vxh-panel vxh-user-panel">
               <div className="vxh-user-head">
-                <span className="vxh-avatar xl">{tu("initial")}</span>
+                <span className="vxh-avatar xl">{initial}</span>
                 <div className="vxh-user-meta">
                   <div className="vxh-user-name">
-                    {tu("name")}
-                    <span className="vxh-verify">
-                      <PIcon name="seal-check" weight="fill" />
-                      {tu("verified")}
-                    </span>
+                    {displayName}
+                    {verified && (
+                      <span className="vxh-verify">
+                        <PIcon name="seal-check" weight="fill" />
+                        {tu("verified")}
+                      </span>
+                    )}
                   </div>
                   <div className="vxh-user-contacts">
-                    <span className="vxh-user-contact">{tu("email")}</span>
+                    <span className="vxh-user-contact">{email}</span>
                   </div>
                 </div>
               </div>
