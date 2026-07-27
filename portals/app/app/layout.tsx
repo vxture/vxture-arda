@@ -9,8 +9,6 @@ import "./globals.css";
 import { Providers } from "@arda/shared/providers";
 import { I18nProvider } from "@arda/shared/i18n";
 import { messages } from "../messages";
-import { AccountGate } from "./ui/account-gate";
-import { EntitlementGate } from "./entitlement/gate";
 
 /** DS brand typeface (Funnel Display) wired to the DS brand-font loader slot. */
 const brandFont = Funnel_Display({
@@ -32,14 +30,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <Providers>
-          <I18nProvider messages={messages}>
-            {/* Entry gating: AccountGate authenticates the user (OIDC RP
-                session), then EntitlementGate checks the workspace
-                subscription before any app surface renders. */}
-            <AccountGate>
-              <EntitlementGate>{children}</EntitlementGate>
-            </AccountGate>
-          </I18nProvider>
+          {/* Entry gating (AccountGate + EntitlementGate) lives in the (app)
+              group layout, not here: the (demo) group (status,
+              entitlement-matrix) is intentionally public. */}
+          <I18nProvider messages={messages}>{children}</I18nProvider>
         </Providers>
       </body>
     </html>
