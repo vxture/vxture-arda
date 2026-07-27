@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Shell } from "../ui/shell";
+import { AccountGate } from "../ui/account-gate";
+import { EntitlementGate } from "../entitlement/gate";
 import { getSession } from "../auth/lib/session";
 import { isWorkspaceAdmin } from "../entitlement/roles";
 import { getWipeState } from "../lib/workspace-state";
@@ -14,8 +16,9 @@ import { fillWorkspaceIfNeeded } from "../lib/seed-fill";
 export const dynamic = "force-dynamic";
 
 // Section group layout: every page under (app) renders inside the DS shell
-// (header + left section nav + footer). Auth + entitlement gating happen above
-// this, in the root layout.
+// (header + left section nav + footer). Entry gating (AccountGate then
+// EntitlementGate) also lives here, scoped to this group only - the sibling
+// (demo) group (status, entitlement-matrix) is intentionally public.
 //
 // First-entry seed: on entry we resolve the caller's workspace and, if it is
 // marked for seeding (or autofill is on for a never-seen workspace), fill it
@@ -31,9 +34,11 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
     const wipe = await getWipeState(session.workspaceId);
     if (wipe.wiped) {
       return (
-        <Shell isAdmin={false}>
-          <WipedNotice retainedUntil={wipe.retainedUntil?.toISOString() ?? null} />
-        </Shell>
+        <AccountGate>
+          <Shell isAdmin={false}>
+            <WipedNotice retainedUntil={wipe.retainedUntil?.toISOString() ?? null} />
+          </Shell>
+        </AccountGate>
       );
     }
     await fillWorkspaceIfNeeded(prisma, session.workspaceId, session.tenantId);
@@ -41,5 +46,11 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
   // Role axis for the chrome: hides role-locked nav/boards (admin). Screen
   // content is enforced separately server-side (ScreenGate) - hiding is UX,
   // not the security boundary.
-  return <Shell isAdmin={isWorkspaceAdmin(session?.roles)}>{children}</Shell>;
+  return (
+    <AccountGate>
+      <EntitlementGate>
+        <Shell isAdmin={isWorkspaceAdmin(session?.roles)}>{children}</Shell>
+      </EntitlementGate>
+    </AccountGate>
+  );
 }
