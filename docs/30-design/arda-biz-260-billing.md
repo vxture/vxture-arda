@@ -29,20 +29,35 @@
   - Enforcement split: product-UI gate requires standalone (active); data-access
     gate (agent DataService consumption) accepts bundled OR standalone. See
     `arda-data-170-platform-agent-support.md` §2②.
-- Seats = humans only. Agents (varda, external L1/L2) are not seats.
+- Seats = humans only. Agents (external L1/L2 products) are not seats. (arda's
+  own in-house Curator capability is likewise not a seat - see
+  [`arda-biz-270`](arda_biz_270_curator.md).)
 - free / starter / pro = individual plans, member.max = 1.
 - business = team/org plan; member.max comes from the purchased plan.
 - enterprise = unlimited, negotiated.
 - Storage = workspace-level shared pool across all vxture products
   (arda + karda + terra + agents). Each product reports its slice
   independently via C3. Platform aggregates the total.
-- varda agent opens at starter (read-only, 50 credits) and pro
-  (read-only, 500 credits). business gets read-write (5000 credits/seat).
-- api.call = external DataService callers only (ApiKey + consumerApp != varda).
-  varda is a first-party product; its AI draws the L0 `ai.credit` pool.
+- arda Curator (renamed from the earlier "varda" naming, ADR-013 2026-07-28 -
+  see [`arda-biz-270`](arda_biz_270_curator.md)) opens at starter (read-only,
+  50 credits) and pro (read-only, 500 credits). business gets read-write
+  (5000 credits/seat).
+- api.call = external DataService callers only (ApiKey + consumerApp !=
+  arda Curator). Curator is arda's own first-party capability; its AI draws
+  the L0 `ai.credit` pool, metered by Atlas (see below), not by arda itself.
 - Data egress: phase 1 = count-based (api.call). Phase 2 = export/share
   type calls weighted. Phase 3 = bytes. AuditLog.bytesOut field to be added
   when egress billing activates.
+- **Atlas is the model-capability provider (ADR-013)**: arda Curator never
+  calls an LLM directly or through a bespoke gateway - it calls Atlas
+  (a separate vxture product, `vxture-atlas`), the platform's sole
+  model-inference/metering entry point. Atlas performs the atomic pre-deduct
+  `ai.credit` consume itself when Curator calls it with workspace/tenant
+  context and reports the consumption to platform C3 - arda does not
+  implement its own `POST /usage/consume` call site for `ai.credit` (see
+  [`ent-120`](arda-ent-120-consumption-contract.md) §2 and
+  [`arda-biz-270`](arda_biz_270_curator.md)). This supersedes any earlier
+  assumption that arda itself would own that consume call.
 
 ---
 
@@ -84,9 +99,9 @@ Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
 | Metric | Kind | Reset | Overage mode | Description |
 |---|---|---|---|---|
 | `storage.bytes` | **gauge** | none (water level) | admission-only (no consume) | Workspace shared pool. Snapshot reporting via future `PUT /usage/gauge` (R4: delta rejected). Not wired to consume until gauge endpoint ships; C2 display + local admission only. |
-| `service.api.call` | counter | monthly | **divisible 后报** | External DataService calls (rest_api/query/export/share). amount=1 per call. Internal varda calls excluded. 409 = terminal, no retry. |
+| `service.api.call` | counter | monthly | **divisible 后报** | External DataService calls (rest_api/query/export/share). amount=1 per call. Internal Curator calls excluded. 409 = terminal, no retry. |
 | `quality.check.run` | counter | monthly | **divisible 后报** | QualityRule batch execution runs. amount=rules executed per batch. 409 = terminal, no retry. |
-| `ai.credit` | counter | monthly | **atomic 预扣** | AI credit (renamed from varda.credit, promoted to L0 platform_metric; product_220 §4). Consume BEFORE the AI op; 409 → reject. Pools earmarked per product by default; tenant admin may enable a shared overflow pool (reply-02 §2). See section 4. |
+| `ai.credit` | counter | monthly | **atomic 预扣** | AI credit (renamed from varda.credit, promoted to L0 platform_metric; product_220 §4). Consume BEFORE the AI op, performed by Atlas on Curator's behalf (ADR-013) - arda never calls this itself; 409 → reject. Pools earmarked per product by default; tenant admin may enable a shared overflow pool (reply-02 §2). See section 4. |
 
 ---
 
@@ -101,8 +116,8 @@ Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
 | dataset.max | 50 | 500 | 5000 | -1 | -1 |
 | datasource.max | 2 | 5 | 20 | 100 | -1 |
 | service_endpoint.max | 0 | 1 | 10 | -1 | -1 |
-| varda.enabled | false | true | true | true | true |
-| varda.readonly | - | true | true | false | false |
+| curator.enabled | false | true | true | true | true |
+| curator.readonly | - | true | true | false | false |
 | sync.frequency | manual | daily | hourly | realtime | realtime |
 | retention.days | 30 | 90 | 365 | -1 | -1 |
 | Governance modules | quality (basic) | +standards +lineage | +security +policies | +MDM | all + custom |
@@ -120,12 +135,15 @@ Metric kind and overage mode are fixed by platform ruling reply-01 R4/R5:
 
 ---
 
-## 4. varda credits reference table
+## 4. arda Curator credits reference table
 
 Credits are the unit arda reports to the platform. The platform converts
-credits to token cost internally (1 credit = ~2K tokens as baseline).
+credits to token cost internally (1 credit = ~2K tokens as baseline). See
+[`arda-biz-270`](arda_biz_270_curator.md) for the architecture behind these
+operations (task set currently undefined/architecture-only; this table
+records the intended cost shape for when tasks are built).
 
-| varda operation | credits | Notes |
+| Curator operation | credits | Notes |
 |---|---|---|
 | Dataset smart catalog (per asset) | 1 | Reads metadata, generates description/tags |
 | Quality rule AI generation | 3 | Generates rules from schema+samples |

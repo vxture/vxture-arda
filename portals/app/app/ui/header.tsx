@@ -58,9 +58,9 @@ interface HeaderProps {
   activeKey: string;
   onSelect: (route: string) => void;
   onOpenNotifications: () => void;
-  /** Toggle the Varda assistant panel. */
+  /** Toggle the arda Curator panel. */
   onToggleAssistant?: () => void;
-  /** Whether the Varda assistant panel is open (for the entry button state). */
+  /** Whether the arda Curator panel is open (for the entry button state). */
   assistantOpen?: boolean;
   /** Subscription plan key (free | starter | pro | business | enterprise). */
   brandPlan?: string;

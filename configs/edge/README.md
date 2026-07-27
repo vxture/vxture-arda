@@ -23,7 +23,7 @@ ARDA_DEPLOY_HOST  = PRIVATE compute, tailnet-only, NO public IP
 - ARDA_DEPLOY_HOST is private (tailnet IP `100.76.219.48`, MagicDNS short name
   `ARDA_DEPLOY_HOST`). It runs only `arda-app` + `arda-redis`. There is NO per-service
   nginx and NO second TLS hop on ARDA_DEPLOY_HOST: the edge proxies straight to the
-  app's published port over tailscale (the house convention, same as varda-bff).
+  app's published port over tailscale (the house convention, same as karda).
 
 ## Files
 

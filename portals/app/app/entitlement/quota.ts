@@ -10,9 +10,12 @@
  * v1 transition (reply-06 §1): until the platform ships the v2 envelope, the
  * numeric caps arrive inside the legacy `capabilities` map - the parser reads
  * `limits` first and falls back to `capabilities`. Functional booleans that
- * used to ride in `capabilities` (varda.enabled / varda.readonly /
- * sync.frequency) are IGNORED entirely: they are product capability levels
- * now, derived from tier in capability.ts (owner ruling 2026-07-13).
+ * used to ride in `capabilities` (historically named varda.enabled /
+ * varda.readonly / sync.frequency) are IGNORED entirely: they are product
+ * capability levels now, derived from tier in capability.ts as
+ * CuratorAccess/curatorAccessForTier (owner ruling 2026-07-13, renamed
+ * 2026-07-28 per ADR-013 - "varda" was never arda's to name, see
+ * docs/30-design/arda_biz_270_curator.md).
  *
  * Metric names below are the canonical strings both arda and vxture platform
  * must agree on. See docs/30-design/arda-biz-260-billing.md for the full spec.
@@ -39,6 +42,13 @@ export const METRICS = {
    * L0 platform_metric, renamed from varda.credit (product_220 §4/§9). Pools are
    * earmarked per contributing product by default; tenant admin may opt into a
    * shared overflow pool (reply-02 §2). 1 credit ~= 2K tokens.
+   *
+   * ADR-013 (2026-07-28): the atomic pre-deduct consume call for this metric
+   * is performed by Atlas (vxture's sole model-inference/metering gateway)
+   * when arda Curator calls it with workspace/tenant context - arda itself
+   * never had a working POST /usage/consume call site for ai.credit (none
+   * was ever wired) and does not need one now. This constant remains for
+   * local C2 display/admission (remaining balance banners) only.
    */
   AI_CREDIT: "ai.credit",
 } as const;

@@ -91,7 +91,7 @@ POST /usage/consume
 - `idempotency_key` 防重放/重复计量：同一操作重试必须带同一个 key，`consume` 调用本身必须幂等（与 [`data-140`](arda-data-140-audit.md) 的幂等约定同构，但这是两条独立通道，不复用同一个 key 空间）。
 - **超额语义**（reply-01 R5 已定，按操作成本分流）：
   - `service.api.call` / `quality.check.run` = **divisible 后报**（先做事后记账）：409 为**终态**——置本地 gated 标志（拦新调用+横幅）、该 UsageRaw 行标记完成，**不记 flushError、不重试**；部分扣减以响应 `consumed` 为准，未覆盖部分不追缴（reply-01 §5.2）。
-  - `varda.credit` = **atomic 预扣**：**先 consume 再执行 AI 操作**，409 → 拒绝执行（贵操作前置门控）；执行失败不返还（v1 接受，量小）。
+  - `ai.credit`（历史名 `varda.credit`）= **atomic 预扣**：**先 consume 再执行 AI 操作**，409 → 拒绝执行（贵操作前置门控）；执行失败不返还（v1 接受，量小）。**ADR-013（2026-07-28）**：这个 consume 调用由 **Atlas**（arda Curator 调用的模型能力/计量网关，独立 vxture 产品）在代表 arda 发起 AI 操作时执行，arda 自身从未有过、也不需要自己的 `ai.credit` consume 调用点——见 `arda-biz-270`。
   - **gated 是从 C2 派生的判断，不是持久标志**（reply-01 §5.1）：`gated ⇔ C2 该 metric 行 remaining ≤ 0`；flush 收 409 → `invalidateCache(workspaceId)` → 下次 C2 拉取（≤45s）自然反映；周期重置后平台读侧自动恢复满额，门自动开——**不要**持久化 gated 标志、写解锁定时器或专门轮询。
 
 ---
