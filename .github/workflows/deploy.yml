@@ -150,6 +150,7 @@ jobs:
           deploy-host: ${{ secrets.DEPLOY_WORKER02_HOST }}
           deploy-port: ${{ secrets.DEPLOY_WORKER02_PORT }}
           deploy-ssh-key: ${{ secrets.DEPLOY_WORKER02_SSH_KEY }}
+          deploy-ssh-key-passphrase: ${{ secrets.DEPLOY_WORKER02_SSH_KEY_PASSPHRASE }}
           deploy-known-hosts: ${{ secrets.DEPLOY_WORKER02_KNOWN_HOSTS }}
 
       - name: Bootstrap environment on target host
