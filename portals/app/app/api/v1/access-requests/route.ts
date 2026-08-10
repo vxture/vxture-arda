@@ -9,7 +9,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { authenticateApiRequest } from "../../../lib/api/auth";
-import { readIdempotencyKey, runIdempotentCreate, storedIdempotencyKey } from "../../../lib/api/idempotency";
+import {
+  findIdempotentReplay,
+  readIdempotencyKey,
+  runIdempotentCreate,
+  storedIdempotencyKey,
+} from "../../../lib/api/idempotency";
 import { problem } from "../../../lib/api/problem";
 import { parseBody } from "../../../lib/api/query";
 import { API_SCOPES } from "../../../lib/api/scopes";
@@ -83,6 +88,21 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const body = parsed.value;
 
+  const fetchRequest = async (targetId: string) => {
+    const row = await prisma.accessRequest.findFirst({ where: { id: targetId, workspaceId: auth.workspaceId } });
+    return row ? toView(row) : null;
+  };
+
+  // Replay check BEFORE the dataset-existence pre-check (ordering parity with
+  // the other write routes; a replay must never re-run business checks).
+  if (storedKey) {
+    const replay = await findIdempotentReplay(storedKey, CREATE_ACTION, fetchRequest);
+    if (replay?.kind === "conflict") return problem(409, "idempotency_conflict");
+    if (replay) {
+      return NextResponse.json(replay.value, { status: 200, headers: { "idempotency-replayed": "true" } });
+    }
+  }
+
   // Access requests target tenant-owned assets (mirror of the UI action).
   const dataset = await prisma.dataset.findFirst({
     where: { workspaceId: auth.workspaceId, id: body.datasetId },
@@ -118,10 +138,7 @@ export async function POST(req: NextRequest) {
         });
         return toView(row);
       }),
-    async (targetId) => {
-      const row = await prisma.accessRequest.findFirst({ where: { id: targetId, workspaceId: auth.workspaceId } });
-      return row ? toView(row) : null;
-    },
+    fetchRequest,
   );
 
   if (outcome.kind === "conflict") return problem(409, "idempotency_conflict");

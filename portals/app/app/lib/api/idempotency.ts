@@ -46,6 +46,28 @@ export type IdempotentOutcome<T> =
   | { kind: "conflict" };
 
 /**
+ * Upfront replay lookup. Write routes MUST call this before their business
+ * pre-checks (duplicate/quota/existence): a replayed request would otherwise
+ * trip those checks first (e.g. duplicate_code on the resource the original
+ * request created) and never reach the replay path. Returns null when the key
+ * has never been used - proceed with creation via runIdempotentCreate, which
+ * stays as the storage-level race guard for concurrent same-key requests.
+ */
+export async function findIdempotentReplay<T>(
+  storedKey: string,
+  action: string,
+  replayFetch: (targetId: string) => Promise<T | null>,
+): Promise<{ kind: "replayed"; value: T } | { kind: "conflict" } | null> {
+  const { prisma } = await import("../db");
+  const original = await prisma.auditLog.findUnique({ where: { idempotencyKey: storedKey } });
+  if (!original) return null;
+  if (original.action !== action || !original.target) return { kind: "conflict" };
+  const value = await replayFetch(original.target);
+  if (value === null) return { kind: "conflict" };
+  return { kind: "replayed", value };
+}
+
+/**
  * Run a create under the idempotency contract. `create` must persist the
  * resource AND its audit row (carrying `storedKey`) in one transaction;
  * `replayFetch` maps the original audit row's target back to a response body.

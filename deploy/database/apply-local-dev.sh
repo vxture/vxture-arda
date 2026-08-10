@@ -21,11 +21,9 @@ for f in 00_baseline.sql 97_service_role.sql 98_column_locks.sql; do
     -U "$OWNER" -d "$DB" < "$DDL_DIR/$f"
 done
 
-for f in "$DDL_DIR"/incr/*.sql; do
-  [ -e "$f" ] || continue
-  echo "== applying incr/$(basename "$f") =="
-  docker exec -i "$CONTAINER" psql -v ON_ERROR_STOP=1 -v svc_password="$SVC_PASSWORD" \
-    -U "$OWNER" -d "$DB" < "$f"
-done
+# NOTE: ddl/incr/*.sql is deliberately NOT applied here. Increments are the
+# migration path for LIVE schemas (db-init action=migrate); the baseline is
+# cumulative and already contains them, and older increments may predate the
+# current multi-schema layout (unqualified relation names).
 
 echo "== done: DDL baseline applied to $DB in $CONTAINER =="

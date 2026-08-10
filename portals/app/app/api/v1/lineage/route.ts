@@ -14,6 +14,7 @@ import { z } from "zod";
 import { wouldCreateCycle } from "../../../(app)/lineage/graph-core";
 import { authenticateApiRequest } from "../../../lib/api/auth";
 import {
+  findIdempotentReplay,
   isUniqueViolation,
   readIdempotencyKey,
   runIdempotentCreate,
@@ -88,6 +89,21 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { upstreamDatasetId: up, downstreamDatasetId: down } = parsed.value;
 
+  const fetchEdge = async (targetId: string) => {
+    const row = await prisma.lineageEdge.findFirst({ where: { id: targetId, workspaceId: auth.workspaceId } });
+    return row ? toEdgeView(row) : null;
+  };
+
+  // Replay check BEFORE the duplicate/cycle pre-checks: the edge the original
+  // request created would otherwise report duplicate_edge.
+  if (storedKey) {
+    const replay = await findIdempotentReplay(storedKey, CREATE_ACTION, fetchEdge);
+    if (replay?.kind === "conflict") return problem(409, "idempotency_conflict");
+    if (replay) {
+      return NextResponse.json(replay.value, { status: 200, headers: { "idempotency-replayed": "true" } });
+    }
+  }
+
   // Both endpoints must be tenant-owned datasets of THIS workspace
   // (LineageEdge.workspaceId is non-null; platform reference assets carry no
   // workspace-scoped lineage).
@@ -134,10 +150,7 @@ export async function POST(req: NextRequest) {
           });
           return toEdgeView(row);
         }),
-      async (targetId) => {
-        const row = await prisma.lineageEdge.findFirst({ where: { id: targetId, workspaceId: auth.workspaceId } });
-        return row ? toEdgeView(row) : null;
-      },
+      fetchEdge,
     );
 
     if (outcome.kind === "conflict") return problem(409, "idempotency_conflict");
