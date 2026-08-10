@@ -988,6 +988,16 @@
       "title": "创建 API 密钥",
       "desc": "密钥用于外部调用方访问已发布的数据服务。",
       "name": "密钥名称",
+      "scopes": "权限范围（/api/v1）",
+      "scopesHint": "不勾选任何范围时，密钥仅可调用数据服务网关；每个范围解锁对应的 /api/v1 端点。",
+      "scopeDesc": {
+        "catalog_read": "读取数据目录与资产画像",
+        "catalog_write": "注册数据集（agent 产出登记）",
+        "quality_read": "读取质量规则与检查结果",
+        "lineage_read": "读取数据血缘",
+        "lineage_write": "登记血缘边",
+        "access_write": "提交数据访问申请"
+      },
       "cancel": "取消",
       "submit": "创建",
       "done": "完成",

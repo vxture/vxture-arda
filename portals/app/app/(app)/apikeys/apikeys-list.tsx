@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import {
   Button,
+  Checkbox,
   DataTable,
   Dialog,
   DialogContent,
@@ -19,10 +20,13 @@ import {
   type MetricGridItem,
 } from "@vxture/design-system";
 import { useTranslations } from "@arda/shared/i18n";
+import { API_SCOPES } from "../../lib/api/scopes";
 import { PIcon } from "../../ui/phosphor-icon";
 import { SectionHeading } from "../../ui/section-heading";
 import { createApiKey, revokeApiKey, type CreateKeyResult } from "./actions";
 import type { ApiKeyMetrics, ApiKeyView } from "./data";
+
+const SCOPE_OPTIONS: readonly string[] = Object.values(API_SCOPES);
 
 function fmtDate(iso: string | null, never: string): string {
   return iso ? new Date(iso).toLocaleString() : never;
@@ -34,16 +38,22 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newScopes, setNewScopes] = useState<string[]>([]);
   const [mintedToken, setMintedToken] = useState<string | null>(null);
   const [createErr, setCreateErr] = useState<string | null>(null);
+
+  const toggleScope = (scope: string, on: boolean) => {
+    setNewScopes((prev) => (on ? [...prev, scope] : prev.filter((s) => s !== scope)));
+  };
 
   const mint = () => {
     setCreateErr(null);
     startTransition(async () => {
-      const res: CreateKeyResult = await createApiKey({ name: newName });
+      const res: CreateKeyResult = await createApiKey({ name: newName, scopes: newScopes });
       if (res.ok) {
         setMintedToken(res.token);
         setNewName("");
+        setNewScopes([]);
       } else {
         setCreateErr(t("create.error." + res.error));
       }
@@ -54,6 +64,7 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
     setCreateOpen(false);
     setMintedToken(null);
     setCreateErr(null);
+    setNewScopes([]);
   };
 
   const revoke = (id: string) => {
@@ -186,6 +197,28 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
               <div>
                 <Label htmlFor="key-name">{t("create.name")}</Label>
                 <Input id="key-name" value={newName} maxLength={120} onChange={(e) => setNewName(e.target.value)} />
+              </div>
+              <div>
+                <Label>{t("create.scopes")}</Label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+                  {SCOPE_OPTIONS.map((scope) => (
+                    <label key={scope} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <Checkbox
+                        checked={newScopes.includes(scope)}
+                        onCheckedChange={(on) => toggleScope(scope, on === true)}
+                      />
+                      <span className="mono" style={{ fontSize: 13 }}>
+                        {scope}
+                      </span>
+                      <span className="dim" style={{ fontSize: 12 }}>
+                        {t("create.scopeDesc." + scope.replace(":", "_"))}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="dim" style={{ fontSize: 12, marginTop: 6 }}>
+                  {t("create.scopesHint")}
+                </p>
               </div>
               {createErr && <p style={{ color: "var(--vx-color-danger-600)", fontSize: 13 }}>{createErr}</p>}
             </div>
