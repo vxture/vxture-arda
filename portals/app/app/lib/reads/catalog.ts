@@ -58,7 +58,7 @@ type DatasetRow = {
   updatedAt: Date;
 };
 
-function toSummary(d: DatasetRow): DatasetSummary {
+export function toDatasetSummary(d: DatasetRow): DatasetSummary {
   return {
     id: d.id,
     code: d.code,
@@ -106,7 +106,13 @@ export async function listDatasets(
     ...(params.cursorId ? { cursor: { id: params.cursorId }, skip: 1 } : {}),
   });
   const page = pageOf(rows, params.limit);
-  return { data: page.data.map(toSummary), nextCursor: page.nextCursor };
+  return { data: page.data.map(toDatasetSummary), nextCursor: page.nextCursor };
+}
+
+/** Single-dataset summary fetch (used by POST create/replay responses). */
+export async function getDatasetSummary(workspaceId: string, id: string): Promise<DatasetSummary | null> {
+  const row = await prisma.dataset.findFirst({ where: { id, ...workspaceOrPlatform(workspaceId) } });
+  return row ? toDatasetSummary(row) : null;
 }
 
 /** Derived score for one latest result (biz-100 3.5, never stored). */
@@ -171,7 +177,7 @@ export async function getDatasetDetail(workspaceId: string, id: string): Promise
   }
 
   return {
-    ...toSummary(row),
+    ...toDatasetSummary(row),
     location: row.location,
     source: row.source
       ? {

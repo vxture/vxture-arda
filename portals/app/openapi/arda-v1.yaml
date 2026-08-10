@@ -18,6 +18,14 @@ info:
       null on the last page. Cursor tokens are opaque.
     - Rate limit: per key, fixed window per minute (default 120). Exceeding it
       returns 429 with `Retry-After`.
+    - Idempotency: every POST accepts an optional `Idempotency-Key` header
+      (printable ASCII, 1-180 chars, unique per workspace per operation).
+      Retrying with the same key returns the originally created resource with
+      200 and `idempotency-replayed: true` instead of creating a duplicate;
+      reusing a key for a different operation is a 409 `idempotency_conflict`.
+    - Entitlement note: writes ride the same data-access gate as reads
+      (standalone subscription OR bundled agent plan); the product-UI
+      capability matrix does not apply to this surface.
     - Versioning: v1 evolves additively only (new optional fields, new
       endpoints). Breaking changes open /api/v2.
 servers:
@@ -76,6 +84,35 @@ paths:
                     items: { $ref: "#/components/schemas/DatasetSummary" }
                   nextCursor:
                     type: [string, "null"]
+        default: { $ref: "#/components/responses/Problem" }
+
+    post:
+      operationId: createDataset
+      tags: [catalog]
+      summary: Register a dataset produced by the calling agent
+      description: >
+        Catalogs a dataset in the key's workspace. Provenance is taken from
+        the credential: `ownerApp` is set to the key's `consumerApp`, never
+        from the body. Subject to the workspace dataset quota. Required
+        scope: `catalog:write`.
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DatasetCreate" }
+      responses:
+        "201":
+          description: Created. `Location` points at the new dataset.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetSummary" }
+        "200":
+          description: Idempotent replay of a previous creation (`idempotency-replayed: true`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetSummary" }
         default: { $ref: "#/components/responses/Problem" }
 
   /api/v1/datasets/{id}:
@@ -187,6 +224,63 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/LineageGraph" }
         default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createLineageEdge
+      tags: [lineage]
+      summary: Record a curated lineage edge
+      description: >
+        Declares upstream -> downstream between two tenant-owned datasets of
+        the key's workspace. Duplicate edges are 409 `duplicate_edge`; edges
+        that would close a cycle are 409 `cycle_detected` (lineage is a DAG).
+        Required scope: `lineage:write`.
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LineageEdgeCreate" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageEdge" }
+        "200":
+          description: Idempotent replay (`idempotency-replayed: true`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageEdge" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api/v1/access-requests:
+    post:
+      operationId: createAccessRequest
+      tags: [catalog]
+      summary: Submit a data access / sharing request
+      description: >
+        Files an access request for a tenant-owned dataset; it lands in the
+        workspace admin approval center as `pending`. Decisions are made by
+        humans in the product UI. Required scope: `access:write`.
+      parameters:
+        - $ref: "#/components/parameters/idempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessRequestCreate" }
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+        "200":
+          description: Idempotent replay (`idempotency-replayed: true`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+        default: { $ref: "#/components/responses/Problem" }
 
 components:
   securitySchemes:
@@ -197,7 +291,8 @@ components:
       description: >
         Workspace-bound API key minted by a workspace admin. Only the sha256
         hash is stored server-side. Scopes on the key gate each endpoint:
-        catalog:read, quality:read, lineage:read.
+        catalog:read, catalog:write, quality:read, lineage:read,
+        lineage:write, access:write.
 
   parameters:
     limit:
@@ -210,14 +305,25 @@ components:
       in: query
       description: Opaque cursor from the previous page's `nextCursor`.
       schema: { type: string }
+    idempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >
+        Client-chosen replay guard for this operation (printable ASCII,
+        1-180 chars). Scoped per workspace per operation.
+      schema: { type: string, minLength: 1, maxLength: 180 }
 
   responses:
     Problem:
       description: >
         Error (RFC 9457). Stable `code` values include: missing_api_key,
-        invalid_api_key (401); insufficient_scope, entitlement_required (403);
-        not_found (404); workspace_wiped (410); invalid_parameter,
-        invalid_cursor (400); rate_limited (429, with Retry-After header).
+        invalid_api_key (401); insufficient_scope, entitlement_required,
+        quota_exceeded (403); not_found (404); workspace_wiped (410);
+        invalid_parameter, invalid_cursor, invalid_body,
+        invalid_idempotency_key (400); duplicate_code, duplicate_edge,
+        cycle_detected, idempotency_conflict (409); rate_limited (429, with
+        Retry-After header).
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -326,6 +432,80 @@ components:
               properties:
                 upstream: { type: integer }
                 downstream: { type: integer }
+
+    DatasetCreate:
+      type: object
+      additionalProperties: false
+      required: [code, name, type]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: "^[\\x21-\\x7e]+$"
+          description: Technical slug, unique per workspace (printable ASCII, no spaces).
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        domain: { type: string, minLength: 1, maxLength: 120 }
+        team: { type: string, minLength: 1, maxLength: 120 }
+        type: { type: string, enum: [table, view, file, stream] }
+        location: { type: string, minLength: 1, maxLength: 500 }
+        classification:
+          allOf: [{ $ref: "#/components/schemas/AssetLevel" }]
+          default: internal
+        refreshFreq: { type: string, enum: [realtime, daily, weekly, monthly] }
+        rowCountEst: { type: integer, minimum: 0 }
+        sizeBytes: { type: integer, minimum: 0 }
+
+    LineageEdgeCreate:
+      type: object
+      additionalProperties: false
+      required: [upstreamDatasetId, downstreamDatasetId]
+      properties:
+        upstreamDatasetId: { type: string }
+        downstreamDatasetId: { type: string }
+        transform: { type: string, minLength: 1, maxLength: 500 }
+        jobId: { type: string, minLength: 1, maxLength: 120 }
+
+    LineageEdge:
+      type: object
+      required: [id, upstreamDatasetId, downstreamDatasetId, transform, jobId]
+      properties:
+        id: { type: string }
+        upstreamDatasetId: { type: string }
+        downstreamDatasetId: { type: string }
+        transform: { type: [string, "null"] }
+        jobId: { type: [string, "null"] }
+
+    AccessRequestCreate:
+      type: object
+      additionalProperties: false
+      required: [datasetId, useCase, justification]
+      properties:
+        datasetId: { type: string }
+        useCase: { type: string, minLength: 1, maxLength: 200 }
+        justification: { type: string, minLength: 1, maxLength: 1000 }
+        scope: { type: string, minLength: 1, maxLength: 200 }
+        duration: { type: string, minLength: 1, maxLength: 120 }
+        method: { type: string, minLength: 1, maxLength: 120 }
+
+    AccessRequest:
+      type: object
+      required:
+        [id, datasetId, requesterSub, requesterName, useCase, scope,
+         justification, duration, method, status, createdAt]
+      properties:
+        id: { type: string }
+        datasetId: { type: [string, "null"] }
+        requesterSub: { type: string, description: "apikey:<consumerApp|name> for API callers." }
+        requesterName: { type: [string, "null"] }
+        useCase: { type: string }
+        scope: { type: [string, "null"] }
+        justification: { type: string }
+        duration: { type: [string, "null"] }
+        method: { type: [string, "null"] }
+        status: { type: string, description: "pending | approved | rejected | cancelled" }
+        createdAt: { type: string, format: date-time }
 
     QualityRuleSummary:
       type: object

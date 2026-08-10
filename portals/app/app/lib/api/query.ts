@@ -26,6 +26,30 @@ export function parseQuery<Schema extends z.ZodType>(
   return { ok: true, value: result.data };
 }
 
+/**
+ * JSON body validation for /api/v1 write handlers. Malformed JSON and schema
+ * violations both become a 400 `invalid_body` problem listing every issue.
+ */
+export async function parseBody<Schema extends z.ZodType>(
+  req: NextRequest,
+  schema: Schema,
+): Promise<ParsedQuery<z.infer<Schema>>> {
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return { ok: false, response: problem(400, "invalid_body", "Request body must be valid JSON.") };
+  }
+  const result = schema.safeParse(raw);
+  if (!result.success) {
+    const detail = result.error.issues
+      .map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`)
+      .join("; ");
+    return { ok: false, response: problem(400, "invalid_body", detail) };
+  }
+  return { ok: true, value: result.data };
+}
+
 /** Resolve the shared limit/cursor pair every list endpoint accepts. */
 export function parsePage(value: {
   limit?: string;
