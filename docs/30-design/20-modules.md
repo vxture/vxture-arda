@@ -68,7 +68,7 @@ max-file: 3
 
 ## arda-redis
 
-**Image:** `redis:7-alpine`
+**Image:** `redis:8-alpine`
 **Container name:** `${PROJECT_NAME}-redis` (e.g., `arda-redis`, `arda-beta-redis`)
 **Internal port:** `6379`
 **Published port:** None (container-internal only)

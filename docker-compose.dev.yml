@@ -88,7 +88,7 @@ services:
 
   redis:
     container_name: vx-arda-redis-db-dev
-    image: redis:7-alpine
+    image: redis:8-alpine
     command: ["redis-server", "--appendonly", "no", "--save", ""]
     networks: [appnet]
     restart: unless-stopped

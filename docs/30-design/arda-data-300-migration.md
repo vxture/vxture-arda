@@ -42,7 +42,7 @@
 | 服务 | 镜像 | 端口 | 卷 |
 |---|---|---|---|
 | `arda-app` | 自有镜像 `arda-app` | `APP_PUBLISH_PORT`（prod 3230 / beta 3231） | 无（无状态） |
-| `arda-redis` | `redis:7-alpine` | 内部 | `${DATA_DIR}/redis:/data`（AOF） |
+| `arda-redis` | `redis:8-alpine` | 内部 | `${DATA_DIR}/redis:/data`（AOF） |
 | `arda-db` | `postgres:16-alpine` | 内部 | `${DATA_DIR}/postgres:/var/lib/postgresql/data` |
 
 每栈数据目录：prod `/srv/md0/arda/data`、beta `/srv/md1/arda-beta/data`。
