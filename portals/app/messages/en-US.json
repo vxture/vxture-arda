@@ -988,6 +988,16 @@
       "title": "Create API key",
       "desc": "The key authenticates external callers of your published data services.",
       "name": "Key name",
+      "scopes": "Scopes (/api/v1)",
+      "scopesHint": "With no scope selected the key can only call the data-service gateway; each scope unlocks the matching /api/v1 endpoints.",
+      "scopeDesc": {
+        "catalog_read": "Read the catalog and asset profiles",
+        "catalog_write": "Register datasets (agent-produced)",
+        "quality_read": "Read quality rules and check results",
+        "lineage_read": "Read dataset lineage",
+        "lineage_write": "Record lineage edges",
+        "access_write": "Submit data access requests"
+      },
       "cancel": "Cancel",
       "submit": "Create",
       "done": "Done",
