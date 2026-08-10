@@ -1,0 +1,105 @@
+# Local dev stack - builds the app image from the working tree and runs the
+# full arda group (app + postgres + redis) on this machine, mirroring the
+# runos/atlas local-stack conventions:
+#
+#   compose project  arda                       (Docker Desktop group)
+#   containers       vx-arda-app-dev / vx-arda-postgres-db-dev / vx-arda-redis-db-dev
+#   image            ghcr.io/vxture/arda-app:local   (compose build, never pushed)
+#
+# This file NEVER deploys anywhere: the deploy stacks use docker-compose.yml
+# with CI-built images. Service names (app/db/redis) are the stable network
+# aliases, so container renames never break a URL.
+#
+# Usage:
+#   NODE_AUTH_TOKEN=<PAT with read:packages> docker compose -f docker-compose.dev.yml up -d --build
+#   bash deploy/database/apply-local-dev.sh     # DDL baseline into the dev db
+#   open http://localhost:3230  (MOCK_AUTH auto-creates a session)
+name: ${PROJECT_NAME:-arda}
+
+services:
+  app:
+    container_name: vx-arda-app-dev
+    build:
+      context: ./portals
+      dockerfile: ./app/Dockerfile
+      # Explicit last-stage pin (#193): never depend on stage order.
+      target: runner
+      # @vxture/* packages come from GitHub Packages; local builds need
+      # NODE_AUTH_TOKEN (PAT with read:packages) in the environment. BuildKit
+      # secret, same as CI - never a build-arg.
+      secrets:
+        - node_auth_token
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: ghcr.io/vxture/arda-app:local
+    ports:
+      - "3230:3230"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      PORT: "3230"
+      DEPLOY_STAGE: "dev"
+      APP_VERSION: "local"
+      # Mock auth: no IdP locally - dev-login creates the session in redis.
+      MOCK_AUTH: "true"
+      MOCK_STATE: "${MOCK_STATE:-subscribed}"
+      MOCK_TIER: "${MOCK_TIER:-pro}"
+      REDIS_URL: "redis://redis:6379"
+      # Connect as the least-privilege service role (prod parity), created by
+      # deploy/database/ddl/97_service_role.sql via apply-local-dev.sh.
+      DATABASE_URL: "postgresql://arda_svc:${ARDA_SVC_PASSWORD:-arda_svc_dev}@db:5432/vx_arda_db?schema=public"
+      RP_SESSION_TTL: "86400"
+      DEFAULT_LANDING: "${DEFAULT_LANDING:-/dashboard}"
+      # First-entry seed so a fresh workspace lands on demo-shaped data.
+      ARDA_SEED_AUTOFILL: "true"
+      INTERNAL_JOB_TOKEN: "${INTERNAL_JOB_TOKEN:-dev-job-token}"
+      DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:-}"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3230/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks: [appnet]
+    restart: unless-stopped
+
+  db:
+    container_name: vx-arda-postgres-db-dev
+    # postgres 18: parent-dir mount + real-query healthcheck (#192).
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: "vx_arda_db"
+      POSTGRES_USER: "${POSTGRES_USER:-arda}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-arda}"
+    volumes:
+      - arda-dev-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${POSTGRES_USER:-arda} -d vx_arda_db -c 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [appnet]
+    restart: unless-stopped
+
+  redis:
+    container_name: vx-arda-redis-db-dev
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    networks: [appnet]
+    restart: unless-stopped
+
+networks:
+  appnet:
+    name: ${PROJECT_NAME:-arda}-dev-net
+
+volumes:
+  arda-dev-pgdata:
+
+secrets:
+  node_auth_token:
+    environment: NODE_AUTH_TOKEN
