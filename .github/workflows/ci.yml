@@ -168,13 +168,13 @@ jobs:
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         uses: pnpm/action-setup@v6
         with:
-          version: "10.30.3"
+          version: "11.21.0"
 
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           cache-dependency-path: portals/pnpm-lock.yaml
 
@@ -188,18 +188,17 @@ jobs:
             nextcache-app-${{ hashFiles('portals/pnpm-lock.yaml') }}-
             nextcache-app-
 
-      # Install the whole pnpm workspace from portals/. The committed
-      # portals/.npmrc declares the @vxture registry, node-linker=hoisted, and a
-      # `//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}` line pnpm expands
-      # from the job env - so the secret never passes through the shell and no
-      # .npmrc is written at build time. A co-located .npmrc is required because
-      # the token is dropped on the GitHub Packages tarball fetch otherwise.
+      # pnpm 11 no longer env-expands credentials in the committed project
+      # .npmrc (#191 supply-chain hardening): it now carries the @vxture scope
+      # mapping + node-linker only, and the auth line is written to the
+      # runner-local user config from the job-env secret before install.
       - name: Install dependencies
         if: ${{ steps.changes.outputs.run_build == 'true' }}
         shell: bash
         working-directory: portals
         run: |
           set -euo pipefail
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           pnpm install --frozen-lockfile
 
       - name: Type check
@@ -282,13 +281,13 @@ jobs:
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
         uses: pnpm/action-setup@v6
         with:
-          version: "10.30.3"
+          version: "11.21.0"
 
       - name: Set up Node.js
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
         uses: actions/setup-node@v7
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           cache-dependency-path: portals/pnpm-lock.yaml
 
@@ -300,6 +299,7 @@ jobs:
         working-directory: portals
         run: |
           set -euo pipefail
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
           pnpm install --frozen-lockfile
 
       # `--if-present` keeps this evergreen (140 SS1: the context must report
