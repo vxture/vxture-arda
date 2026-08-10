@@ -68,3 +68,4 @@ coverage/
 # Python bytecode (local compileall artifacts)
 __pycache__/
 *.pyc
+/.cookies*

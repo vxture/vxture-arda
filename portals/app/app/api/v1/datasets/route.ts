@@ -11,6 +11,7 @@ import { z } from "zod";
 import { getEntitlementResolver } from "../../../entitlement/resolver";
 import { authenticateApiRequest } from "../../../lib/api/auth";
 import {
+  findIdempotentReplay,
   isUniqueViolation,
   readIdempotencyKey,
   runIdempotentCreate,
@@ -82,6 +83,18 @@ export async function POST(req: NextRequest) {
   const parsed = await parseBody(req, CREATE_BODY);
   if (!parsed.ok) return parsed.response;
   const body = parsed.value;
+
+  // Replay check BEFORE the business pre-checks: the original request's own
+  // resource would otherwise trip duplicate_code/quota below.
+  if (storedKey) {
+    const replay = await findIdempotentReplay(storedKey, CREATE_ACTION, (id) =>
+      getDatasetSummary(auth.workspaceId, id),
+    );
+    if (replay?.kind === "conflict") return problem(409, "idempotency_conflict");
+    if (replay) {
+      return NextResponse.json(replay.value, { status: 200, headers: { "idempotency-replayed": "true" } });
+    }
+  }
 
   // Same quota gate as source sync (no silent caps): tenant-owned datasets only.
   const [quota, count] = await Promise.all([
