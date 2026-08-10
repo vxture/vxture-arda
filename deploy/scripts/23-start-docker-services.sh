@@ -25,6 +25,24 @@ cd "$REPO_DIR"
 
 CONTAINERS=("${PROJECT_NAME}-redis" "${PROJECT_NAME}-db" "${PROJECT_NAME}-app")
 
+# Per-image mirror fallback: deploy.yml mirrors every compose image into the
+# ACR namespace before the SSH step, so when the source registry (docker.io
+# for postgres/redis) is unreachable from this host, the same tag is pulled
+# from the mirror and retagged to the name compose expects.
+pull_from_mirror() {
+  local image="$1"
+  local pull_timeout="${DOCKER_PULL_TIMEOUT_SECONDS:-90}"
+  [[ -n "${FALLBACK_IMAGE_REGISTRY:-}" && -n "${FALLBACK_IMAGE_NAMESPACE:-}" ]] || return 1
+  local mirror="${FALLBACK_IMAGE_REGISTRY}/${FALLBACK_IMAGE_NAMESPACE}/${image##*/}"
+  [[ "$mirror" != "$image" ]] || return 1
+  log_warn "Retrying $image from mirror $mirror"
+  if timeout "$pull_timeout" docker pull --quiet "$mirror"; then
+    docker tag "$mirror" "$image"
+    return 0
+  fi
+  return 1
+}
+
 pull_images_for_current_registry() {
   local image attempt
   local -a images
@@ -39,6 +57,9 @@ pull_images_for_current_registry() {
       fi
 
       if [[ "$attempt" -eq 3 ]]; then
+        if pull_from_mirror "$image"; then
+          break
+        fi
         log_error "docker pull failed after retries: $image"
         return 1
       fi
