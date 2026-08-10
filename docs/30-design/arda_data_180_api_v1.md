@@ -2,7 +2,7 @@
 
 > 状态：权威设计 · 已落地（只读面 + 写操作 v1；身份透传与工具清单见 §6 路线）
 > 层：arda 数据域 · 横切工程（对外消费接口面）
-> 机器可读契约：`portals/app/openapi/arda-v1.yaml`（OpenAPI 3.1，与代码同 PR 演进；本文是约定的可读版）
+> 机器可读契约：`portals/app/public/openapi/arda-v1.yaml`（OpenAPI 3.1，与代码同 PR 演进；线上以 `/openapi/arda-v1.yaml` 公开可取；本文是约定的可读版）
 > 上游/兄弟：消费契约总纲 [`data-170`](arda-data-170-platform-agent-support.md)；隔离 [`data-110`](arda-data-110-isolation.md)；审计 [`data-140`](arda-data-140-audit.md)；服务板块 [`data-240`](arda-data-240-services.md)；权益 [`ent-120`](arda-ent-120-consumption-contract.md)
 > 实现落点：`portals/app/app/api/v1/**`（路由）、`portals/app/app/lib/api/**`（横切基建）、`portals/app/app/lib/reads/**`（领域读函数）
 
@@ -96,7 +96,7 @@
 - **元数据读不逐次落审计**：`AuditLog` 审计的是数据取用与变更（[`data-140`](arda-data-140-audit.md)）；目录列表逐次落审计会灌满审计表。数据字节出口（DataService 网关）保持逐次审计不变。
 - **读不计量**：`service.api.call` 是 DataService 取用的计费指标，编目元数据读不挪用该指标；API 面计量待 [`biz-260`](arda-biz-260-billing.md) 定义专属指标后接入。
 
-后续（第三步及机械收尾）：token exchange 身份透传（RFC 8693，替代/并行 ApiKey）、`.well-known/vxture-tools` 工具清单填充（面向任务的粗粒度工具，非 CRUD 镜像）、存量审计写入点迁移到 `writeAudit`、apikeys UI 的 scope 选择器。
+已落地的第三步 arda 侧交付：`.well-known/vxture-tools` 工具清单（7 个面向任务的粗粒度工具,绑定 OpenAPI operationId,统一入口据此渲染 MCP）；OpenAPI 契约经 `/openapi/arda-v1.yaml` 公开可取。剩余：token exchange 身份透传（RFC 8693,需 accounts.vxture.com 平台侧支持,替代/并行 ApiKey）。（存量审计迁移与 apikeys scope 选择器已完成。）
 
 ## 变更规程
 
