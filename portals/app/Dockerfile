@@ -1,4 +1,4 @@
-ARG NODE_BASE_IMAGE=node:22-alpine
+ARG NODE_BASE_IMAGE=node:24-alpine
 
 # Build context is the portals/ workspace root (pnpm workspace). This image
 # builds the @arda/app workspace; shared code comes from the internal
@@ -8,7 +8,7 @@ ARG NODE_BASE_IMAGE=node:22-alpine
 FROM ${NODE_BASE_IMAGE} AS deps
 WORKDIR /app
 ARG VXTURE_NPM_REGISTRY=https://npm.pkg.github.com
-RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
 # Root manifest + lockfile + workspace file + every member manifest (pnpm needs
 # them all to resolve the workspace before install).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -16,19 +16,20 @@ COPY app/package.json ./app/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 # The @vxture registry PAT rides a BuildKit secret mount, not a build-arg: a
 # build-arg is recorded in image/build metadata and can persist into the
-# exported layer cache (cache-to gha,mode=max), leaking the token. The secret
-# is mounted as a file for this RUN only, read into .npmrc, and the .npmrc is
-# deleted in the same layer (the deps stage is intermediate and never pushed).
+# exported layer cache (cache-to gha,mode=max), leaking the token. pnpm 11 no
+# longer honors credentials in a project-level .npmrc (#191), so the token is
+# written to the USER config (/root/.npmrc) for this RUN only and deleted in
+# the same layer (the deps stage is intermediate and never pushed).
 RUN --mount=type=secret,id=node_auth_token \
-    printf '@vxture:registry=%s\nnode-linker=hoisted\n//npm.pkg.github.com/:_authToken=%s\n' \
-      "$VXTURE_NPM_REGISTRY" "$(cat /run/secrets/node_auth_token)" > .npmrc \
+    printf '@vxture:registry=%s\nnode-linker=hoisted\n' "$VXTURE_NPM_REGISTRY" > .npmrc \
+    && printf '//npm.pkg.github.com/:_authToken=%s\n' "$(cat /run/secrets/node_auth_token)" > /root/.npmrc \
     && pnpm install --frozen-lockfile \
-    && rm -f .npmrc
+    && rm -f /root/.npmrc
 
 FROM ${NODE_BASE_IMAGE} AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
+RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
 # NEXT_PUBLIC_* vars are baked into the browser bundle at build time. Pass them
 # as build args so CI can inject the correct value per stack (prod vs beta).
 ARG NEXT_PUBLIC_APP_ENV=prod

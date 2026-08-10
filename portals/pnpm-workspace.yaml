@@ -3,3 +3,24 @@
 packages:
   - app
   - packages/*
+
+# Next.js standalone build + the Dockerfile deps-stage COPY assume a flat,
+# hoisted node_modules. pnpm 11 reads this setting from here, not .npmrc
+# (which keeps the registry mapping only).
+nodeLinker: hoisted
+
+# Security pins (moved from package.json "pnpm.overrides" - pnpm 11 reads
+# these settings from this file only).
+overrides:
+  sharp: "^0.35.0"
+  "@prisma/dev": "^0.24.16"
+  valibot: "^1.4.2"
+
+# pnpm 11 supply-chain hardening (version baseline #191): dependency build
+# scripts run ONLY for this explicit allowlist.
+allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  esbuild: true
+  sharp: true
+  "@tailwindcss/oxide": true
