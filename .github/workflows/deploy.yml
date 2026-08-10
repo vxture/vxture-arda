@@ -305,7 +305,12 @@ jobs:
             -o ConnectTimeout=30 \
             "$DEPLOY_USER@$DEPLOY_HOST" "printf '%s\n' '$PASSED_SHA' > '$deploy_dir/VERSION'"
 
-          cat > /tmp/deploy.sh <<'REMOTE_SCRIPT'
+          # Unique per product+run: a fixed shared-host path can be overwritten
+          # MID-EXECUTION by a concurrent deploy from a sibling product repo
+          # (bash reads scripts lazily), which produced a phantom syntax error
+          # in an otherwise healthy deploy (issue #203).
+          remote_script="/tmp/deploy-arda-${GITHUB_RUN_ID}.sh"
+          cat > "$remote_script" <<'REMOTE_SCRIPT'
           set -euo pipefail
 
           cd "$REPO_DIR"
@@ -347,8 +352,8 @@ jobs:
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=20 \
             -o ConnectTimeout=30 \
-            /tmp/deploy.sh \
-            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy.sh"
+            "$remote_script" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$remote_script"
 
           remote_env=(
             "REPO_DIR=$deploy_dir"
@@ -371,7 +376,7 @@ jobs:
             printf -v escaped '%q=%q ' "$key" "$value"
             remote_cmd+="$escaped"
           done
-          remote_cmd+="bash /tmp/deploy.sh"
+          remote_cmd+="bash $remote_script && rm -f $remote_script"
 
           # Feed the env-prefixed command to a remote `bash -s` over stdin
           # instead of passing it as ssh argv. The secret assignments
