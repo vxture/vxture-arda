@@ -65,7 +65,6 @@ REQUIRED_VARS=(
   REDIS_URL RP_SESSION_TTL RP_SESSION_COOKIE_NAME RP_SESSION_COOKIE_DOMAIN
   DEFAULT_LANDING MOCK_TIER
   IMAGE_REGISTRY IMAGE_NAMESPACE IMAGE_TAG
-  VXTURE_NPM_REGISTRY
 )
 
 for var in "${REQUIRED_VARS[@]}"; do
@@ -120,20 +119,6 @@ elif is_valid_host "${RP_SESSION_COOKIE_DOMAIN:-}"; then
   log_ok "RP_SESSION_COOKIE_DOMAIN is host-only"
 else
   fail "RP_SESSION_COOKIE_DOMAIN is not a valid host"
-fi
-
-if [[ "${VXTURE_NPM_REGISTRY:-}" =~ ^https?://[^[:space:]]+$ ]]; then
-  log_ok "VXTURE_NPM_REGISTRY is valid"
-else
-  fail "VXTURE_NPM_REGISTRY must be an http(s) URL"
-fi
-
-if [[ "${VXTURE_NPM_REGISTRY:-}" == *"npm.pkg.github.com"* ]]; then
-  if [[ -n "${NODE_AUTH_TOKEN:-}" ]]; then
-    log_ok "NODE_AUTH_TOKEN is set for GitHub Packages"
-  else
-    fail "NODE_AUTH_TOKEN is required when VXTURE_NPM_REGISTRY uses GitHub Packages"
-  fi
 fi
 
 # -- Docker --------------------------------------------------------------------
