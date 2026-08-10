@@ -74,6 +74,10 @@ services:
     container_name: vx-arda-postgres-db-dev
     # postgres 18: parent-dir mount + real-query healthcheck (#192).
     image: postgres:18-alpine
+    # Loopback-only publish so local tooling (prisma db push, seed scripts)
+    # can reach the dev db without entering the container.
+    ports:
+      - "127.0.0.1:15432:5432"
     environment:
       POSTGRES_DB: "vx_arda_db"
       POSTGRES_USER: "${POSTGRES_USER:-arda}"

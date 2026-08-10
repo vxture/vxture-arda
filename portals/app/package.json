@@ -10,7 +10,8 @@
     "type-check": "prisma generate && tsc --noEmit",
     "test": "node --import tsx --test \"app/**/*.test.ts\"",
     "prisma:generate": "prisma generate",
-    "db:seed": "prisma generate && tsx prisma/seed.ts"
+    "db:seed": "prisma generate && tsx prisma/seed.ts",
+    "db:seed:test": "tsx prisma/seed-test-data.ts"
   },
   "dependencies": {
     "@arda/shared": "workspace:*",
