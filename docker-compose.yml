@@ -71,7 +71,7 @@ services:
       # migrates. Host is ${PROJECT_NAME}-db so prod/beta never collide. The
       # default here is the local-dev fallback (owner role, no arda_svc yet);
       # deployed stacks set DATABASE_URL in etc/.env to connect as arda_svc.
-      DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/vxturebiz_arda_prod?schema=public}"
+      DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/vx_arda_db?schema=public}"
       RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
       # Host-only cookie (no leading dot): scoped to this exact domain.
@@ -140,19 +140,27 @@ services:
   # published ports). Data under DATA_DIR survives restarts and redeploys; prod
   # and beta use separate stacks/dirs so their data never mixes.
   arda-db:
-    image: postgres:16-alpine
+    # postgres 18 (version-baseline #192): the volume binds the PARENT
+    # postgresql dir, not .../data - the 18+ image refuses the pre-18 layout
+    # and the versioned subdirectory enables pg_upgrade --link across majors.
+    # Database name is ADR-007 form vx_arda_db (#190): identity only - env
+    # lives in the stack/container name, engine in the container name.
+    image: postgres:18-alpine
     container_name: ${PROJECT_NAME:-arda}-db
     restart: always
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-arda}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-arda}"
-      POSTGRES_DB: "${POSTGRES_DB:-vxturebiz_arda_prod}"
+      POSTGRES_DB: "${POSTGRES_DB:-vx_arda_db}"
     volumes:
-      - ${DATA_DIR}/postgres:/var/lib/postgresql/data
+      - ${DATA_DIR}/postgres:/var/lib/postgresql
     networks:
       - arda-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-vxturebiz_arda_prod}"]
+      # Real query against the target DB, NOT pg_isready: during first-time
+      # init the entrypoint runs a temp server before POSTGRES_DB exists and
+      # pg_isready already reports success in that phase (#192 gotcha 3).
+      test: ["CMD-SHELL", "psql -U ${POSTGRES_USER:-arda} -d ${POSTGRES_DB:-vx_arda_db} -c 'SELECT 1' >/dev/null 2>&1"]
       interval: 30s
       timeout: 5s
       retries: 5

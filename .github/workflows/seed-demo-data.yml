@@ -98,10 +98,10 @@ jobs:
           set -euo pipefail
           port="${DEPLOY_PORT:-22}"
           # container_name is ${PROJECT_NAME}-db: prod=arda-db, beta=arda-beta-db.
-          # Database name follows vxturebiz_arda_{env} (data_platform_100 2.3).
+          # Database name is ADR-007 vx_arda_db for every env (runos->arda #190):
           case "$ENVIRONMENT" in
-            production) db="arda-db";      dbname="vxturebiz_arda_prod" ;;
-            beta)       db="arda-beta-db"; dbname="vxturebiz_arda_beta" ;;
+            production) db="arda-db";      dbname="vx_arda_db" ;;
+            beta)       db="arda-beta-db"; dbname="vx_arda_db" ;;
             *) echo "unknown environment: $ENVIRONMENT" >&2; exit 1 ;;
           esac
           echo "Loading demo data for workspace '$WS' into $dbname ($db) on $DEPLOY_HOST ..."

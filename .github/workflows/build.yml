@@ -190,6 +190,10 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          # Explicit last-stage pin (runos->arda #193 / platform #209): with no
+          # target, docker builds the LAST stage - adding any stage after
+          # `runner` would silently ship the wrong entrypoint.
+          target: runner
           push: true
           # GitHub Actions cache backend: reuses unchanged layers (e.g. npm
           # install) across separate build runs instead of building from
