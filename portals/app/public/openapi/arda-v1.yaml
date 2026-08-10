@@ -35,6 +35,7 @@ servers:
     description: Beta
 security:
   - apiKey: []
+  - s2sBearer: []
 tags:
   - name: catalog
     description: Dataset catalog (workspace assets + read-only platform reference overlay)
@@ -284,6 +285,15 @@ paths:
 
 components:
   securitySchemes:
+    s2sBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Platform token-exchange bearer (product_210, aud=arda, 300s TTL,
+        scope tool:arda). arda additionally enforces an act.sub allow-list;
+        allow-listed callers get the full /api/v1 surface (operation authz
+        is arda's own model, not token scope).
     apiKey:
       type: apiKey
       in: header
