@@ -24,7 +24,8 @@ import type { ApiScope } from "./scopes";
 
 export interface ApiContext {
   workspaceId: string;
-  apiKeyId: string;
+  /** ApiKey row id, or null for the S2S bearer plane. */
+  apiKeyId: string | null;
   /** Consumer agent identity for audit/policy (data-170 3.2); null = unset. */
   consumerApp: string | null;
   /** AuditLog.actor string for this caller ("apikey:<consumerApp|name>"). */
@@ -37,6 +38,40 @@ export async function authenticateApiRequest(
   req: NextRequest,
   requiredScope: ApiScope,
 ): Promise<ApiContext | NextResponse> {
+  // S2S bearer plane (token exchange, platform#226): verified identity from
+  // the platform IdP + arda's own act.sub allow-list. Operation authz is
+  // arda's model (D3): an allow-listed caller gets the full /api/v1 surface
+  // in v1, so requiredScope is satisfied by admission. Same gating tail as
+  // the key plane: rate limit -> wipe -> entitlement.
+  const authz = req.headers.get("authorization");
+  if (authz?.startsWith("Bearer ")) {
+    const { verifyS2sBearer } = await import("./bearer");
+    const v = await verifyS2sBearer(authz.slice(7));
+    if (!v.ok) {
+      return problem(v.code === "invalid_token" ? 401 : 403, v.code);
+    }
+    const rate = await checkRateLimit(`s2s:${v.id.actSub}:${v.id.workspaceId}`);
+    if (!rate.allowed) {
+      return problem(429, "rate_limited", undefined, undefined, {
+        "retry-after": String(rate.retryAfterSeconds),
+        "ratelimit-limit": String(rate.limit),
+        "ratelimit-remaining": String(rate.remaining),
+      });
+    }
+    const wiped = await getWipeState(v.id.workspaceId);
+    if (wiped.wiped) return problem(410, "workspace_wiped");
+    const sub = await getEntitlementResolver().resolve(null, v.id.workspaceId);
+    if (!hasDataAccess(sub)) {
+      return problem(403, "entitlement_required", "The workspace has no active arda entitlement (standalone or bundled).");
+    }
+    return {
+      workspaceId: v.id.workspaceId,
+      apiKeyId: null,
+      consumerApp: v.id.actSub,
+      actor: v.id.sub ? `s2s:${v.id.actSub}:${v.id.sub}` : `s2s:${v.id.actSub}`,
+    };
+  }
+
   const rawKey = req.headers.get("x-arda-api-key");
   if (!rawKey) return problem(401, "missing_api_key", "Provide the API key in the x-arda-api-key header.");
 

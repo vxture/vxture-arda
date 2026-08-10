@@ -35,6 +35,10 @@
 - 写操作沿用既有配额与业务不变量：dataset 注册受 `datasetMax` 配额（超限 403 `quota_exceeded`，不静默）；血缘写入拒绝环（DAG）与重复边；`ownerApp` 溯源一律来自凭证的 `consumerApp`，**不接受请求体指定**。
 - `lastUsedAt` 每 key 每 60s 最多写一次（活性标记，best-effort）。
 
+### 1b. S2S Bearer(token exchange,platform#226)
+
+与 ApiKey 并存的第二凭证面:`Authorization: Bearer <exchange token>`(RS256/同 JWKS,iss/aud=`S2S_AUDIENCE`/exp,300s 不可续)。**准入 = act.sub 白名单**(`S2S_ALLOWED_CALLERS`,空=禁用 fail-closed;有效签名不等于授权调用方)。scope 仅 `tool:arda`(平台 D3 裁定),操作级授权走 arda 自有模型:v1 白名单调用方获得全 `/api/v1` 面。workspace 取自 token 的 `workspace_id`;OBO 模式携带真实 `sub`,审计 actor 为 `s2s:<act.sub>[:<sub>]`。限流按 caller+workspace;尾部门控(wipe/entitlement)与 key 面一致。
+
 ## 2. 错误模型（RFC 9457 problem+json）
 
 实现：`lib/api/problem.ts`。所有非 2xx 响应体为 `application/problem+json`：

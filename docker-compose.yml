@@ -65,6 +65,9 @@ services:
       OIDC_POST_LOGOUT_REDIRECT_URI: "${OIDC_POST_LOGOUT_REDIRECT_URI:-}"
       # -- Server-side RP session store (this stack's redis container) --------
       REDIS_URL: "${REDIS_URL:-redis://arda-redis:6379}"
+      # S2S inbound (token exchange, platform#226): empty allow-list = disabled.
+      S2S_AUDIENCE: "${S2S_AUDIENCE:-arda}"
+      S2S_ALLOWED_CALLERS: "${S2S_ALLOWED_CALLERS:-}"
       # -- Domain data store (this stack's postgres container) ----------------
       # Used by the Prisma client (pg driver adapter). Schema is DDL-owned and
       # only ever changed via the db-init pipeline; the entrypoint never

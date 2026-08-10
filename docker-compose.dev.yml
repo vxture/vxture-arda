@@ -49,6 +49,9 @@ services:
       MOCK_STATE: "${MOCK_STATE:-subscribed}"
       MOCK_TIER: "${MOCK_TIER:-pro}"
       REDIS_URL: "redis://redis:6379"
+      # S2S inbound (token exchange, platform#226): empty allow-list = disabled.
+      S2S_AUDIENCE: "${S2S_AUDIENCE:-arda}"
+      S2S_ALLOWED_CALLERS: "${S2S_ALLOWED_CALLERS:-}"
       # Connect as the least-privilege service role (prod parity), created by
       # deploy/database/ddl/97_service_role.sql via apply-local-dev.sh.
       DATABASE_URL: "postgresql://arda_svc:${ARDA_SVC_PASSWORD:-arda_svc_dev}@db:5432/vx_arda_db?schema=public"
