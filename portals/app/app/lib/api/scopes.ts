@@ -8,8 +8,11 @@
 
 export const API_SCOPES = {
   CATALOG_READ: "catalog:read",
+  CATALOG_WRITE: "catalog:write",
   QUALITY_READ: "quality:read",
   LINEAGE_READ: "lineage:read",
+  LINEAGE_WRITE: "lineage:write",
+  ACCESS_WRITE: "access:write",
 } as const;
 
 export type ApiScope = (typeof API_SCOPES)[keyof typeof API_SCOPES];

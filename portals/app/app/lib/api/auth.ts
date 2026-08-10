@@ -27,6 +27,8 @@ export interface ApiContext {
   apiKeyId: string;
   /** Consumer agent identity for audit/policy (data-170 3.2); null = unset. */
   consumerApp: string | null;
+  /** AuditLog.actor string for this caller ("apikey:<consumerApp|name>"). */
+  actor: string;
 }
 
 const LAST_USED_UPDATE_INTERVAL_MS = 60_000;
@@ -71,7 +73,12 @@ export async function authenticateApiRequest(
       .catch(() => {});
   }
 
-  return { workspaceId: key.workspaceId, apiKeyId: key.id, consumerApp: key.consumerApp };
+  return {
+    workspaceId: key.workspaceId,
+    apiKeyId: key.id,
+    consumerApp: key.consumerApp,
+    actor: `apikey:${key.consumerApp ?? key.name}`,
+  };
 }
 
 /** Type guard: narrows the auth result to the error-response branch. */
