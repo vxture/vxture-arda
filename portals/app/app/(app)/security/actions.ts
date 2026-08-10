@@ -7,6 +7,7 @@ import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "../dashboard/seed";
+import { writeAudit } from "../../lib/audit";
 
 export type PolicyActionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "invalid" };
 
@@ -46,14 +47,12 @@ export async function setMaxExternalLevel(level: string): Promise<PolicyActionRe
         },
       });
     }
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "security.policy.access.set",
-        target: existing?.id ?? "access-policy",
-        metadata: { maxExternalLevel: level },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "security.policy.access.set",
+      target: existing?.id ?? "access-policy",
+      metadata: { maxExternalLevel: level },
     });
   });
 
@@ -96,14 +95,12 @@ export async function createMaskingRule(input: MaskingRuleInput): Promise<Policy
         config: { datasetId: input.datasetId, fields, strategy: input.strategy },
       },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "security.policy.masking.create",
-        target: policy.id,
-        metadata: { dataset: datasetName ?? "*", fields, strategy: input.strategy },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "security.policy.masking.create",
+      target: policy.id,
+      metadata: { dataset: datasetName ?? "*", fields, strategy: input.strategy },
     });
   });
 
@@ -125,14 +122,12 @@ export async function deleteMaskingRule(id: string): Promise<PolicyActionResult>
 
   await prisma.$transaction([
     prisma.policy.delete({ where: { id: policy.id } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "security.policy.masking.delete",
-        target: policy.id,
-        metadata: { name: policy.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "security.policy.masking.delete",
+      target: policy.id,
+      metadata: { name: policy.name },
     }),
   ]);
 

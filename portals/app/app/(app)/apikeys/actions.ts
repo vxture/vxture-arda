@@ -5,6 +5,7 @@ import { getSession } from "../../auth/lib/session";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { isKnownScope } from "../../lib/api/scopes";
 import { prisma } from "../../lib/db";
+import { writeAudit } from "../../lib/audit";
 
 /**
  * Revoke an API key. Server action: never trust the client - the session,
@@ -25,14 +26,12 @@ export async function revokeApiKey(keyId: string): Promise<{ ok: boolean; error?
 
   await prisma.$transaction([
     prisma.apiKey.update({ where: { id: key.id }, data: { revoked: true } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "apikey.revoke",
-        target: key.id,
-        metadata: { name: key.name, consumerApp: key.consumerApp },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "apikey.revoke",
+      target: key.id,
+      metadata: { name: key.name, consumerApp: key.consumerApp },
     }),
   ]);
 
@@ -86,14 +85,12 @@ export async function createApiKey(input: {
     const row = await tx.apiKey.create({
       data: { workspaceId: session.workspaceId, name, dataServiceId, hashedKey, scopes },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "apikey.create",
-        target: row.id,
-        metadata: { name, dataServiceId, scopes },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "apikey.create",
+      target: row.id,
+      metadata: { name, dataServiceId, scopes },
     });
     return row;
   });

@@ -19,6 +19,7 @@ import { reportStorageGauge } from "../usage/lib/gauge";
 import { getConnector } from "../(app)/sources/connectors";
 import type { QualityCheckSpec } from "../(app)/sources/connectors/types";
 import { datasetCode, planSync } from "../(app)/sources/sync-core";
+import { writeAudit } from "../lib/audit";
 
 const WORKSPACE_CAP = 50; // per tick; skips are reported, never silent
 
@@ -107,19 +108,17 @@ async function syncWorkspaceSources(workspaceId: string, result: RefreshResult):
           });
         }
         await tx.dataSource.update({ where: { id: source.id }, data: { status: "connected", lastSyncedAt: now } });
-        await tx.auditLog.create({
-          data: {
-            workspaceId,
-            actor: "scheduler",
-            action: "datasource.sync",
-            target: source.id,
-            metadata: {
-              name: source.name,
-              discovered: discovered.length,
-              created: plan.toCreate.length,
-              updated: plan.toUpdate.length,
-              skippedByQuota: plan.skippedByQuota,
-            },
+        await writeAudit(tx, {
+          workspaceId,
+          actor: "scheduler",
+          action: "datasource.sync",
+          target: source.id,
+          metadata: {
+            name: source.name,
+            discovered: discovered.length,
+            created: plan.toCreate.length,
+            updated: plan.toUpdate.length,
+            skippedByQuota: plan.skippedByQuota,
           },
         });
       });
@@ -129,14 +128,12 @@ async function syncWorkspaceSources(workspaceId: string, result: RefreshResult):
       const reason = (err as { reason?: string })?.reason ?? "error";
       await prisma.$transaction([
         prisma.dataSource.update({ where: { id: source.id }, data: { status: "disconnected" } }),
-        prisma.auditLog.create({
-          data: {
-            workspaceId,
-            actor: "scheduler",
-            action: "datasource.sync_fail",
-            target: source.id,
-            metadata: { name: source.name, type: source.type, reason },
-          },
+        writeAudit(prisma, {
+          workspaceId,
+          actor: "scheduler",
+          action: "datasource.sync_fail",
+          target: source.id,
+          metadata: { name: source.name, type: source.type, reason },
         }),
       ]);
     }
@@ -214,13 +211,11 @@ async function runWorkspaceChecksScheduled(workspaceId: string): Promise<number>
       amount: ran,
       idempotencyKey: `arda:${METRICS.QUALITY_CHECK_RUN}:${randomUUID()}`,
     });
-    await prisma.auditLog.create({
-      data: {
-        workspaceId,
-        actor: "scheduler",
-        action: failed > 0 ? "quality.alert" : "quality.run",
-        metadata: { ran, failed, scheduled: true },
-      },
+    await writeAudit(prisma, {
+      workspaceId,
+      actor: "scheduler",
+      action: failed > 0 ? "quality.alert" : "quality.run",
+      metadata: { ran, failed, scheduled: true },
     });
   }
   return ran;

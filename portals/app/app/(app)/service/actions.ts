@@ -8,6 +8,7 @@ import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "../dashboard/seed";
 import { qualityGate, type QualityGateVerdict } from "./quality-gate";
+import { writeAudit } from "../../lib/audit";
 
 const ASSET_LEVELS = new Set<AssetLevel>(["public", "internal", "sensitive", "core"]);
 const METHODS = new Set(["GET", "POST"]);
@@ -100,9 +101,7 @@ export async function createDataService(input: ServiceInput): Promise<ServiceWri
         data: linkedIds.map((datasetId) => ({ dataServiceId: svc.id, datasetId, workspaceId: session.workspaceId })),
       });
     }
-    await tx.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "service.create", target: svc.id, metadata: { code, name: v.value.name, datasets: linkedIds.length } },
-    });
+    await writeAudit(tx, { workspaceId: session.workspaceId, actor: session.sub, action: "service.create", target: svc.id, metadata: { code, name: v.value.name, datasets: linkedIds.length } });
     return svc;
   });
 
@@ -140,9 +139,7 @@ export async function updateDataService(serviceId: string, input: ServiceInput):
         data: linkedIds.map((datasetId) => ({ dataServiceId: existing.id, datasetId, workspaceId: session.workspaceId })),
       });
     }
-    await tx.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "service.update", target: existing.id, metadata: { code: existing.code, name: v.value.name, datasets: linkedIds.length } },
-    });
+    await writeAudit(tx, { workspaceId: session.workspaceId, actor: session.sub, action: "service.update", target: existing.id, metadata: { code: existing.code, name: v.value.name, datasets: linkedIds.length } });
   });
 
   revalidatePath("/service");
@@ -161,7 +158,7 @@ export async function unpublishDataService(serviceId: string): Promise<ServiceWr
 
   await prisma.$transaction([
     prisma.dataService.update({ where: { id: svc.id }, data: { status: "paused" } }),
-    prisma.auditLog.create({ data: { workspaceId: session.workspaceId, actor: session.sub, action: "service.unpublish", target: svc.id, metadata: { code: svc.code, name: svc.name } } }),
+    writeAudit(prisma, { workspaceId: session.workspaceId, actor: session.sub, action: "service.unpublish", target: svc.id, metadata: { code: svc.code, name: svc.name } }),
   ]);
 
   revalidatePath("/service");
@@ -182,7 +179,7 @@ export async function deleteDataService(serviceId: string): Promise<ServiceWrite
   await prisma.$transaction([
     prisma.dataServiceDataset.deleteMany({ where: { dataServiceId: svc.id } }),
     prisma.dataService.delete({ where: { id: svc.id } }),
-    prisma.auditLog.create({ data: { workspaceId: session.workspaceId, actor: session.sub, action: "service.delete", target: svc.id, metadata: { code: svc.code, name: svc.name } } }),
+    writeAudit(prisma, { workspaceId: session.workspaceId, actor: session.sub, action: "service.delete", target: svc.id, metadata: { code: svc.code, name: svc.name } }),
   ]);
 
   revalidatePath("/service");
@@ -216,14 +213,12 @@ export async function publishDataService(serviceId: string): Promise<PublishServ
 
   const verdict = await qualityGate(session.workspaceId, service.id);
   if (!verdict.allowed) {
-    await prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "service.publish_blocked",
-        target: service.id,
-        metadata: { name: service.name, blockers: verdict.blockers },
-      },
+    await writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "service.publish_blocked",
+      target: service.id,
+      metadata: { name: service.name, blockers: verdict.blockers },
     });
     return { ok: false, error: "quality", blockers: verdict.blockers };
   }
@@ -233,14 +228,12 @@ export async function publishDataService(serviceId: string): Promise<PublishServ
       where: { id: service.id },
       data: { status: "running", publishedAt: new Date() },
     }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "service.publish",
-        target: service.id,
-        metadata: { name: service.name, warnings: verdict.warnings },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "service.publish",
+      target: service.id,
+      metadata: { name: service.name, warnings: verdict.warnings },
     }),
   ]);
 

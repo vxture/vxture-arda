@@ -20,6 +20,7 @@
 
 import { prisma } from "../../lib/db";
 import { getEntitlementResolver } from "../../entitlement/resolver";
+import { writeAudit } from "../../lib/audit";
 
 /** Beta plans (code prefix `arda-beta-`) are lazily built and not provisioned
  *  via webhook - ignore their events (arda_000_definition §5.1). */
@@ -101,14 +102,12 @@ export async function handleProvisioningEvent(
         where: { id: workspace_id, status: "provisioned" },
         data: { status: "deprovisioned", wipedAt: new Date() },
       });
-      await tx.auditLog.create({
-        data: {
-          workspaceId: workspace_id,
-          actor: "platform",
-          action: "workspace.wipe",
-          target: workspace_id,
-          metadata: { source: "tenant.deprovisioned", seq },
-        },
+      await writeAudit(tx, {
+        workspaceId: workspace_id,
+        actor: "platform",
+        action: "workspace.wipe",
+        target: workspace_id,
+        metadata: { source: "tenant.deprovisioned", seq },
       });
     }
     // subscription_changed and grant.invalidated: no WorkspaceRef mutation needed.

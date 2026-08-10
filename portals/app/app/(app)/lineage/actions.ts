@@ -7,6 +7,7 @@ import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import { wouldCreateCycle } from "./graph-core";
+import { writeAudit } from "../../lib/audit";
 
 export type AddEdgeResult =
   | { ok: true }
@@ -55,17 +56,15 @@ export async function addLineageEdge(input: {
     prisma.lineageEdge.create({
       data: { workspaceId: session.workspaceId, upstreamDatasetId: up, downstreamDatasetId: down, transform },
     }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "lineage.change",
-        target: `${up}->${down}`,
-        metadata: {
-          upstream: endpoints.find((e) => e.id === up)?.name,
-          downstream: endpoints.find((e) => e.id === down)?.name,
-          transform,
-        },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "lineage.change",
+      target: `${up}->${down}`,
+      metadata: {
+        upstream: endpoints.find((e) => e.id === up)?.name,
+        downstream: endpoints.find((e) => e.id === down)?.name,
+        transform,
       },
     }),
   ]);

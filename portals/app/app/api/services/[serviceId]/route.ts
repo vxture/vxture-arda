@@ -25,6 +25,7 @@ import { unseal, type SealedSecret } from "../../../lib/seal";
 import { recordUsage } from "../../../usage/lib/buffer";
 import { getConnector } from "../../../(app)/sources/connectors";
 import { levelAllowed, maskedColumnsFor, resolveEgressPolicy } from "../../../(app)/service/egress-policy";
+import { writeAudit } from "../../../lib/audit";
 
 const ROW_LIMIT_DEFAULT = 20;
 
@@ -94,18 +95,16 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ serviceId: 
 
   await Promise.all([
     prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: key.workspaceId,
-        actor: `apikey:${key.consumerApp ?? key.name}`,
-        action: "service.access",
-        target: service.id,
-        metadata: {
-          service: service.name,
-          datasets: included.length,
-          excludedByClassification,
-          maxExternalLevel: policy.maxExternalLevel,
-        },
+    writeAudit(prisma, {
+      workspaceId: key.workspaceId,
+      actor: `apikey:${key.consumerApp ?? key.name}`,
+      action: "service.access",
+      target: service.id,
+      metadata: {
+        service: service.name,
+        datasets: included.length,
+        excludedByClassification,
+        maxExternalLevel: policy.maxExternalLevel,
       },
     }),
     recordUsage({

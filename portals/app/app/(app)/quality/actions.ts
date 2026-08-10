@@ -12,6 +12,7 @@ import { unseal, type SealedSecret } from "../../lib/seal";
 import { recordUsage } from "../../usage/lib/buffer";
 import { getConnector } from "../sources/connectors";
 import type { QualityCheckSpec } from "../sources/connectors/types";
+import { writeAudit } from "../../lib/audit";
 
 export type RuleActionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "invalid" };
 
@@ -67,14 +68,12 @@ export async function createQualityRule(input: CreateQualityRuleInput): Promise<
         severity: input.severity,
       },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "quality.rule.create",
-        target: rule.id,
-        metadata: { code, name, dataset: dataset.name, dimension: input.dimension, type: input.type, severity: input.severity },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "quality.rule.create",
+      target: rule.id,
+      metadata: { code, name, dataset: dataset.name, dimension: input.dimension, type: input.type, severity: input.severity },
     });
   });
 
@@ -97,14 +96,12 @@ export async function setQualityRuleEnabled(ruleId: string, enabled: boolean): P
 
   await prisma.$transaction([
     prisma.qualityRule.update({ where: { id: rule.id }, data: { enabled } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: enabled ? "quality.rule.enable" : "quality.rule.disable",
-        target: rule.id,
-        metadata: { code: rule.code, name: rule.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: enabled ? "quality.rule.enable" : "quality.rule.disable",
+      target: rule.id,
+      metadata: { code: rule.code, name: rule.name },
     }),
   ]);
 
@@ -126,14 +123,12 @@ export async function deleteQualityRule(ruleId: string): Promise<RuleActionResul
 
   await prisma.$transaction([
     prisma.qualityRule.delete({ where: { id: rule.id } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "quality.rule.delete",
-        target: rule.id,
-        metadata: { code: rule.code, name: rule.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "quality.rule.delete",
+      target: rule.id,
+      metadata: { code: rule.code, name: rule.name },
     }),
   ]);
 
@@ -261,13 +256,11 @@ export async function runWorkspaceChecks(): Promise<RunChecksResult> {
     });
   }
 
-  await prisma.auditLog.create({
-    data: {
-      workspaceId: session.workspaceId,
-      actor: session.sub,
-      action: failed > 0 ? "quality.alert" : "quality.run",
-      metadata: { ran, passed, warned, failed, skipped },
-    },
+  await writeAudit(prisma, {
+    workspaceId: session.workspaceId,
+    actor: session.sub,
+    action: failed > 0 ? "quality.alert" : "quality.run",
+    metadata: { ran, passed, warned, failed, skipped },
   });
 
   revalidatePath("/quality");

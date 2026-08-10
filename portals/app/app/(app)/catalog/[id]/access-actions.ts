@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "../../../auth/lib/session";
 import { prisma } from "../../../lib/db";
+import { writeAudit } from "../../../lib/audit";
 
 /**
  * Submit a data access / sharing request (Sec-BL4). Any authenticated
@@ -50,9 +51,7 @@ export async function submitAccessRequest(input: AccessRequestInput): Promise<Ac
         status: "pending",
       },
     });
-    await tx.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "access.request.submit", target: row.id, metadata: { dataset: ds.name, useCase } },
-    });
+    await writeAudit(tx, { workspaceId: session.workspaceId, actor: session.sub, action: "access.request.submit", target: row.id, metadata: { dataset: ds.name, useCase } });
   });
 
   revalidatePath("/approvals");
