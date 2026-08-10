@@ -46,6 +46,8 @@ arda-<维度>-<三位数>-<slug>.md
 | `data-140` | 审计与幂等（AuditLog / idempotencyKey 工程） | 1 横切 | 新建 | 完成 |
 | `data-150` | 多-agent 数据归属与共享（租户模型 / 三层 scope / ownerApp / 共享契约） | 1 横切 | 新建 | 完成（D8 已被 data-160 取代） |
 | `data-160` | [跨 workspace 授权访问模型](arda-data-160-cross-workspace-authorization.md)（org 硬 / workspace 默认软 / WorkspaceGrant） | 1 横切 | owner 裁定 2026-07-13 | 定稿（G1 待实施） |
+| `data-170` | [数据平台对 agent 的支撑契约](arda-data-170-platform-agent-support.md)（取用入口 / ApiKey / 不变量） | 1 横切 | 新建 | 定稿（目标契约，链路逐步接通） |
+| `data-180` | [对外 API v1 约定](arda_data_180_api_v1.md)（认证链 / 错误模型 / 分页 / 限流 / 版本纪律） | 1 横切 | 新建 | 已落地（只读面） |
 | `data-210` | 数据资产 schema | 2 板块 | 拆自 schema §4.1 | 完成 |
 | `data-220` | 数据集成 schema | 2 板块 | 拆自 schema §4.2 | 完成 |
 | `data-230` | 数据治理 schema | 2 板块 | 拆自 schema §4.3 | 完成 |

@@ -1,0 +1,383 @@
+openapi: 3.1.0
+info:
+  title: Arda External API
+  version: 1.0.0
+  description: |
+    Read-only external API surface of the Arda data platform (v1).
+
+    Conventions (authoritative doc: docs/30-design/arda_data_180_api_v1.md):
+    - Auth: every request carries an API key in the `x-arda-api-key` header.
+      The key binds the workspace scope (never caller-selectable) and carries
+      the scopes gating each endpoint (fail-closed).
+    - Entitlement: the key's workspace must hold an active arda entitlement,
+      standalone or bundled; otherwise 403 `entitlement_required`.
+    - Errors: every non-2xx response is an RFC 9457 `application/problem+json`
+      body whose `code` field is the stable machine-readable identifier.
+    - Pagination: cursor-based. Pass `limit` (1-100, default 20) and the
+      `nextCursor` returned by the previous page as `cursor`. `nextCursor` is
+      null on the last page. Cursor tokens are opaque.
+    - Rate limit: per key, fixed window per minute (default 120). Exceeding it
+      returns 429 with `Retry-After`.
+    - Versioning: v1 evolves additively only (new optional fields, new
+      endpoints). Breaking changes open /api/v2.
+servers:
+  - url: https://arda.vxture.com
+    description: Production
+  - url: https://beta-arda.vxture.com
+    description: Beta
+security:
+  - apiKey: []
+tags:
+  - name: catalog
+    description: Dataset catalog (workspace assets + read-only platform reference overlay)
+  - name: quality
+    description: Data-quality rules and check runs
+  - name: lineage
+    description: Curated dataset-level lineage
+
+paths:
+  /api/v1/datasets:
+    get:
+      operationId: listDatasets
+      tags: [catalog]
+      summary: List datasets
+      description: >
+        Datasets visible to the key's workspace: its own assets plus
+        platform-global reference assets (scope=platform, read-only overlay).
+        Required scope: `catalog:read`.
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive substring match on name or code.
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: domain
+          in: query
+          schema: { type: string, minLength: 1, maxLength: 120 }
+        - name: classification
+          in: query
+          schema: { $ref: "#/components/schemas/AssetLevel" }
+        - name: type
+          in: query
+          description: Dataset type (table | view | file | stream).
+          schema: { type: string, minLength: 1, maxLength: 60 }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
+      responses:
+        "200":
+          description: One page of datasets.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/DatasetSummary" }
+                  nextCursor:
+                    type: [string, "null"]
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api/v1/datasets/{id}:
+    get:
+      operationId: getDataset
+      tags: [catalog]
+      summary: Get dataset detail
+      description: >
+        Full asset profile: base fields plus source, tags, standards, linked
+        services, derived quality summary and lineage degree. Required scope:
+        `catalog:read`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The dataset.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DatasetDetail" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api/v1/quality-rules:
+    get:
+      operationId: listQualityRules
+      tags: [quality]
+      summary: List quality rules
+      description: Required scope `quality:read`. Tenant data only (no platform overlay).
+      parameters:
+        - name: datasetId
+          in: query
+          schema: { type: string }
+        - name: enabled
+          in: query
+          schema: { type: string, enum: ["true", "false"] }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
+      responses:
+        "200":
+          description: One page of quality rules.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/QualityRuleSummary" }
+                  nextCursor:
+                    type: [string, "null"]
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api/v1/quality-results:
+    get:
+      operationId: listQualityResults
+      tags: [quality]
+      summary: List quality check runs (newest first)
+      description: Required scope `quality:read`. Tenant data only.
+      parameters:
+        - name: datasetId
+          in: query
+          schema: { type: string }
+        - name: ruleId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pass, warn, fail] }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
+      responses:
+        "200":
+          description: One page of quality results.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/QualityResultSummary" }
+                  nextCursor:
+                    type: [string, "null"]
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api/v1/lineage:
+    get:
+      operationId: getLineage
+      tags: [lineage]
+      summary: Get the curated dataset-level lineage graph
+      description: >
+        Raw edge list plus a dataset name map for the key's workspace.
+        Optional `datasetId` narrows to edges touching that dataset (404 when
+        it is not visible to the workspace). At most 500 edges are returned;
+        `truncated: true` reports the cap was hit. Required scope:
+        `lineage:read`.
+      parameters:
+        - name: datasetId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: The lineage graph.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageGraph" }
+        default: { $ref: "#/components/responses/Problem" }
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-arda-api-key
+      description: >
+        Workspace-bound API key minted by a workspace admin. Only the sha256
+        hash is stored server-side. Scopes on the key gate each endpoint:
+        catalog:read, quality:read, lineage:read.
+
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: Page size, 1-100 (default 20). Out-of-range values fall back to the default.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    cursor:
+      name: cursor
+      in: query
+      description: Opaque cursor from the previous page's `nextCursor`.
+      schema: { type: string }
+
+  responses:
+    Problem:
+      description: >
+        Error (RFC 9457). Stable `code` values include: missing_api_key,
+        invalid_api_key (401); insufficient_scope, entitlement_required (403);
+        not_found (404); workspace_wiped (410); invalid_parameter,
+        invalid_cursor (400); rate_limited (429, with Retry-After header).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, description: "Problem identifier URI (not necessarily resolvable)." }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string, description: "Stable machine-readable snake_case error code." }
+        detail: { type: string }
+
+    AssetLevel:
+      type: string
+      enum: [public, internal, sensitive, core]
+      description: Classification level; travels with the data (data-170 2.3).
+
+    DatasetSummary:
+      type: object
+      required:
+        [id, code, name, description, domain, team, type, classification, scope,
+         ownerApp, ownerUserId, goldenRecord, rowCountEst, sizeBytes,
+         refreshFreq, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        code: { type: string, description: "Technical slug, unique per workspace." }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        domain: { type: [string, "null"] }
+        team: { type: [string, "null"] }
+        type: { type: string, description: "table | view | file | stream" }
+        classification: { $ref: "#/components/schemas/AssetLevel" }
+        scope:
+          type: string
+          enum: [workspace, platform]
+          description: platform = read-only global reference asset.
+        ownerApp:
+          type: [string, "null"]
+          description: Producing agent/app within the workspace (provenance).
+        ownerUserId: { type: [string, "null"] }
+        goldenRecord: { type: boolean }
+        rowCountEst: { type: [number, "null"] }
+        sizeBytes: { type: [number, "null"] }
+        refreshFreq: { type: [string, "null"], description: "realtime | daily | weekly | monthly" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    DatasetDetail:
+      allOf:
+        - $ref: "#/components/schemas/DatasetSummary"
+        - type: object
+          required: [location, source, tags, standards, services, quality, lineage]
+          properties:
+            location: { type: [string, "null"] }
+            source:
+              type: [object, "null"]
+              required: [id, name, type, lastSyncedAt]
+              properties:
+                id: { type: string }
+                name: { type: string }
+                type: { type: string }
+                lastSyncedAt: { type: [string, "null"], format: date-time }
+            tags:
+              type: array
+              items:
+                type: object
+                required: [id, name]
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+            standards:
+              type: array
+              items:
+                type: object
+                required: [id, code, name]
+                properties:
+                  id: { type: string }
+                  code: { type: string }
+                  name: { type: string }
+            services:
+              type: array
+              items:
+                type: object
+                required: [id, code, name]
+                properties:
+                  id: { type: string }
+                  code: { type: string }
+                  name: { type: string }
+            quality:
+              type: object
+              description: Derived at read time from the latest run of each enabled rule; never stored.
+              required: [score, rules, pass, warn, fail, lastRunAt]
+              properties:
+                score: { type: [number, "null"] }
+                rules: { type: integer }
+                pass: { type: integer }
+                warn: { type: integer }
+                fail: { type: integer }
+                lastRunAt: { type: [string, "null"], format: date-time }
+            lineage:
+              type: object
+              required: [upstream, downstream]
+              properties:
+                upstream: { type: integer }
+                downstream: { type: integer }
+
+    QualityRuleSummary:
+      type: object
+      required: [id, code, name, datasetId, datasetName, dimension, type, severity, enabled]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        datasetId: { type: string }
+        datasetName: { type: string }
+        dimension: { type: string, description: "completeness | accuracy | validity | uniqueness | timeliness | consistency" }
+        type: { type: string, description: "not_null | unique | range | freshness | ..." }
+        severity: { type: string }
+        enabled: { type: boolean }
+
+    QualityResultSummary:
+      type: object
+      required: [id, ruleId, datasetId, runAt, status, score, issues]
+      properties:
+        id: { type: string }
+        ruleId: { type: string }
+        datasetId: { type: string }
+        runAt: { type: string, format: date-time }
+        status: { type: string, enum: [pass, warn, fail] }
+        score: { type: [number, "null"], description: "Pass rate percentage." }
+        issues: { type: integer }
+
+    LineageGraph:
+      type: object
+      required: [edges, datasets, truncated]
+      properties:
+        edges:
+          type: array
+          items:
+            type: object
+            required: [id, upstreamDatasetId, downstreamDatasetId, transform, jobId]
+            properties:
+              id: { type: string }
+              upstreamDatasetId: { type: string }
+              downstreamDatasetId: { type: string }
+              transform: { type: [string, "null"] }
+              jobId: { type: [string, "null"] }
+        datasets:
+          type: array
+          description: Name map for every dataset id referenced by the edges.
+          items:
+            type: object
+            required: [id, code, name]
+            properties:
+              id: { type: string }
+              code: { type: string }
+              name: { type: string }
+        truncated:
+          type: boolean
+          description: True when the 500-edge cap was hit (never silent).
