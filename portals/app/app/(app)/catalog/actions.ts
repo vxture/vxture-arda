@@ -7,6 +7,7 @@ import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "./seed";
+import { writeAudit } from "../../lib/audit";
 
 export type TagActionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" | "invalid" };
 
@@ -38,14 +39,12 @@ export async function attachTag(datasetId: string, name: string): Promise<TagAct
       create: { workspaceId: session.workspaceId, datasetId: dataset.id, tagId: tag.id },
       update: {},
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "metadata.tag.attach",
-        target: dataset.id,
-        metadata: { dataset: dataset.name, tag: clean },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "metadata.tag.attach",
+      target: dataset.id,
+      metadata: { dataset: dataset.name, tag: clean },
     });
   });
 
@@ -70,14 +69,12 @@ export async function detachTag(datasetId: string, tagId: string): Promise<TagAc
 
   await prisma.$transaction([
     prisma.datasetTag.delete({ where: { datasetId_tagId: { datasetId, tagId } } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "metadata.tag.detach",
-        target: datasetId,
-        metadata: { dataset: link.dataset.name, tag: link.tag.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "metadata.tag.detach",
+      target: datasetId,
+      metadata: { dataset: link.dataset.name, tag: link.tag.name },
     }),
   ]);
 
@@ -99,14 +96,12 @@ export async function setGoldenRecord(datasetId: string, golden: boolean): Promi
 
   await prisma.$transaction([
     prisma.dataset.update({ where: { id: dataset.id }, data: { goldenRecord: golden } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: golden ? "master_data.golden.mark" : "master_data.golden.unmark",
-        target: dataset.id,
-        metadata: { dataset: dataset.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: golden ? "master_data.golden.mark" : "master_data.golden.unmark",
+      target: dataset.id,
+      metadata: { dataset: dataset.name },
     }),
   ]);
   revalidatePath(`/catalog/${datasetId}`);
@@ -134,14 +129,12 @@ export async function setDatasetClassification(datasetId: string, level: string)
 
   await prisma.$transaction([
     prisma.dataset.update({ where: { id: dataset.id }, data: { classification: newLevel } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "security.classification.set",
-        target: dataset.id,
-        metadata: { dataset: dataset.name, from: dataset.classification, to: newLevel },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "security.classification.set",
+      target: dataset.id,
+      metadata: { dataset: dataset.name, from: dataset.classification, to: newLevel },
     }),
   ]);
   revalidatePath(`/catalog/${datasetId}`);
@@ -174,14 +167,12 @@ export async function attachStandard(datasetId: string, standardId: string): Pro
       create: { workspaceId: session.workspaceId, datasetId: dataset.id, standardId: standard.id },
       update: {},
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "standard.compliance.link",
-        target: dataset.id,
-        metadata: { dataset: dataset.name, standard: standard.name },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "standard.compliance.link",
+      target: dataset.id,
+      metadata: { dataset: dataset.name, standard: standard.name },
     });
   });
   revalidatePath(`/catalog/${datasetId}`);
@@ -205,14 +196,12 @@ export async function detachStandard(datasetId: string, standardId: string): Pro
 
   await prisma.$transaction([
     prisma.datasetStandard.delete({ where: { datasetId_standardId: { datasetId, standardId } } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "standard.compliance.unlink",
-        target: datasetId,
-        metadata: { dataset: link.dataset.name, standard: link.standard.name },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "standard.compliance.unlink",
+      target: datasetId,
+      metadata: { dataset: link.dataset.name, standard: link.standard.name },
     }),
   ]);
   revalidatePath(`/catalog/${datasetId}`);

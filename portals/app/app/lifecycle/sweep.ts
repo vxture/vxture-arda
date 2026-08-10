@@ -1,6 +1,7 @@
 import { prisma } from "../lib/db";
 import { RETENTION_DAYS } from "../lib/workspace-state";
 import { reportStorageGauge } from "../usage/lib/gauge";
+import { writeAudit } from "../lib/audit";
 
 /**
  * Hard-delete sweep (Lc-BL2 second half): physically clears business data for
@@ -51,14 +52,12 @@ export async function sweepWipedWorkspaces(now: Date = new Date()): Promise<Swee
       rowsDeleted += deleted;
 
       await tx.workspaceRef.update({ where: { id: workspaceId }, data: { status: "hard_deleted" } });
-      await tx.auditLog.create({
-        data: {
-          workspaceId,
-          actor: "platform",
-          action: "workspace.hard_delete",
-          target: workspaceId,
-          metadata: { rowsDeleted: deleted, wipedAt: ws.wipedAt?.toISOString(), retentionDays: RETENTION_DAYS },
-        },
+      await writeAudit(tx, {
+        workspaceId,
+        actor: "platform",
+        action: "workspace.hard_delete",
+        target: workspaceId,
+        metadata: { rowsDeleted: deleted, wipedAt: ws.wipedAt?.toISOString(), retentionDays: RETENTION_DAYS },
       });
     });
   }

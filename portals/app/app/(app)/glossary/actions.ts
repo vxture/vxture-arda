@@ -6,6 +6,7 @@ import { canUseFeature } from "../../entitlement/capability";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
+import { writeAudit } from "../../lib/audit";
 
 export type CreateTermResult =
   | { ok: true; id: string }
@@ -36,14 +37,12 @@ export async function createGlossaryTerm(input: { term: string; definition: stri
     const row = await tx.glossaryTerm.create({
       data: { workspaceId: session.workspaceId, term, definition, stewardUserId: session.sub },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "glossary.term.create",
-        target: row.id,
-        metadata: { term },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "glossary.term.create",
+      target: row.id,
+      metadata: { term },
     });
     return row;
   });

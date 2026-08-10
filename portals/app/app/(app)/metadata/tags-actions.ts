@@ -6,6 +6,7 @@ import { canUseFeature } from "../../entitlement/capability";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
+import { writeAudit } from "../../lib/audit";
 
 /**
  * Tag management writes (biz-422 MD-BL3). Business-metadata curation gates on
@@ -38,9 +39,7 @@ export async function createTag(nameRaw: string): Promise<TagActionResult> {
 
   await prisma.$transaction(async (tx) => {
     const tag = await tx.tag.create({ data: { workspaceId: session.workspaceId, name } });
-    await tx.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "metadata.tag.create", target: tag.id, metadata: { name } },
-    });
+    await writeAudit(tx, { workspaceId: session.workspaceId, actor: session.sub, action: "metadata.tag.create", target: tag.id, metadata: { name } });
   });
 
   revalidatePath("/metadata/tags");
@@ -58,9 +57,7 @@ export async function deleteTag(tagId: string): Promise<TagActionResult> {
   // DatasetTag rows cascade (schema onDelete: Cascade).
   await prisma.$transaction([
     prisma.tag.delete({ where: { id: tag.id } }),
-    prisma.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "metadata.tag.delete", target: tag.id, metadata: { name: tag.name } },
-    }),
+    writeAudit(prisma, { workspaceId: session.workspaceId, actor: session.sub, action: "metadata.tag.delete", target: tag.id, metadata: { name: tag.name } }),
   ]);
 
   revalidatePath("/metadata/tags");

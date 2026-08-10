@@ -17,6 +17,7 @@
  *     so the internal preview environment shows data without platform wiring.
  */
 import type { PrismaClient, Prisma, QualityStatus } from "../../generated/prisma/client";
+import { writeAudit } from "./audit";
 import {
   DEFAULT_MANIFEST,
   DEFAULT_TEMPLATE_ID,
@@ -177,14 +178,12 @@ export async function fillWorkspaceIfNeeded(
       await ensureSeedTemplate(prisma);
       const counts = await cloneManifest(prisma, workspaceId, DEFAULT_MANIFEST);
       await prisma.workspaceRef.update({ where: { id: workspaceId }, data: { seedStatus: "done" } });
-      await prisma.auditLog.create({
-        data: {
-          workspaceId,
-          actor: "system",
-          action: "seed.fill",
-          target: TEMPLATE_REF,
-          metadata: counts as unknown as Prisma.InputJsonValue,
-        },
+      await writeAudit(prisma, {
+        workspaceId,
+        actor: "system",
+        action: "seed.fill",
+        target: TEMPLATE_REF,
+        metadata: counts as unknown as Prisma.InputJsonValue,
       });
       return { seeded: true, reason: "filled", counts };
     } catch (err) {

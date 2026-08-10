@@ -12,6 +12,7 @@ import { getConnector } from "./connectors";
 import { datasetCode, planSync } from "./sync-core";
 import { featureKeyForSourceType } from "./source-types";
 import type { Prisma } from "../../../generated/prisma/client";
+import { writeAudit } from "../../lib/audit";
 
 export interface RegisterSourceInput {
   name: string;
@@ -85,14 +86,12 @@ export async function registerDataSource(input: RegisterSourceInput): Promise<Re
         status: "connected",
       },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "datasource.register",
-        target: row.id,
-        metadata: { name, type: input.type },
-      },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "datasource.register",
+      target: row.id,
+      metadata: { name, type: input.type },
     });
     return row;
   });
@@ -154,14 +153,12 @@ export async function syncDataSource(sourceId: string): Promise<SyncSourceResult
     const reason = (err as { reason?: string })?.reason ?? "error";
     await prisma.$transaction([
       prisma.dataSource.update({ where: { id: source.id }, data: { status: "disconnected" } }),
-      prisma.auditLog.create({
-        data: {
-          workspaceId: session.workspaceId,
-          actor: session.sub,
-          action: "datasource.sync_fail",
-          target: source.id,
-          metadata: { name: source.name, type: source.type, reason },
-        },
+      writeAudit(prisma, {
+        workspaceId: session.workspaceId,
+        actor: session.sub,
+        action: "datasource.sync_fail",
+        target: source.id,
+        metadata: { name: source.name, type: source.type, reason },
       }),
     ]);
     revalidatePath("/sources");
@@ -215,19 +212,17 @@ export async function syncDataSource(sourceId: string): Promise<SyncSourceResult
       where: { id: source.id },
       data: { status: "connected", lastSyncedAt: now },
     });
-    await tx.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "datasource.sync",
-        target: source.id,
-        metadata: {
-          name: source.name,
-          discovered: discovered.length,
-          created: plan.toCreate.length,
-          updated: plan.toUpdate.length,
-          skippedByQuota: plan.skippedByQuota,
-        },
+    await writeAudit(tx, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "datasource.sync",
+      target: source.id,
+      metadata: {
+        name: source.name,
+        discovered: discovered.length,
+        created: plan.toCreate.length,
+        updated: plan.toUpdate.length,
+        skippedByQuota: plan.skippedByQuota,
       },
     });
   });
@@ -271,14 +266,12 @@ export async function unbindDataSource(sourceId: string): Promise<UnbindSourceRe
 
   await prisma.$transaction([
     prisma.dataSource.delete({ where: { id: source.id } }),
-    prisma.auditLog.create({
-      data: {
-        workspaceId: session.workspaceId,
-        actor: session.sub,
-        action: "datasource.unbind",
-        target: source.id,
-        metadata: { name: source.name, type: source.type, datasetsOrphaned: source._count.datasets },
-      },
+    writeAudit(prisma, {
+      workspaceId: session.workspaceId,
+      actor: session.sub,
+      action: "datasource.unbind",
+      target: source.id,
+      metadata: { name: source.name, type: source.type, datasetsOrphaned: source._count.datasets },
     }),
   ]);
 

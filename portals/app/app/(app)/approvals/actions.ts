@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "../../auth/lib/session";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { prisma } from "../../lib/db";
+import { writeAudit } from "../../lib/audit";
 
 /**
  * Approval decisions (Sec-BL4). Approve/reject is workspace-admin only; a
@@ -29,9 +30,7 @@ export async function decideRequest(id: string, approve: boolean, note?: string)
       where: { id: req.id },
       data: { status, decidedBy: session.sub, decidedAt: new Date(), decisionNote },
     }),
-    prisma.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: approve ? "access.request.approve" : "access.request.reject", target: req.id, metadata: { requester: req.requesterName ?? req.requesterSub, useCase: req.useCase } },
-    }),
+    writeAudit(prisma, { workspaceId: session.workspaceId, actor: session.sub, action: approve ? "access.request.approve" : "access.request.reject", target: req.id, metadata: { requester: req.requesterName ?? req.requesterSub, useCase: req.useCase } }),
   ]);
 
   revalidatePath("/approvals");
@@ -50,9 +49,7 @@ export async function cancelRequest(id: string): Promise<DecisionResult> {
 
   await prisma.$transaction([
     prisma.accessRequest.update({ where: { id: req.id }, data: { status: "cancelled", decidedAt: new Date() } }),
-    prisma.auditLog.create({
-      data: { workspaceId: session.workspaceId, actor: session.sub, action: "access.request.cancel", target: req.id, metadata: { useCase: req.useCase } },
-    }),
+    writeAudit(prisma, { workspaceId: session.workspaceId, actor: session.sub, action: "access.request.cancel", target: req.id, metadata: { useCase: req.useCase } }),
   ]);
 
   revalidatePath("/approvals");
