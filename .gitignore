@@ -69,3 +69,9 @@ coverage/
 __pycache__/
 *.pyc
 /.cookies*
+/.ssh-agent-env.tmp
+/.askpass.tmp.sh
+/.*.tmp.md
+/.*.tmp.py
+/.*.tmp.sh
+/.*.tmp.json
