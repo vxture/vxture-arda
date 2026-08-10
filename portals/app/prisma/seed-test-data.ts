@@ -16,6 +16,11 @@
  *     EMIT=sql pnpm --filter @arda/app run db:seed:test | \
  *       ssh <host> "docker exec -i arda-beta-db psql -v ON_ERROR_STOP=1 -U arda -d vx_arda_db"
  *
+ * CLEAN=1 removes the test workspace entirely (rows + WorkspaceRef) and
+ * inserts nothing - works in both modes:
+ *   CLEAN=1 pnpm --filter @arda/app run db:seed:test            (direct)
+ *   CLEAN=1 EMIT=sql pnpm --filter @arda/app run db:seed:test   (SQL to stdout)
+ *
  * Scale via SEED_SCALE (default 1): datasets = 60*scale, results = 14 days
  * per rule. Test API keys (plaintext, TEST ONLY - never mint these in prod):
  *   ak_test_full_0001      all scopes
@@ -29,6 +34,7 @@ const WS = process.env.SEED_WORKSPACE_ID ?? "test-ws-rich";
 const ORG = process.env.SEED_ORG_ID ?? "test-org-rich";
 const SCALE = Math.max(1, Number(process.env.SEED_SCALE) || 1);
 const EMIT_SQL = process.env.EMIT === "sql";
+const CLEAN = process.env.CLEAN === "1";
 
 if (!/^(dev-|test-)/.test(WS) && process.env.SEED_ALLOW_ANY !== "1") {
   console.error(`refusing to own workspace '${WS}' (must start dev-/test-, or set SEED_ALLOW_ANY=1)`);
@@ -185,8 +191,16 @@ function sqlVal(v: unknown): string {
 async function main(): Promise<void> {
   if (EMIT_SQL) {
     const out: string[] = ["BEGIN;"];
-    out.push(`INSERT INTO vx_provision."app_instance" ("id","orgId","status","createdAt","updatedAt") VALUES ('${WS}','${ORG}','provisioned',now(),now()) ON CONFLICT ("id") DO NOTHING;`);
+    if (!CLEAN) {
+      out.push(`INSERT INTO vx_provision."app_instance" ("id","orgId","status","createdAt","updatedAt") VALUES ('${WS}','${ORG}','provisioned',now(),now()) ON CONFLICT ("id") DO NOTHING;`);
+    }
     for (const t of WIPE_ORDER) out.push(`DELETE FROM catalog."${t}" WHERE "workspaceId" = '${WS}';`);
+    if (CLEAN) {
+      out.push(`DELETE FROM vx_provision."app_instance" WHERE "id" = '${WS}';`);
+      out.push("COMMIT;");
+      process.stdout.write(out.join("\n") + "\n");
+      return;
+    }
     for (const { table, rows } of plan) {
       const schema = TABLE_SCHEMA[table] ?? "catalog";
       const cols = Object.keys(rows[0]);
@@ -200,9 +214,16 @@ async function main(): Promise<void> {
   }
 
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
-  await prisma.workspaceRef.upsert({ where: { id: WS }, update: {}, create: { id: WS, orgId: ORG } });
   const client = prisma as unknown as Record<string, { deleteMany: (a: object) => Promise<unknown>; createMany: (a: object) => Promise<unknown> }>;
   const model = (t: string) => client[t[0].toLowerCase() + t.slice(1)];
+  if (CLEAN) {
+    for (const t of WIPE_ORDER) await model(t).deleteMany({ where: { workspaceId: WS } });
+    await prisma.workspaceRef.deleteMany({ where: { id: WS } });
+    console.log(`cleaned workspace '${WS}' (all seeded rows + WorkspaceRef removed)`);
+    await prisma.$disconnect();
+    return;
+  }
+  await prisma.workspaceRef.upsert({ where: { id: WS }, update: {}, create: { id: WS, orgId: ORG } });
   for (const t of WIPE_ORDER) await model(t).deleteMany({ where: { workspaceId: WS } });
   for (const { table, rows } of plan) await model(table).createMany({ data: rows });
   console.log(`seeded workspace '${WS}': ` + plan.map((p) => `${p.table}=${p.rows.length}`).join(", "));
