@@ -1,5 +1,9 @@
 # Arda - Design Decisions
 
+Event-driven browser access synchronization is specified in
+[ADR-014](ADR-014-event-driven-browser-access.md) (2026-11-22; architecture only,
+implementation pending).
+
 Decisions that are not obvious from the code, that survived deliberate
 consideration, or that would otherwise tempt a future reader to change them.
 
