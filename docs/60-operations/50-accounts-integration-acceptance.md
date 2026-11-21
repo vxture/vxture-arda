@@ -78,3 +78,12 @@ and still returned live data as superadmin. Customer logout and workforce
 isolation passed for these clients; other products were not independently tested.
 Screenshots are saved in local output as arda-opera-isolation-passed-20261121.jpg
 and arda-beta-logout-passed-20261121.jpg.
+
+## v0.13.1 production follow-up
+
+Production6295744 login callback returned to arda.ruyin.work and admitted the
+active Business workspace. With beta session confirmed authenticated, production
+/auth/logout returned the signed-out view; beta /auth/session then returned
+authenticated:false. Opera had expired before this test, so no fresh production
+workforce-isolation claim is made. The earlier beta fresh-baseline isolation
+passed. Browser evidence does not distinguish backchannel from status fallback.

@@ -69,3 +69,13 @@ service paused through normal UI operations; read-only DB checks confirm both.
 This meets the gateway accounting path in item5, not quality execution or data
 egress acceptance. Live stop/re-enable and production reconcile/ACK still need
 their own evidence; no lifecycle event or usage was fabricated for this test.
+
+## v0.13.1 production follow-up
+
+Production startup reconciliation: pages1, scanned4, failed0, readOnly=false.
+Read ticket exchange/list200 with validated scope and signature. The active
+Business target's single authorized empty-service call returned200; one real
+service.api.call row auto-flushed on attempt1, and C2 remaining1999999 ->1999998.
+The key was revoked and service paused; read-only DB verified both. This is
+production gateway accounting evidence, not a lifecycle stop/re-enable drill,
+source-query acceptance or AI inference acceptance. No manual flush was used.
