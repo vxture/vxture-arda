@@ -234,3 +234,30 @@ not evidence of live platform registration, billing, SSO or successful delivery.
 - No real Arda exchange/consume, authenticated acceptance on the new domain,
   DNS write or deployment has been verified. Opera callback allow-list changes
   above are registration evidence only. New-domain DNS still returns NXDOMAIN.
+
+## Live routing progress, 2026-11-21 17:08 CST
+
+- Opera saved edge domain `arda.ruyin.work` at 17:05:55. Upstream remains
+  `100.76.219.48:3230`; internal webhook, stable/beta callbacks and secrets
+  were preserved. Homepage and back-channel logout remain on the old domain
+  until product runtime origin and ordinary DNS access are aligned.
+- Worker01 certificate is valid 2026-11-06 through 2027-02-04 and includes
+  `*.ruyin.work`. The installed registered-product wildcard route is present.
+- Regenerated the edge map with the platform's installed `render-agent-map.mjs`
+  reading product registration. No hand-written vhost or server variable edits.
+  Backed up the previous map under `/srv/vxture/runtime/backups/`.
+  Nginx syntax validation and reload succeeded. The map now points the new
+  domain at the same existing upstream. Old exact-host routing is retained
+  until verified final cutover, not as a permanent second entrance.
+- Source-targeted HTTPS with normal certificate validation returns health 200,
+  service arda-app, production v0.12.0 / 9609a92. Login still generates
+  `redirect_uri=https://arda.vxture.com/auth/callback`; updating registration
+  alone does not update Arda's current runtime origin. No new release applied.
+- Owner reports DNS was already configured. At 17:07, local, worker01,
+  1.1.1.1, 8.8.8.8, Cloudflare authoritative nameservers and HTTPS DNS queries
+  still returned NXDOMAIN for the exact `arda.ruyin.work` name. Preserve this
+  discrepancy for verification; do not create a duplicate record blindly.
+- Clarification pending: whether the prohibition on server-variable changes
+  applies specifically to platform onboarding, or also to Arda's own normal
+  deployment configuration. Current Arda deployment preserves the existing
+  `etc/.env`; code release alone does not apply the new callback origin.
