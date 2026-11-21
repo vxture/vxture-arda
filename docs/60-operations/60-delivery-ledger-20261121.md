@@ -216,3 +216,25 @@ API-1001 was created through the UI and published with zero linked datasets.
 Before minting, inspection found that the key action supports dataServiceId but
 the UI never sends it. A workspace-scoped service picker now exposes the
 existing binding. No unbound key was minted to work around this missing UI.
+
+## Completed beta gateway accounting acceptance
+
+PR223 merged as6295744 with all gates green; beta-20261121.7 deployed via
+Actions44910187525. Public health matches6295744. The authorized temporary key
+was created through the updated UI with the API-1001 binding and no /api/v1
+scopes. Exactly one GET to the actual service gateway returned200 with the
+expected service identifier and zero datasets. Its durable service.api.call
+row has amount1, flushed=true, flushAttempts1 and no error. No manual flush or
+usage insertion was used. C2 purchased call remaining changed from2000000 to
+1999999. This verifies the real gateway, automatic worker and platform debit;
+it does not verify source-query, masking, quality-rule or AI inference behavior.
+
+The key was revoked through the UI and the service taken offline. Read-only DB
+verification confirms boundToTarget=true, revoked=true, scopes0, service paused;
+the plaintext temporary file was removed. No second call was made. Screenshots
+and single-attempt result are retained in local output without the key value.
+
+Production candidate v0.13.1 pins the beta-validated6295744 image. Its tag was
+pushed for the required human production approval. Production remains v0.13.0
+until that gated deployment succeeds. Owner explicitly requested final prod
+acceptance; beta evidence must not be relabeled as production evidence.
