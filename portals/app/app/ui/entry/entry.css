@@ -1,0 +1,34 @@
+/* Native controls replace static Tailwind utility strings, within the confirmed entry only. */
+.arda-entry {
+  --background:var(--vx-color-background);--foreground:var(--vx-color-foreground);
+  --card:var(--vx-color-surface);--border:var(--vx-color-border);
+  --muted-foreground:var(--vx-color-text-muted);--primary:var(--vx-color-primary);
+  --primary-hover:var(--vx-color-primary-hover);--primary-foreground:var(--vx-color-white);
+  --primary-text:var(--vx-color-brand-700);--primary-muted:var(--vx-color-brand-50);
+  --primary-border-soft:var(--vx-color-brand-200);--ring:var(--vx-color-primary);
+  --accent:var(--vx-color-primary-subtle);
+  --space-xs:8px;--space-sm:10px;--space-md:16px;--space-lg:24px;
+  --space-xl:32px;--space-2xl:40px;--space-3xl:48px;--space-4xl:56px;
+  --home-inset:48px;--home-width:1536px;
+}
+.dark .arda-entry { --primary-text:var(--vx-color-brand-400);--primary-muted:var(--vx-color-brand-950);--primary-border-soft:var(--vx-color-brand-800); }
+.arda-entry { color:var(--foreground);background:var(--background); }
+.arda-entry,.arda-entry * { box-sizing:border-box; }
+.arda-entry p { margin-block:0; }
+.arda-entry .home-panorama { min-height:100svh; }
+.arda-entry .cospace-home { display:flex;flex-direction:column; }
+.arda-entry .arda-entry-header-inner { display:flex;align-items:center;justify-content:space-between;gap:8px;height:100%; }
+.arda-entry .home-header { height:64px;flex:none; }
+.arda-entry .public-header-tools button,.arda-entry .public-header-tools a { display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;background:transparent;cursor:pointer; }
+.arda-entry .public-header-tools button:hover,.arda-entry .public-header-tools a:hover { background:var(--accent);color:var(--foreground); }
+.arda-entry .entry-action { display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;height:48px;min-height:48px;padding:0 16px;border:1px solid transparent;border-radius:8px;background:var(--primary);color:var(--primary-foreground);font-family:inherit;font-size:14px;font-weight:500;line-height:1.578571;text-decoration:none;cursor:pointer; }
+.arda-entry .entry-action:hover { background:var(--primary-hover); }
+.arda-entry .entry-action-secondary { background:transparent;color:var(--foreground);border-color:var(--border); }
+.arda-entry .entry-action-secondary:hover { background:var(--accent); }
+.arda-entry .entry-action:disabled { opacity:.5;cursor:default; }
+.arda-entry button:focus-visible,.arda-entry a:focus-visible { outline:2px solid var(--ring);outline-offset:3px; }
+.arda-entry .entry-footnote { display:flex;justify-content:center;align-items:center;gap:8px; }
+.arda-entry .entry-footnote svg,.arda-entry .home-login-security svg { flex:none; }
+.arda-entry .home-login-actions .entry-actions { gap:12px; }
+.arda-entry .entry-status header h1 { line-height:1.578571; }
+.arda-entry .home-login-heading h1,.arda-entry .platform-brand,.arda-entry .cospace-brand span { font-family:var(--vx-font-loader-brand),"Funnel Display",Inter,sans-serif; }

@@ -60,6 +60,7 @@ async function oidcCallback(request: NextRequest, cfg: OidcConfig): Promise<Next
   const destination = authReq.returnTo || "/";
   const response = NextResponse.redirect(new URL(destination, origin));
   setSessionCookie(response, cfg, rpsid);
+  response.cookies.set("arda_signed_out", "", { httpOnly: true, secure: cfg.isProd, sameSite: "lax", path: "/", maxAge: 0 });
   clearLoginStateCookie(response, cfg);
   return response;
 }

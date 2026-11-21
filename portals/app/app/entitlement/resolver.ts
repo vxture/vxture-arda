@@ -9,6 +9,8 @@ import { PlatformEntitlementResolver } from "./platform-resolver";
 export interface EntitlementResolver {
   resolve(claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription>;
   resolveQuota(workspaceId?: string): Promise<WorkspaceQuota>;
+  /** Entry checks must not convert transport errors into an unsubscribed fact. */
+  resolveFresh?(claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription>;
   /** Evict cached entitlement for workspaceId. Called on subscription_changed events. */
   invalidateCache(workspaceId: string): void;
 }

@@ -46,6 +46,14 @@ export class PlatformEntitlementResolver implements EntitlementResolver {
     return (await this._fetch(workspaceId)).quota;
   }
 
+  /** Explicit entry revalidation bypasses both TTL and stale-on-error fallback. */
+  async resolveFresh(_claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription> {
+    if (!workspaceId) throw new Error("workspace required");
+    const result = await fetchPlatformEntitlement(workspaceId, this.baseUrl, this.authToken);
+    this.cache.set(workspaceId, { ...result, expiresAt: Date.now() + TTL_MS });
+    return result.subscription;
+  }
+
   invalidateCache(workspaceId: string): void {
     this.cache.delete(workspaceId);
   }

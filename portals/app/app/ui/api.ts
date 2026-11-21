@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ArdaClaim } from "../entitlement/types";
 
 /**
@@ -34,7 +34,7 @@ export interface SessionUser {
 
 /** Response shape of GET /auth/session. */
 export type SessionResponse =
-  | { authenticated: false }
+  | { authenticated: false; signedOut?: boolean }
   | { authenticated: true; user: SessionUser };
 
 /**
@@ -52,13 +52,15 @@ export function ssoStartUrl(): string {
 }
 
 /** Fetch the current session from /auth/session (no-store, credentials). */
-export async function fetchSession(): Promise<SessionResponse> {
+export async function fetchSession(signal?: AbortSignal): Promise<SessionResponse> {
   const res = await fetch("/auth/session", {
     credentials: "include",
     cache: "no-store",
     headers: { Accept: "application/json" },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
   });
-  if (!res.ok) return { authenticated: false };
+  if (res.status === 401) return { authenticated: false };
+  if (!res.ok) throw new Error(`session ${res.status}`);
   return (await res.json()) as SessionResponse;
 }
 
@@ -69,14 +71,23 @@ export interface UseSessionState {
   session: SessionResponse | null;
 }
 
+export interface EntrySessionState extends UseSessionState {
+  revision: number;
+  recheck: () => Promise<SessionResponse | null>;
+}
+
+export const EntrySessionContext = createContext<EntrySessionState | null>(null);
+
 /**
  * Client hook: load the session once on mount. Treats any error as anonymous
  * (fail closed) so callers can route an unauthenticated visitor to sign-in.
  */
 export function useSession(): UseSessionState {
+  const shared = useContext(EntrySessionContext);
   const [state, setState] = useState<UseSessionState>({ loading: true, session: null });
 
   useEffect(() => {
+    if (shared) return;
     let cancelled = false;
     fetchSession()
       .then((session) => {
@@ -88,7 +99,7 @@ export function useSession(): UseSessionState {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [shared]);
 
-  return state;
+  return shared ?? state;
 }

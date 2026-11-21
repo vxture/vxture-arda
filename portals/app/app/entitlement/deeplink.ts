@@ -1,9 +1,9 @@
 /**
  * Console deep-link builder (ent-120 §4a, reply-06 §2).
  *
- * The ONLY conversion exit from the product: a link into the vxture console
- * where all commercial decisions (trial eligibility, plans, prices, add-ons)
- * are rendered. The product never infers or displays those. Links fire ONLY
+ * Legacy feature/add-on order links. Public entry subscription and renewal use
+ * productSubscriptionUrl instead, so plan selection starts on the website.
+ * The product never infers prices. Links fire ONLY
  * on an explicit user click - never auto-redirect (owner ruling 2026-07-13).
  *
  * Intent vocabulary is deliberately tiny: upgrade | renew | addon. The console
@@ -12,6 +12,11 @@
  */
 
 import type { Tier } from "./types";
+
+/** Product entry actions use the public plan-selection surface. */
+export function productSubscriptionUrl(locale: string = "zh-CN"): string {
+  return `https://vxture.com/${locale === "en-US" ? "en-US" : "zh-CN"}/pricing?product=arda`;
+}
 
 const CONSOLE_BASE = process.env.NEXT_PUBLIC_CONSOLE_URL ?? "https://console.vxture.com";
 
