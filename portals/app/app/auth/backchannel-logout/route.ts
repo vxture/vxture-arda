@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOidcConfig } from "../lib/config";
 import { verifyToken } from "../lib/oidc";
-import { destroyBySid, markLogoutTokenSeen } from "../lib/session-store";
+import { destroyBySid } from "../lib/session-store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,8 +31,6 @@ export async function POST(request: NextRequest) {
   if (!logoutToken) return new NextResponse("missing logout_token", { status: 400 });
 
   let sid: string;
-  let jti: string;
-  let ttl: number;
   try {
     const claims = await verifyToken(cfg, logoutToken);
     if (typeof claims.nonce !== "undefined") throw new Error("logout_token must not carry nonce");
@@ -48,20 +46,15 @@ export async function POST(request: NextRequest) {
     // replays within the token's validity window (+ clock skew).
     if (typeof claims.jti !== "string" || !claims.jti) throw new Error("missing jti");
     sid = claims.sid;
-    jti = claims.jti;
-    const now = Math.floor(Date.now() / 1000);
-    const exp = typeof claims.exp === "number" ? claims.exp : now;
-    ttl = Math.max(exp - now, 0) + 120;
+    if (!Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp)) {
+      throw new Error("missing logout_token lifetime");
+    }
   } catch {
     return new NextResponse("invalid logout_token", { status: 400 });
   }
 
-  // Reject replays: the first valid receipt tears the sid down; a replayed token
-  // is acked idempotently (200) without re-running the teardown.
-  if (!(await markLogoutTokenSeen(cfg, jti, ttl))) {
-    return new NextResponse(null, { status: 200 });
-  }
-
+  // Deletion is idempotent. Do not mark a delivery seen before deleting:
+  // a store failure must leave retries able to complete the teardown.
   await destroyBySid(cfg, sid);
   return new NextResponse(null, { status: 200 });
 }

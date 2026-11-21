@@ -14,13 +14,15 @@ export async function checkCentralSession(cfg: OidcConfig, sid: string,
     method: "POST", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(8_000),
     headers: { Authorization: `Basic ${Buffer.from(credentials).toString("base64")}`,
       "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ sid, active: true }),
+    // Session resolution includes focus checks and token refresh, neither of
+    // which establishes real user interaction. Keep this adapter read-only.
+    body: JSON.stringify({ sid, active: false }),
   });
   if (response.status !== 200) throw new Error("central_session_unavailable");
   const body = await response.json() as Record<string, unknown>;
   if (body && body.valid === false) return { valid: false };
   if (!body || body.valid !== true || typeof body.next_check_at !== "number"
-    || !Number.isFinite(body.next_check_at) || body.next_check_at <= now) {
+    || !Number.isSafeInteger(body.next_check_at) || body.next_check_at <= now) {
     throw new Error("central_session_invalid_response");
   }
   return { valid: true, next_check_at: body.next_check_at };

@@ -9,6 +9,7 @@
  */
 import Redis from "ioredis";
 import { randomToken } from "./pkce";
+import { setTimeout as delay } from "node:timers/promises";
 import type { OidcConfig } from "./config";
 import type { ArdaClaim } from "../../entitlement/types";
 
@@ -71,14 +72,18 @@ const authReqKey = (state: string) => `authreq:${state}`;
 const sessKey = (rpsid: string) => `rpsess:${rpsid}`;
 const tokKey = (rpsid: string) => `rptok:${rpsid}`;
 const sidKey = (sid: string) => `sid:${sid}`;
-const seenLogoutKey = (jti: string) => `bclogout:${jti}`;
 
 /** Serialize central checks and rotating single-use refresh tokens across replicas. */
 export async function withSessionLock<T>(cfg: OidcConfig, rpsid: string, work: () => Promise<T>): Promise<T> {
   const key = `rplock:${rpsid}`;
   const owner = randomToken();
-  const acquired = await redis(cfg).set(key, owner, "PX", 60_000, "NX");
-  if (!acquired) throw new Error("session_resolution_busy");
+  // Concurrent session/entitlement requests must wait for the same rotation,
+  // then re-read its result inside work(), never reuse a single-use refresh.
+  const deadline = Date.now() + 12_000;
+  while (!(await redis(cfg).set(key, owner, "PX", 60_000, "NX"))) {
+    if (Date.now() >= deadline) throw new Error("session_resolution_busy");
+    await delay(50);
+  }
   try { return await work(); }
   finally {
     await redis(cfg).eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", 1, key, owner);
@@ -189,18 +194,4 @@ export async function destroyBySid(cfg: OidcConfig, sid: string): Promise<number
   pipe.del(sidKey(sid));
   await pipe.exec();
   return rpsids.length;
-}
-
-/**
- * Atomically record a back-channel logout_token `jti` as seen for the token's
- * validity window. Returns true the first time (proceed with logout), false on
- * replay so the receiver can ack idempotently without re-processing.
- */
-export async function markLogoutTokenSeen(
-  cfg: OidcConfig,
-  jti: string,
-  ttlSeconds: number,
-): Promise<boolean> {
-  const res = await redis(cfg).set(seenLogoutKey(jti), "1", "EX", Math.max(ttlSeconds, 1), "NX");
-  return res === "OK";
 }

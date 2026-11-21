@@ -132,6 +132,7 @@ export function buildAuthorizeUrl(
 /** Build the /oidc/end_session global-logout redirect URL. */
 export function buildEndSessionUrl(cfg: OidcConfig, state: string): string {
   const url = new URL(cfg.endpoints.endSession);
+  url.searchParams.set("client_id", cfg.clientId);
   if (cfg.postLogoutRedirectUri) {
     url.searchParams.set("post_logout_redirect_uri", cfg.postLogoutRedirectUri);
   }

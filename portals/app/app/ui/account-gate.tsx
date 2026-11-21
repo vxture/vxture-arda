@@ -16,6 +16,7 @@ export function AccountGate({ children }: { children: ReactNode }) {
   const controller = useRef<AbortController | null>(null);
   const inflight = useRef<Promise<SessionResponse | null> | null>(null);
   const alive = useRef(true);
+  const lastInteractionCheck = useRef(0);
 
   const recheck = useCallback((): Promise<SessionResponse | null> => {
     if (inflight.current) return inflight.current;
@@ -53,14 +54,22 @@ export function AccountGate({ children }: { children: ReactNode }) {
     void recheck();
     const checkVisible = () => { if (document.visibilityState === "visible") void recheck(); };
     const invalid = () => { setReady(false); setPhase("recovery"); void recheck(); };
+    const interaction = () => {
+      if (Date.now() - lastInteractionCheck.current < 30_000) return;
+      lastInteractionCheck.current = Date.now();
+      checkVisible();
+    };
     window.addEventListener("focus", checkVisible);
     window.addEventListener("storage", checkVisible);
     window.addEventListener("arda:session-invalid", invalid);
     document.addEventListener("visibilitychange", checkVisible);
-    const timer = window.setInterval(checkVisible, 60_000);
+    // Accounts status is checked on return/activity, not by background timers.
+    window.addEventListener("pointerdown", interaction, { passive: true });
+    window.addEventListener("keydown", interaction);
     return () => {
       alive.current = false; controller.current?.abort(); inflight.current = null;
-      window.clearInterval(timer);
+      window.removeEventListener("pointerdown", interaction);
+      window.removeEventListener("keydown", interaction);
       window.removeEventListener("focus", checkVisible);
       window.removeEventListener("storage", checkVisible);
       window.removeEventListener("arda:session-invalid", invalid);
