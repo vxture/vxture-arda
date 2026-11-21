@@ -2,7 +2,7 @@
  * Storage gauge reporting (arda_200 3.2 / plat-300 item 5).
  *
  * storage.bytes is a GAUGE, not a counter: arda reports the ABSOLUTE
- * workspace watermark (SUM of Dataset.sizeBytes) via PUT /usage/gauge with a
+ * workspace watermark (hosted catalog payload) via PUT /usage/gauge with a
  * mandatory observed_at; the platform orders writes last-write-wins by
  * observed_at (an older snapshot returns applied:false and is dropped -
  * idempotent by design). Never sent through consume (reply-01 R4).
@@ -16,6 +16,7 @@
 import { prisma } from "../../lib/db";
 import { METRICS } from "../../entitlement/quota";
 import { platformRequest, workspacePlatformContext } from "../../platform/client";
+import { HOSTED_STORAGE_SQL, hostedByteCount } from "./hosted-storage";
 
 
 export async function reportStorageGauge(workspaceId: string): Promise<void> {
@@ -23,13 +24,10 @@ export async function reportStorageGauge(workspaceId: string): Promise<void> {
 
   try {
     const context = await workspacePlatformContext(workspaceId);
-    const agg = await prisma.dataset.aggregate({
-      where: { workspaceId },
-      _sum: { sizeBytes: true },
-    });
-    const value = Number(agg._sum.sizeBytes ?? 0n);
-
-    if (!Number.isSafeInteger(value) || value < 0) throw new Error("storage_gauge_invalid");
+    // Capture before reading so a slower old snapshot cannot supersede a newer one.
+    const observedAt = new Date().toISOString();
+    const rows = await prisma.$queryRawUnsafe<Array<{ bytes: bigint }>>(HOSTED_STORAGE_SQL, workspaceId);
+    const value = hostedByteCount(rows[0]?.bytes ?? 0n);
     const res = await platformRequest("/usage/gauge", context, {
       method: "PUT",
       headers: {
@@ -40,7 +38,7 @@ export async function reportStorageGauge(workspaceId: string): Promise<void> {
         product: "arda",
         metric: METRICS.STORAGE_BYTES,
         value,
-        observed_at: new Date().toISOString(),
+        observed_at: observedAt,
       }),
       cache: "no-store",
     });

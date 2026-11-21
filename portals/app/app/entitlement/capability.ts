@@ -75,26 +75,16 @@ export const FUTURE_FEATURE_KEYS: ReadonlySet<FeatureKey> = new Set([
 
 // ---- The matrix (cumulative by construction) ---------------------------------
 
-const FREE_FEATURES = [
+// Commercial edition 2026-11: implemented individual features are available
+// at every tier. Platform quotas distinguish scale; RBAC still gates actions.
+const CORE_FEATURES = [
   "arda.assets.catalog",
   "arda.assets.edit_metadata",
   "arda.integration.sources_basic",
-] as const satisfies readonly FeatureKey[];
-
-const STARTER_FEATURES = [
-  ...FREE_FEATURES,
   "arda.assets.glossary",
   "arda.assets.advanced_search",
   "arda.governance.classification",
   "arda.governance.quality_rules",
-] as const satisfies readonly FeatureKey[];
-
-// Tier philosophy (owner ruling 2026-07-14, platform-wide): pro = ALL product
-// features except multi-user/collaboration ones; business = pro + seats, where
-// the seat difference is a MANAGEMENT difference, not a business-function
-// difference. Keeps per-tier feature config simple by design.
-const PRO_FEATURES = [
-  ...STARTER_FEATURES,
   "arda.assets.bulk_ops",
   "arda.integration.sources_premium",
   "arda.governance.standards",
@@ -106,6 +96,10 @@ const PRO_FEATURES = [
   "arda.admin.api_keys",
   "arda.admin.audit_log",
 ] as const satisfies readonly FeatureKey[];
+
+const FREE_FEATURES = CORE_FEATURES;
+const STARTER_FEATURES = [...FREE_FEATURES] as const;
+const PRO_FEATURES = [...STARTER_FEATURES] as const;
 
 const BUSINESS_FEATURES = [
   ...PRO_FEATURES,
