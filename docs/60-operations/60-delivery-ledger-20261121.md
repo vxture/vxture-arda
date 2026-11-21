@@ -238,3 +238,34 @@ Production candidate v0.13.1 pins the beta-validated6295744 image. Its tag was
 pushed for the required human production approval. Production remains v0.13.0
 until that gated deployment succeeds. Owner explicitly requested final prod
 acceptance; beta evidence must not be relabeled as production evidence.
+
+## Production release and acceptance
+
+Owner approved production Actions44911686041; v0.13.1 deployed successfully
+at6295744, reusing the beta-validated build. Public /api/health and /api/ready
+identify v0.13.1, production,6295744; readiness200/ready, db/redis ok. Production
+reconcile startup: pages1, scanned4, failed0, readOnly=false. Product-wide read
+exchange and list both200; signed read ticket scope/actor/TTL verified. Both
+provisioned records have scope-matching C2; target is active/business.
+
+Owner separately approved one production acceptance call. UI created and
+published API-1001 Arda production acceptance20261121 with zero datasets,
+then minted a service-bound temporary key with no /api/v1 scopes. Exactly one
+gateway GET returned200. Durable amount1 automatically flushed on attempt1,
+no error, no manual flush. C2 purchased call remaining1999999 ->1999998.
+Normal UI revoked the key and paused the service. Read-only DB checks confirm
+revoked=true, boundToTarget=true, scopes0, service paused and one flushed row.
+The temporary plaintext file was removed. No second call was performed.
+
+Production Accounts login callback reached arda.ruyin.work and admitted the
+Business UI. Before production logout, beta /auth/session was authenticated.
+Production /auth/logout returned its signed-out screen and beta session became
+authenticated:false. Opera was already expired before this logout, so this round
+cannot prove workforce isolation; the earlier fresh-baseline beta isolation
+round remains the evidence. Do not infer delivery mechanism from browser state.
+
+Remaining limits: no source-query/masking/quality execution acceptance without
+real data; Curator is unwired and Atlas runtime route/base is unconfigured;
+live lifecycle stop/re-enable and strict ACK race guarantees remain separate.
+Platform issue720 tracks version-bound ACK; issue721 tracks old-domain retirement.
+This production release is complete, not a claim that every interface is closed.
