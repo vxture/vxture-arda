@@ -203,3 +203,16 @@ assumption: Atlas is L1 infrastructure reporting four-dimensional raw tokens
 attributed to Arda; the platform converts/account credits (platform PR581,
 issue547). No Atlas ai.credit pre-deduct guarantee is claimed. Local comments
 and affected design documents were corrected; live inference remains pending.
+
+PR222 merged as ff4e132 with all CI gates green (81 tests:79 passed,2 skipped;
+PG concurrency ran). Local failed-dependency readiness returned503/fail with
+db/redis fail in19ms and did not expose connection strings. Beta release tag
+beta-20261121.6 was pushed. Atlas runtime presence probe found no configured
+base, endpoint, legacy profile or explicit model in beta.
+
+The owner approved one beta call using a temporary key bound only to the named
+empty acceptance service, followed by revocation and unpublish. The service
+API-1001 was created through the UI and published with zero linked datasets.
+Before minting, inspection found that the key action supports dataServiceId but
+the UI never sends it. A workspace-scoped service picker now exposes the
+existing binding. No unbound key was minted to work around this missing UI.

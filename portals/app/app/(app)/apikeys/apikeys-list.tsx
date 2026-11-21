@@ -15,6 +15,7 @@ import {
   Input,
   Label,
   MetricGrid,
+  NativeSelect,
   StatusBadge,
   type DataTableColumn,
   type MetricGridItem,
@@ -32,13 +33,15 @@ function fmtDate(iso: string | null, never: string): string {
   return iso ? new Date(iso).toLocaleString() : never;
 }
 
-export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: ApiKeyMetrics }) {
+export function ApiKeysList({ keys, metrics, services }: { keys: ApiKeyView[]; metrics: ApiKeyMetrics;
+  services: Array<{ id: string; name: string; code: string }> }) {
   const t = useTranslations("apikeys");
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newScopes, setNewScopes] = useState<string[]>([]);
+  const [serviceId, setServiceId] = useState("");
   const [mintedToken, setMintedToken] = useState<string | null>(null);
   const [createErr, setCreateErr] = useState<string | null>(null);
 
@@ -49,11 +52,12 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
   const mint = () => {
     setCreateErr(null);
     startTransition(async () => {
-      const res: CreateKeyResult = await createApiKey({ name: newName, scopes: newScopes });
+      const res: CreateKeyResult = await createApiKey({ name: newName, scopes: newScopes, dataServiceId: serviceId || null });
       if (res.ok) {
         setMintedToken(res.token);
         setNewName("");
         setNewScopes([]);
+        setServiceId("");
       } else {
         setCreateErr(t("create.error." + res.error));
       }
@@ -65,6 +69,7 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
     setMintedToken(null);
     setCreateErr(null);
     setNewScopes([]);
+    setServiceId("");
   };
 
   const revoke = (id: string) => {
@@ -197,6 +202,14 @@ export function ApiKeysList({ keys, metrics }: { keys: ApiKeyView[]; metrics: Ap
               <div>
                 <Label htmlFor="key-name">{t("create.name")}</Label>
                 <Input id="key-name" value={newName} maxLength={120} onChange={(e) => setNewName(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="key-service">{t("create.service")}</Label>
+                <NativeSelect id="key-service" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                  <option value="">{t("create.allServices")}</option>
+                  {services.map((service) => <option key={service.id} value={service.id}>{service.code} - {service.name}</option>)}
+                </NativeSelect>
+                <p className="dim">{t("create.serviceHint")}</p>
               </div>
               <div>
                 <Label>{t("create.scopes")}</Label>
