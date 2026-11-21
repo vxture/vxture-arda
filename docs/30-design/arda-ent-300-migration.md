@@ -1,5 +1,7 @@
 # arda 权益门控 · 迁移（arda-ent-300-migration）
 
+> Current AI accounting correction (2026-11-21; Arda issue214): Atlas is L1 infrastructure. It reports raw input/output/cache-write/cache-read tokens attributed to Arda. The platform converts/account credits (platform PR581 / issue547). Atlas does not pre-deduct ai.credit; Arda must not duplicate inference reporting. Earlier pre-deduct descriptions below are superseded. Storage gauge is available via PUT /usage/gauge, implemented in usage/lib/gauge.ts.
+
 > 状态：实时跟踪（随每次迭代更新）
 > 层：第 3 层 · 迁移（`ent` 系列，见 [`ent-000`](arda-ent-000-index.md) 索引）
 > 范围：**只列 arda 侧任务**——现状（token claim + Mock Resolver）到目标（平台拉取 + 缓存 + invalidate）的迁移清单。平台侧任务（如"平台补 `trial` claim 字段"）只作为 arda 任务的**前置依赖**提及，不展开设计。

@@ -61,9 +61,13 @@ likewise left empty pending scope - the same stub posture adopted here.
 3. **Model capability**: sourced exclusively from Atlas via S2S
    token-exchange. arda does not build, and must not build, a bespoke or
    "varda-flavored" LLM gateway of its own.
-4. **Metering**: Atlas performs the atomic pre-deduct `ai.credit` consume
-   itself when Curator calls it with workspace/tenant context, and reports
-   that consumption to platform C3. arda does not implement its own
+4. **Metering** (corrected by owner 2026-09-30, Arda issue214): Atlas is L1
+   infrastructure and reports raw input/output/cache-write/cache-read tokens,
+   attributed to the calling product. The platform converts tokens into
+   credits and owns accounting; Atlas does not convert or pre-deduct credits.
+   The raw-token intake was delivered in platform PR581 (issue547).
+   This is not evidence of a live Arda inference or pre-deduct quota gate.
+   Arda does not implement its own
    `POST /usage/consume` call site for `ai.credit` - this was already true in
    practice (never wired) and is now the permanent, intended design rather
    than an open TODO. arda's local role is limited to: (a) tier-based

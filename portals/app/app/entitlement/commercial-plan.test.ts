@@ -15,6 +15,25 @@ test("individual tiers can publish services without unlocking collaboration or f
   assert.ok(CAPABILITY_MATRIX.business.includes("arda.services.cross_workspace_share"));
 });
 
+test("eligible pools include purchased capacity after a zero bundled pool", () => {
+  const quota_pools = [
+    { metric: "service.api.call", limit: 0, remaining: 0, priority: 0 },
+    { metric: "service.api.call", limit: 2_000_000, remaining: 1_999_999, priority: 1 },
+    { metric: "ai.credit", limit: 200, remaining: 180, priority: 0 },
+    { metric: "ai.credit", limit: 1_500, remaining: 1_500, priority: 1 },
+    { metric: "storage.bytes", limit: 100, remaining: -5, priority: 0 },
+  ];
+  for (const pools of [quota_pools, [...quota_pools].reverse()]) {
+    const result = mapToWorkspaceQuota({ quota_pools: pools });
+    assert.equal(result.pools.apiCall?.limit, 2_000_000);
+    assert.equal(result.pools.apiCall?.remaining, 1_999_999);
+    assert.equal(result.pools.aiCredit?.limit, 1_700);
+    assert.equal(result.pools.aiCredit?.remaining, 1_680);
+    assert.equal(result.pools.storageBytes?.remaining, -5);
+    assert.equal(result.pools.qualityCheckRun, null);
+  }
+});
+
 test("canonical seats and pinned legacy member limits both preserve team capacity", () => {
   assert.equal(mapToWorkspaceQuota({ limits: { "seat.max": 5 } }).limits.memberMax, 5);
   assert.equal(mapToWorkspaceQuota({ limits: { "member.max": 8 } }).limits.memberMax, 8);

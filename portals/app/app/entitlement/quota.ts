@@ -27,9 +27,9 @@
 export const METRICS = {
   /**
    * Workspace shared storage pool (bytes). GAUGE (snapshot), not a counter -
-   * reported via the future PUT /usage/gauge, NOT POST /usage/consume
-   * (reply-01 R4: delta rejected). Until the gauge endpoint ships, storage is
-   * C2-display + local admission only and is NOT wired into recordUsage.
+   * reported via PUT /usage/gauge, NOT POST /usage/consume
+   * (reply-01 R4: delta rejected). See usage/lib/gauge.ts; storage is never
+   * wired into recordUsage.
    * L0 platform_metric (product_220 §4): shared physical pool, summed across products.
    */
   STORAGE_BYTES: "storage.bytes",
@@ -38,17 +38,17 @@ export const METRICS = {
   /** QualityRule batch execution. counter, divisible 后报 (reply-01 R5). amount=rules_run. */
   QUALITY_CHECK_RUN: "quality.check.run",
   /**
-   * AI credit. counter, ATOMIC pre-deduct (reply-01 R5). amount=credits_spent.
+   * AI credit. Tenant-facing unit converted by the platform from raw tokens.
    * L0 platform_metric, renamed from varda.credit (product_220 §4/§9). Pools are
    * earmarked per contributing product by default; tenant admin may opt into a
    * shared overflow pool (reply-02 §2). 1 credit ~= 2K tokens.
    *
-   * ADR-013 (2026-07-28): the atomic pre-deduct consume call for this metric
-   * is performed by Atlas (vxture's sole model-inference/metering gateway)
-   * when arda Curator calls it with workspace/tenant context - arda itself
-   * never had a working POST /usage/consume call site for ai.credit (none
-   * was ever wired) and does not need one now. This constant remains for
-   * local C2 display/admission (remaining balance banners) only.
+   * Owner correction (issue214, 2026-09-30): Atlas does not pre-deduct or
+   * report ai.credit. It reports raw four-dimensional token usage; the
+   * platform owns conversion/accounting. The older ADR-013 pre-deduct
+   * statement is superseded; no runtime pre-deduct guarantee is claimed.
+   * This constant is for C2 balance display/admission only. Arda has no
+   * ai.credit consume call site and must not duplicate inference reporting.
    */
   AI_CREDIT: "ai.credit",
 } as const;
@@ -137,13 +137,18 @@ function parsePool(
   pools: Array<{ metric: string; limit: number; remaining: number }>,
   metric: MetricName,
 ): QuotaPool | null {
-  const raw = pools.find((p) => p.metric === metric);
-  if (!raw) return null;
+  // C2 already filters counter pools by product sharing policy. Every
+  // returned eligible pool contributes; waterfall order is not a total.
+  // Storage is already a single workspace-wide aggregate from the platform.
+  const matching = pools.filter((p) => p.metric === metric);
+  if (matching.length === 0) return null;
+  const limit = matching.reduce((sum, pool) => sum + pool.limit, 0);
+  const remaining = matching.reduce((sum, pool) => sum + pool.remaining, 0);
   return {
     metric,
-    limit: raw.limit,
-    remaining: raw.remaining,
-    pct: raw.limit > 0 ? raw.remaining / raw.limit : 0,
+    limit,
+    remaining,
+    pct: limit > 0 ? remaining / limit : 0,
   };
 }
 
