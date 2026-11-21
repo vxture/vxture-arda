@@ -325,7 +325,7 @@ jobs:
         shell: bash
         working-directory: portals
         env:
-          ARDA_PROVISIONING_TEST_DATABASE_URL: postgresql://postgres:local-qa-only@127.0.0.1:${{ job.services.provisioning-db.ports[5432] }}/arda_provisioning_test
+          ARDA_PROVISIONING_TEST_DATABASE_URL: postgresql://postgres:local-qa-only@127.0.0.1:${{ job.services.provisioning-db.ports['5432'] }}/arda_provisioning_test
         run: |
           set -euo pipefail
           pnpm --filter @arda/app run prisma:generate
