@@ -13,7 +13,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignatureAny } from "../lib/verify";
-import { handleProvisioningEvent, type ProvisioningPayload } from "../lib/handler";
+import { handleProvisioningEvent } from "../lib/handler";
+import { parseProvisioningPayload } from "../lib/payload";
+import { acknowledgeProvisioning } from "../lib/ack";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -41,25 +43,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
 
-  let payload: ProvisioningPayload;
+  let payload;
   try {
-    payload = JSON.parse(new TextDecoder().decode(rawBody)) as ProvisioningPayload;
+    payload = parseProvisioningPayload(JSON.parse(new TextDecoder().decode(rawBody)), request.headers);
   } catch {
-    return NextResponse.json({ error: "invalid json" }, { status: 400 });
+    return NextResponse.json({ error: "invalid payload or headers" }, { status: 400 });
   }
 
   if (payload.application !== "arda") {
     return NextResponse.json({ error: "not for this application" }, { status: 400 });
   }
 
-  const deliveryId = request.headers.get("x-vxture-delivery") ?? payload.id;
-  const resolvedPayload: ProvisioningPayload = { ...payload, id: deliveryId };
-
-  const result = await handleProvisioningEvent(resolvedPayload);
-
-  const eventType = request.headers.get("x-vxture-event") ?? payload.type;
-  console.log(`[provisioning/webhook] event=${eventType} delivery=${deliveryId} outcome=${result.outcome}`);
-
-  // Always 2xx - platform retries on non-2xx (8 attempts, then dead-letter)
-  return NextResponse.json({ outcome: result.outcome }, { status: 200 });
+  try {
+    const result = await handleProvisioningEvent(payload);
+    if (payload.type === "tenant.provisioned" && result.outcome !== "ignored") {
+      await acknowledgeProvisioning(payload.workspace_id, payload.seq!, payload.id);
+    }
+    return NextResponse.json({ outcome: result.outcome }, { status: 200 });
+  } catch {
+    // Retry after ACK failure dedups local changes, then retries the same ACK.
+    console.error("[provisioning/webhook] processing unavailable; retry required");
+    return NextResponse.json({ error: "provisioning unavailable" }, { status: 503 });
+  }
 }
