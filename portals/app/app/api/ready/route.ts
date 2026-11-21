@@ -37,6 +37,7 @@ export async function GET() {
   const [database, redis] = await Promise.all([databaseReady(), redisReady()]);
   const ready = database && redis;
   return NextResponse.json({ ...buildHealthIdentity({ service: "arda-app" }),
-    status: ready ? "ok" : "error", checks: { database, redis } },
+    status: ready ? "ready" : "fail",
+    checks: { db: database ? "ok" : "fail", redis: redis ? "ok" : "fail" } },
   { status: ready ? 200 : 503, headers: { "Cache-Control": "no-store" } });
 }
