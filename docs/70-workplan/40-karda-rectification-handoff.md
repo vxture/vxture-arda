@@ -1,6 +1,7 @@
 # Karda remediation handoff
 
-Planning snapshot: 2026-11-21. No Karda code, configuration, commercial plan or
+Planning snapshot: 2026-11-21; kickoff preparation updated 2026-11-22.
+No Karda code, configuration, commercial plan or
 release is changed by this handoff. Start with discovery, not copied Arda settings.
 
 ## Baseline and ownership
@@ -91,3 +92,36 @@ gap matrix split into local fix/platform issue/configuration/acceptance; indepen
 login preview and core knowledge workflow test plan; cost-backed commercial proposal
 with the smallest necessary owner decision set. The present request is planning
 only and does not start these implementation phases.
+
+## Kickoff preparation - 2026-11-22
+
+The owner requested the delivery update and preparation to start Karda. Rechecked
+the local tracked tree: clean, HEAD2503652. Read CLAUDE.md and the workplan index;
+their inherited bootstrap-era statuses must be reconciled with actual releases.
+Known entry points include auth/lib/session-store.ts, auth/backchannel-logout/route.ts
+and provisioning/lib/handler.ts under portals/app/app. Presence is not evidence
+that their latest contracts or live behavior pass.
+
+First working batch:
+
+1. Read repository instructions and product decisions fully; fetch current main
+   before starting a Karda feature branch. Preserve existing local artifacts.
+2. Inventory actual entry gates, session checks, platform clients, lifecycle,
+   quotas, usage, model adapters, ingestion/index/retrieval and deploy profiles.
+3. Verify deployed version and product registration read-only. Mark unavailable
+   evidence as pending; historical workplan rows do not establish current truth.
+4. Produce a file/contract/evidence gap matrix and prioritized PR batches. Keep
+   platform issues separate from Karda fixes, configuration and live acceptance.
+5. Prepare Karda-specific entry previews and business test samples; commercial
+   publication and domain changes await concrete reviewed proposals.
+
+Use Arda ADR-014 as an architecture reference, not an implemented shared SDK.
+Do not copy the focus -> session revision -> blocking entitlement loop. Audit
+Karda's actual event coverage and proxy support before choosing transport details.
+No repeated frontend access polling should be introduced as the default solution.
+Arda's SSE implementation remains pending and must stay visible in its backlog;
+starting Karda does not imply it was delivered or must be copied as working code.
+
+Kickoff exit evidence: baseline/version inventory, scoped interface gap matrix,
+prioritized implementation batches, outstanding owner decisions and platform issue
+list. This update prepares that work; it does not claim the full audit is complete.

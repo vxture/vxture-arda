@@ -4,6 +4,32 @@ Snapshot: 2026-11-21. This consolidated record supersedes early status statement
 in the cumulative [ledger](60-delivery-ledger-20261121.md), without rewriting
 historical evidence. Implemented, configured, deployed and accepted are separate.
 
+## Handoff update - 2026-11-22
+
+[PR226](https://github.com/vxture/vxture-arda/pull/226), f04fcb5, archived this
+consolidated delivery and Karda plan. [PR227](https://github.com/vxture/vxture-arda/pull/227),
+3101c3c, added [ADR-014](../30-design/decisions/ADR-014-event-driven-browser-access.md)
+for event-driven browser access synchronization.
+
+The tab-switch access-screen problem is diagnosed: successful unchanged session
+checks advance revision and cause blocking entitlement reads. The architecture
+uses committed events, shared revisions, recoverable SSE and targeted reads;
+ordinary healthy tab switches must perform no session/C2 reads or full-screen
+transition. It includes expiry, replay, multi-instance cache invalidation and
+server-side authority. Upstream event coverage and edge streaming remain checks.
+
+This is an architecture delivery only. No SSE runtime, schema migration, gate fix
+or new release was delivered. Production remains v0.13.1/6295744; the existing tab
+behavior is unchanged. Arda implementation remains an explicit follow-up and is
+not a prerequisite claimed complete before starting Karda discovery.
+
+Karda kickoff is now prepared: read-only HEAD2503652 (v0.10.3 record), tracked tree
+clean on 2026-11-22; local standards and workplan inspected. Historical bootstrap
+and integration statements conflict with later release records, so discovery must
+verify code, current registration and live identity rather than copy old statuses.
+No Karda code, configuration, subscription or release has been changed. See the
+[updated kickoff sequence](../70-workplan/40-karda-rectification-handoff.md).
+
 ## Final status
 
 - Production v0.13.1 / 6295744 is deployed at https://arda.ruyin.work.
