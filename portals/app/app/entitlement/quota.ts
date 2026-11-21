@@ -105,15 +105,15 @@ export const FREE_PLAN_LIMITS: PlanLimits = {
   memberMax: 1,
   datasetMax: 50,
   datasourceMax: 2,
-  serviceEndpointMax: 0,
+  serviceEndpointMax: 1,
   retentionDays: 30,
 };
 
 export const FREE_QUOTA_POOLS: WorkspaceQuota["pools"] = {
   storageBytes: {
     metric: METRICS.STORAGE_BYTES,
-    limit: 1_073_741_824, // 1 GB
-    remaining: 1_073_741_824,
+    limit: 268_435_456, // 256 MB
+    remaining: 268_435_456,
     pct: 1,
   },
   apiCall: {
@@ -170,7 +170,10 @@ export function mapToWorkspaceQuota(raw: {
 
   return {
     limits: {
-      memberMax: num("member.max", 1),
+      // Canonical platform seat key wins; retain old pinned plan versions.
+      memberMax: v2["seat.max"] !== undefined || legacy["seat.max"] !== undefined
+        ? num("seat.max", 1)
+        : num("member.max", 1),
       datasetMax: num("dataset.max", 50),
       datasourceMax: num("datasource.max", 2),
       serviceEndpointMax: num("service_endpoint.max", 0),
