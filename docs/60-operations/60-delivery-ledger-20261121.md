@@ -75,6 +75,7 @@ The target direct contribution is approximately 70%, not measured net profit.
 | Pricing labels/order, internal controls, enterprise CTA, timestamps | issue717 | Open |
 | Remove a billing cycle price explicitly | issue718 | Open |
 | Honest launch summary, dependency applicability, Bearer and ACK evidence | issue719 | Open |
+| Version-bound ACK, stale ready evidence and delivery ownership | issue720 | Open |
 | Retire old arda.vxture.com edge route | platform PR716 | Awaiting platform CI/merge/deploy |
 
 PR716 was prepared earlier, before the owner clarified the repo boundary. Its
@@ -111,3 +112,27 @@ C3, signed versioned lifecycle and versionless invalidations; read-reconcile;
 verify model grants and terminal settings; publish reviewed packages; beta then
 production; keep product fixes local and send platform gaps as detailed issues.
 The design standard remains separate from product-specific branding.
+
+## Follow-up implementation in PR220
+
+Webhook validation now follows the producer's epoch timestamp and versionless
+notification format; transaction locks cover dedup and lifecycle watermark.
+Post-commit ready ACK retries and product-wide read reconciliation were added.
+Beta reconciliation is read-only because the platform list is not environment
+scoped. A startup/30-second worker drains the existing durable C3 outbox.
+An isolated PostgreSQL18 concurrency regression passed locally and is required
+in CI. Initial CI exposed missing Prisma generation in the test job; the job
+now generates the client before running tests, using a disposable PG service.
+
+Atlas adapter follow-up corrects the retired /model-platform/chat path to
+/v1/chat, replaces unverified form-secret exchange with Basic plus signed
+workspace/actor/audience/scope/lifetime validation, and adds bounded calls,
+stable task attribution and structured quota/rate-limit errors. Endpoint route
+configuration is preferred; no invented default model. Compose forwards the
+adapter settings, but no model, grant, feature, or paid inference is fabricated.
+Curator remains an unwired skeleton per ADR-013; its actual AI feature is not
+delivered by configuring an adapter. AI live acceptance remains pending.
+
+All these PR220 items require final CI, beta validation and owner-approved
+production promotion. Merged PR218 and PR219 are not sufficient proof of live
+deployment of these changes.

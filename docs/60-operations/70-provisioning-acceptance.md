@@ -20,7 +20,7 @@ workspace-bound tool:vxture service ticket. An ACK failure returns webhook503;
 redelivery dedups local mutations and retries the same ACK. The platform ACK
 endpoint records evidence only, not lifecycle state; it lacks atomic version
 preconditions. An event superseded during network flight requires platform-side
-version-bound ACK semantics for a strict guarantee.
+version-bound ACK semantics for a strict guarantee (platform issue720).
 
 Product-wide reconciliation uses a separate provisioning:read service grant,
 signed-claim validation, no workspace/user/delegation authority, bounded responses,
