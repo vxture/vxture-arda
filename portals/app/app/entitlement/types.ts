@@ -6,7 +6,7 @@
  *    is the single source of truth for these value sets). arda does not redefine
  *    them locally.
  *  - Subscription.status is the RAW platform status (SubscriptionStatus) or null
- *    (null = never subscribed). Product-UI access = status in {active, trialing}.
+ *    (null = never subscribed). Product-UI access = effective tier != null.
  *  - ArdaState/ArdaClaim are LOCAL MOCK-ONLY since the platform retired the
  *    `arda` token claim (arda_305 cutover, 2026-07-14): production tokens carry
  *    zero commercial fields; these types survive solely for dev-login /
@@ -55,7 +55,11 @@ export interface ArdaClaim {
 // -- Subscription (gate-facing view) ------------------------------------------
 
 export interface Subscription {
-  /** Direct-purchase tier, or null when there is no standalone subscription. */
+  /** False for a future descriptive status; hide lifecycle CTA until understood. */
+  readonly statusKnown?: boolean;
+  /** User-bound platform decision; never stored in the workspace C2 cache. */
+  readonly productAssigned?: boolean;
+  /** Effective product tier from C2; null means no product UI coverage. */
   readonly tier: Tier | null;
   /** Raw platform subscription status (SubscriptionStatus), or null = never
    *  subscribed (product_220 / @vxture/shared). */
@@ -75,18 +79,10 @@ export interface Subscription {
   readonly dataRetentionUntil?: string | null;
 }
 
-/** Statuses that grant product-UI access. `overdue` (dunning grace, arda_303
- *  §1.3: payment failed, entitlement RETAINED while the platform retries) is
- *  included forward-ready: the value only survives envelope validation once
- *  @vxture/shared ships the six-value set (1.4.0), so this is inert until the
- *  dependency upgrade lands. `suspended` (ops freeze) and `expired` block.
- *  Typed as plain strings so the list compiles against both value-set
- *  versions (evolution-tolerance clause, arda_303 §1.3). */
-const PRODUCT_ACCESS_STATUSES: readonly string[] = ["active", "trialing", "overdue"];
-
-/** Product-UI access gate (product_220 §3 + arda_303 §1.3). */
+/** Product UI uses the platform's effective tier (product_220 SS3).
+ * Descriptive subscription status must not become a second policy engine. */
 export function hasProductAccess(sub: Subscription): boolean {
-  return sub.status !== null && PRODUCT_ACCESS_STATUSES.includes(sub.status);
+  return sub.tier !== null && TIER_ORDER.includes(sub.tier);
 }
 
 /** Data-access gate (product_220 §3): product-UI access OR bundled. */

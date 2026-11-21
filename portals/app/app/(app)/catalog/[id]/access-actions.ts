@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession } from "../../../auth/lib/session";
+import { getProductSession as getSession } from "../../../auth/lib/session";
 import { prisma } from "../../../lib/db";
 import { writeAudit } from "../../../lib/audit";
 

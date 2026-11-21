@@ -88,8 +88,14 @@ repo Settings -> Environments -> production -> Deployments) to let it proceed.
 
 ## Environment Configuration
 
-All runtime config is in `.env` at `<ROOT_DIR>/etc/.env`. Use `.env.example`
-as the template:
+L2/L3 product integration is configuration-managed by the platform. Domain,
+OIDC client/callback, edge and webhook changes go through the product
+configuration, not direct server environment edits. See the
+[alignment audit](../70-workplan/30-platform-l2-alignment.md).
+
+The following describes the legacy Arda env-based deployment and infrastructure
+bootstrap only. It is not the procedure for changing product integration.
+The existing stack stores legacy settings in `<ROOT_DIR>/etc/.env`:
 
 ```bash
 cp .env.example /srv/md0/arda/etc/.env    # prod
@@ -106,13 +112,14 @@ cp .env.example /srv/md1/arda-beta/etc/.env  # beta
 |---|---|---|
 | `PROJECT_NAME` | `arda` | `arda-beta` |
 | `ROOT_DIR` | `/srv/md0/arda` | `/srv/md1/arda-beta` |
-| `APEX_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |
+| `APEX_DOMAIN` | `arda.ruyin.work` | `beta-arda.vxture.com` |
 | `APP_PUBLISH_PORT` | `3230` | `3231` |
 | `OIDC_CLIENT_ID` | `arda` | `arda-beta` |
 | `OIDC_CLIENT_SECRET` | (provisioned, `arda` client) | (provisioned, `arda-beta` client) |
-| `OIDC_REDIRECT_URI` | `https://arda.vxture.com/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
+| `OIDC_REDIRECT_URI` | `https://arda.ruyin.work/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
 | `REDIS_URL` | `redis://arda-redis:6379` | `redis://arda-beta-redis:6379` |
-| `RP_SESSION_COOKIE_DOMAIN` | `arda.vxture.com` | `beta-arda.vxture.com` |
+| `RP_SESSION_COOKIE_DOMAIN` | (empty; host-only) | (empty; host-only) |
+| `OIDC_BACKCHANNEL_ISSUER` | (worker01 tailnet IdP origin, port 8081) | (worker01 tailnet IdP origin, port 8081) |
 | `MOCK_STATE` | `subscribed` | `trial` |
 | `NEXT_PUBLIC_APP_ENV` | `prod` | `beta` |
 
@@ -156,24 +163,28 @@ docker compose exec arda-redis redis-cli ping
 bash deploy/deploy.sh verify
 ```
 
-Through the edge (requires edge vhost installed):
+Through the edge (requires platform-managed routing activated):
 
 ```bash
-curl https://arda.vxture.com/api/health
+curl https://arda.ruyin.work/api/health
 # Expected: {"status":"ok"}
 ```
 
 ---
 
-## Edge Vhost Installation
+## Platform edge activation
 
-After the first deploy or domain changes, install the vhost config on the
-shared public edge:
+After the first deploy or domain changes, activate platform-managed routing on
+the shared public edge:
 
-1. Copy `configs/edge/arda.vxture.com.conf` and
-   `configs/edge/beta-arda.vxture.com.conf` into the vxture project repository
-2. Run `20-sync-nginx-config.sh` on the edge host
-3. Verify with `curl -I https://arda.vxture.com/api/health`
+1. Complete DNS, certificate SAN coverage and platform registration using the
+   [coordinated cutover](../70-workplan/30-platform-l2-alignment.md).
+2. Change the existing product's edge settings in platform configuration and use
+   the platform's generated routing/synchronization. Do not install a hand-written
+   product vhost or overwrite generated routing.
+3. Verify product configuration consumption; do not edit persistent server env
+   variables to apply the integration change. Release code changes through CI.
+4. Verify `https://arda.ruyin.work/api/health`, real login and global logout.
 
 See `configs/edge/README.md` for the full sync procedure.
 

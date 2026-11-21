@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import type { Subscription } from "../../entitlement/types";
-import { getSession } from "../../auth/lib/session";
+import { getSession, getPlatformUserContext } from "../../auth/lib/session";
+import { productAssigned } from "../../platform/access";
+import { fetchPlatformEntitlement } from "../../entitlement/platform-client";
 
 // Resolve authoritative C2 facts without stale fallback for the entry boundary.
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -13,10 +15,13 @@ export async function GET() {
   }
   if (!session.workspaceId) return NextResponse.json({ error: "workspace_required" }, { status: 409, headers: NO_STORE });
 
-  const resolver = getEntitlementResolver();
-  const subscription: Subscription = await (resolver.resolveFresh ?? resolver.resolve).call(resolver, session.ardaClaim, session.workspaceId);
-
-  return NextResponse.json(subscription, { headers: NO_STORE });
+  const mock = process.env.NODE_ENV !== "production" && process.env.MOCK_AUTH === "true";
+  const context = mock ? undefined : await getPlatformUserContext(session);
+  const subscription: Subscription = context
+    ? (await fetchPlatformEntitlement(session.workspaceId, context)).subscription
+    : await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
+  const assigned = context ? await productAssigned(context) : true;
+  return NextResponse.json({ ...subscription, productAssigned: assigned }, { headers: NO_STORE });
  } catch {
   return NextResponse.json({ error: "entitlement_unavailable" }, { status: 503, headers: NO_STORE });
  }

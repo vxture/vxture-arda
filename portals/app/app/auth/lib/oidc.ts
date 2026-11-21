@@ -42,12 +42,12 @@ function getJwks(cfg: OidcConfig) {
 export async function verifyToken(
   cfg: OidcConfig,
   token: string,
-  opts: { expectedNonce?: string } = {},
+  opts: { expectedNonce?: string; audience?: string } = {},
 ): Promise<JWTPayload> {
   const { payload } = await jwtVerify(token, getJwks(cfg), {
     algorithms: ["RS256"],
     issuer: cfg.issuer,
-    audience: cfg.clientId,
+    audience: opts.audience ?? cfg.clientId,
     clockTolerance: 60,
   });
   // jwtVerify enforces exp/nbf but not iat; reject tokens issued in the future
@@ -78,6 +78,7 @@ async function postToken(cfg: OidcConfig, body: URLSearchParams): Promise<TokenS
     },
     body: body.toString(),
     cache: "no-store",
+    redirect: "error",
     signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
   });
   if (!res.ok) {

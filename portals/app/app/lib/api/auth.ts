@@ -18,8 +18,8 @@ import type { ApiScope } from "./scopes";
  *   5. entitlement: data access = standalone OR bundled      (403)
  *
  * Workspace scope always comes from the KEY, never from the caller. The
- * entitlement resolver is stale-on-error and degrades to "no entitlement",
- * so step 5 is fail-closed by construction.
+ * entitlement resolver never grants stale access after a platform error.
+ * An unavailable decision returns 503, distinct from a verified denial.
  */
 
 export interface ApiContext {
@@ -60,10 +60,8 @@ export async function authenticateApiRequest(
     }
     const wiped = await getWipeState(v.id.workspaceId);
     if (wiped.wiped) return problem(410, "workspace_wiped");
-    const sub = await getEntitlementResolver().resolve(null, v.id.workspaceId);
-    if (!hasDataAccess(sub)) {
-      return problem(403, "entitlement_required", "The workspace has no active arda entitlement (standalone or bundled).");
-    }
+    const gate = await checkWorkspaceEntitlement(v.id.workspaceId);
+    if (gate) return gate;
     return {
       workspaceId: v.id.workspaceId,
       apiKeyId: null,
@@ -95,10 +93,8 @@ export async function authenticateApiRequest(
   const wipe = await getWipeState(key.workspaceId);
   if (wipe.wiped) return problem(410, "workspace_wiped");
 
-  const subscription = await getEntitlementResolver().resolve(null, key.workspaceId);
-  if (!hasDataAccess(subscription)) {
-    return problem(403, "entitlement_required", "The workspace has no active arda entitlement (standalone or bundled).");
-  }
+  const gate = await checkWorkspaceEntitlement(key.workspaceId);
+  if (gate) return gate;
 
   // Liveness marker, throttled to one write per key per interval; best-effort.
   const now = Date.now();
@@ -114,6 +110,17 @@ export async function authenticateApiRequest(
     consumerApp: key.consumerApp,
     actor: `apikey:${key.consumerApp ?? key.name}`,
   };
+}
+
+/** Shared by both external API surfaces; never disclose upstream error details. */
+export async function checkWorkspaceEntitlement(workspaceId: string): Promise<NextResponse | null> {
+  try {
+    const subscription = await getEntitlementResolver().resolve(null, workspaceId);
+    return hasDataAccess(subscription) ? null
+      : problem(403, "entitlement_required", "The workspace has no active arda entitlement (standalone or bundled).");
+  } catch {
+    return problem(503, "entitlement_unavailable", undefined, undefined, { "Cache-Control": "no-store" });
+  }
 }
 
 /** Type guard: narrows the auth result to the error-response branch. */

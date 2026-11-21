@@ -1,4 +1,4 @@
-import { getSession } from "../../../auth/lib/session";
+import { getProductSession as getSession } from "../../../auth/lib/session";
 import { isWorkspaceAdmin } from "../../../entitlement/roles";
 import { getAssetProfile } from "../data";
 import { AssetDetail, AssetMissing } from "./asset-detail";

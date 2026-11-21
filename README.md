@@ -55,8 +55,8 @@ arda-app (Next.js, published on APP_PUBLISH_PORT)
    `- default landing -> /data-assets/overview (configurable)
 ```
 
-arda contributes its public vhost as source artifacts in `configs/edge/*.conf`;
-an operator installs them on the edge host. There is no separate
+Platform product configuration owns edge routing; `configs/edge/*.conf`
+contains legacy reference artifacts. There is no separate
 console/admin app and no VPN stack - Arda is one app, one owned image
 (`arda-app`), two environments.
 
@@ -66,11 +66,16 @@ console/admin app and no VPN stack - Arda is one app, one owned image
 
 | Environment | Domain | Stack path (ARDA_DEPLOY_HOST) | Tailnet port (`APP_PUBLISH_PORT`) |
 |-------------|--------------------------|------------------------|-----------------------------------|
-| prod | `arda.vxture.com` | `/srv/md0/arda` | 3230 |
+| prod | `arda.ruyin.work` | `/srv/md0/arda` | 3230 |
 | beta | `beta-arda.vxture.com` | `/srv/md1/arda-beta` | 3231 |
 
-Both are direct subdomains of `vxture.com`, served by the public edge with
-the wildcard `*.vxture.com` cert. Each stack publishes `arda-app` on its own
+Production domain above is the migration target. The running v0.12.0 stack
+remains on `arda.vxture.com` until the coordinated DNS/platform/runtime cutover.
+See [platform alignment](docs/70-workplan/30-platform-l2-alignment.md).
+
+The public edge must cover each stack's actual hostname in its certificate;
+the `*.vxture.com` certificate does not cover `arda.ruyin.work`.
+Each stack publishes `arda-app` on its own
 tailnet port (`APP_PUBLISH_PORT`); the edge upstream targets
 `ARDA_DEPLOY_HOST:APP_PUBLISH_PORT` over tailscale. Deploys are tag-triggered:
 pushing a `beta-*` tag deploys beta automatically; pushing a `v*.*.*` tag
@@ -127,10 +132,9 @@ start -> verify). CI normally runs this for you on a release; the manual form
 above is for operator intervention. The two stacks must never share an `.env`
 file or data directory.
 
-The public vhost arda contributes to the edge lives in `configs/edge/` (one
-`.conf` per environment). An operator installs them on the edge host by copying them
-into the vxture project repository and running
-`20-sync-nginx-config.sh`; see [configs/edge/README.md](configs/edge/README.md).
+Domain and routing changes use the existing product configuration and platform
+edge synchronization. Do not copy product vhosts or edit server variables for
+onboarding. See [edge references](configs/edge/README.md).
 
 ---
 

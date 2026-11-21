@@ -4,7 +4,7 @@
  * browser. Endpoint paths are the frozen contract relative to the issuer
  * (standard section 2), so we derive them rather than fetch discovery per call.
  *
- * arda runs on a SINGLE host (arda.vxture.com / beta-arda.vxture.com) and the
+ * arda runs on a SINGLE host (arda.ruyin.work / beta-arda.vxture.com) and the
  * OIDC callback lives on that same host (/auth/callback), so there is no
  * cross-subdomain apex hop. The session cookie is host-only (no leading dot)
  * so it cannot leak to sibling vxture subdomains.
@@ -92,6 +92,8 @@ export function getOidcConfig(): OidcConfig | null {
   }
 
   const issuer = trimTrailingSlash((process.env.OIDC_ISSUER || "").trim());
+  // Public issuer remains the signature authority; internal transport is separate.
+  const backchannel = trimTrailingSlash((process.env.OIDC_BACKCHANNEL_ISSUER || issuer).trim());
   const clientSecret = (process.env.OIDC_CLIENT_SECRET || "").trim();
   if (!issuer || !clientSecret) return null;
 
@@ -115,14 +117,13 @@ export function getOidcConfig(): OidcConfig | null {
     redisUrl,
     sessionTtlSeconds,
     cookieName,
-    // Host-only domain (no leading dot). Read verbatim from env so the cookie is
-    // scoped to exactly arda.vxture.com and never to sibling *.vxture.com hosts.
+    // Retained for operator compatibility; cookie.ts always omits Domain.
     cookieDomain,
     isProd: process.env.NODE_ENV === "production",
     endpoints: {
       authorize: `${issuer}/oidc/authorize`,
-      token: `${issuer}/oidc/token`,
-      jwks: `${issuer}/oidc/jwks`,
+      token: `${backchannel}/oidc/token`,
+      jwks: `${backchannel}/oidc/jwks`,
       endSession: `${issuer}/oidc/end_session`,
     },
   };

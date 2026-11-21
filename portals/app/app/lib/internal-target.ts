@@ -1,7 +1,7 @@
 /**
  * S2S egress guard (arda-plat-220 §4 / B1).
  *
- * arda's C2/C3 calls carry a shared S2S secret (x-vxture-internal-auth). Those
+ * arda's C2/C3 calls carry workspace-bound Bearer tickets. Those
  * calls MUST stay on the internal network (tailnet, WireGuard-encrypted) and
  * NEVER traverse the public internet in cleartext. This guard refuses to send
  * over plaintext http to a host that is not demonstrably internal, so a
@@ -38,7 +38,7 @@ function isInternalHost(host: string): boolean {
 
 /**
  * Throws if `rawUrl` would send an S2S credential over cleartext http to a
- * public host. Call this before any C2/C3 fetch that sets x-vxture-internal-auth.
+ * public host. Call this before sending product credentials or Bearer tickets.
  */
 export function assertInternalTarget(rawUrl: string): void {
   let u: URL;

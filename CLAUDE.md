@@ -9,11 +9,12 @@ business/enterprise) and lands them on a configurable default page. It ships
 as one owned image (`arda-app`) into two environments (beta + prod).
 
 Topology is two-host. The shared vxture public edge (edge host) terminates TLS
-with the wildcard `*.vxture.com` cert and reverse-proxies over tailscale to
+with a certificate covering the selected public domain and reverse-proxies over tailscale to
 ARDA_DEPLOY_HOST, which is private compute (tailnet-only, no public IP) running
-`arda-app` + `arda-redis` + `arda-db` only. arda does NOT own the edge; it contributes the
-vhost source artifacts in `configs/edge/*.conf`, which an operator installs into
-the vxture project repository. There is no on-host
+`arda-app` + `arda-redis` + `arda-db` only. Platform product configuration owns
+domain, callbacks, webhook registration and generated edge routing. Do not
+change server variables or manually install product vhosts for integration.
+The files in `configs/edge/*.conf` are legacy references. There is no on-host
 TLS or nginx in this repo - the app is published on ARDA_DEPLOY_HOST's tailnet
 (`APP_PUBLISH_PORT`, prod 3230 / beta 3231) and the edge is the only TLS hop.
 
@@ -27,7 +28,7 @@ environment:
   Merging to `main` does NOT deploy anything by itself.
 - `beta-YYYYMMDD.N` tag - deploys the beta stack (`beta-arda.vxture.com`,
   `/srv/md1/arda-beta`). No approval gate.
-- `vX.Y.Z` tag - deploys the prod stack (`arda.vxture.com`, `/srv/md0/arda`).
+- `vX.Y.Z` tag - deploys the prod stack (`arda.ruyin.work`, `/srv/md0/arda`).
   Gated by a required reviewer on the `production` GitHub Environment
   (stonesmoker) - the deploy job pauses until approved.
 - `claude-memory` - independent Claude memory versioning line. NOT part of the
@@ -192,8 +193,8 @@ above. ADRs live in `docs/30-design/decisions/` with stable append-only IDs.
 Deploy contracts hold the one-image, two-stack reality: the build emits exactly
 `arda-app`; prod resolves to `/srv/md0/arda` and beta to `/srv/md1/arda-beta` on
 ARDA_DEPLOY_HOST; the two stacks must not share runtime state. TLS and the public
-domain live on the shared public edge (wildcard `*.vxture.com`); arda only
-contributes the vhost source artifacts in `configs/edge/*.conf` and runs no
+domain live on the shared public edge (SAN coverage must include `arda.ruyin.work` for prod);
+platform configuration owns routing and arda runs no
 on-host TLS or nginx.
 
 ## Operational gotchas

@@ -15,27 +15,24 @@
 
 import { prisma } from "../../lib/db";
 import { METRICS } from "../../entitlement/quota";
-import { assertInternalTarget } from "../../lib/internal-target";
+import { platformRequest, workspacePlatformContext } from "../../platform/client";
 
-const TIMEOUT_MS = 5_000;
 
 export async function reportStorageGauge(workspaceId: string): Promise<void> {
-  const baseUrl = process.env.PLATFORM_API_URL;
-  const token = process.env.PLATFORM_INTERNAL_AUTH_TOKEN;
-  if (!baseUrl || !token) return; // local dev / CI: silently skip
+  if (!process.env.PLATFORM_API_URL && process.env.NODE_ENV !== "production") return;
 
   try {
-    assertInternalTarget(baseUrl);
+    const context = await workspacePlatformContext(workspaceId);
     const agg = await prisma.dataset.aggregate({
       where: { workspaceId },
       _sum: { sizeBytes: true },
     });
     const value = Number(agg._sum.sizeBytes ?? 0n);
 
-    const res = await fetch(`${baseUrl}/usage/gauge`, {
+    if (!Number.isSafeInteger(value) || value < 0) throw new Error("storage_gauge_invalid");
+    const res = await platformRequest("/usage/gauge", context, {
       method: "PUT",
       headers: {
-        "x-vxture-internal-auth": token,
         "content-type": "application/json",
       },
       body: JSON.stringify({
@@ -45,7 +42,6 @@ export async function reportStorageGauge(workspaceId: string): Promise<void> {
         value,
         observed_at: new Date().toISOString(),
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
       cache: "no-store",
     });
     if (!res.ok) {

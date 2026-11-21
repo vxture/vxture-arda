@@ -28,6 +28,7 @@ const TITLES: Record<number, string> = {
   422: "Unprocessable Content",
   429: "Too Many Requests",
   500: "Internal Server Error",
+  503: "Service Unavailable",
 };
 
 export function problem(
@@ -38,7 +39,7 @@ export function problem(
   headers?: Record<string, string>,
 ): NextResponse {
   const body: Problem = {
-    type: `https://arda.vxture.com/problems/${code}`,
+    type: `https://arda.ruyin.work/problems/${code}`,
     title: TITLES[status] ?? "Error",
     status,
     code,

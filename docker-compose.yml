@@ -2,8 +2,8 @@
 #
 # the deploy host is private compute (Tailscale-only, no public IP). This stack runs
 # arda-app + arda-redis ONLY. There is NO per-service nginx and NO TLS here:
-# the shared public edge terminates TLS with the wildcard
-# *.vxture.com cert and reverse-proxies to arda-app's published port over
+# the shared public edge terminates TLS with a certificate covering the
+# selected product domain and reverse-proxies to arda-app's published port over
 # tailscale. See configs/edge/ for the vhost arda contributes to that edge.
 #
 # The same file deploys two independent stacks on the deploy host by pointing at a
@@ -58,6 +58,7 @@ services:
       APP_VERSION: "${APP_VERSION:-dev}"
       # -- OIDC RP (Vxture App Integration Standard v1.0) --------------------
       OIDC_ISSUER: "${OIDC_ISSUER:-}"
+      OIDC_BACKCHANNEL_ISSUER: "${OIDC_BACKCHANNEL_ISSUER:-}"
       OIDC_CLIENT_ID: "${OIDC_CLIENT_ID:-arda}"
       OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET:-}"
       OIDC_REDIRECT_URI: "${OIDC_REDIRECT_URI:-}"
@@ -77,11 +78,10 @@ services:
       DATABASE_URL: "${DATABASE_URL:-postgresql://arda:arda@${PROJECT_NAME:-arda}-db:5432/vx_arda_db?schema=public}"
       RP_SESSION_TTL: "${RP_SESSION_TTL:-2592000}"
       RP_SESSION_COOKIE_NAME: "${RP_SESSION_COOKIE_NAME:-vx_rp_session}"
-      # Host-only cookie (no leading dot): scoped to this exact domain.
+      # Host-only cookie: Domain is omitted; legacy operator key remains accepted.
       RP_SESSION_COOKIE_DOMAIN: "${RP_SESSION_COOKIE_DOMAIN:-}"
       # -- Platform API (C2 entitlement + C3 consume) -----------------------
       PLATFORM_API_URL: "${PLATFORM_API_URL:-}"
-      PLATFORM_INTERNAL_AUTH_TOKEN: "${PLATFORM_INTERNAL_AUTH_TOKEN:-}"
       DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:-}"
       INTERNAL_JOB_TOKEN: "${INTERNAL_JOB_TOKEN:-}"
       # -- Platform provisioning webhook (C3) --------------------------------

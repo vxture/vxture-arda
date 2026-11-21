@@ -112,7 +112,7 @@ export default function StatusPage() {
             </h3>
             <Field k="resolver" v={status.c2.resolver} />
             <Field k="platform API" v={`${boolBadge(status.c2.platformApiConfigured)} configured`} />
-            <Field k="internal-auth token" v={`${boolBadge(status.c2.authTokenConfigured)} configured`} />
+            <Field k="product exchange credentials" v={`${boolBadge(status.c2.exchangeCredentialsConfigured)} configured`} />
             <Field k="console URL" v={status.c2.consoleUrl ?? "-"} />
             <Field k="cache TTL (ms)" v={status.c2.cacheTtlMs} />
           </section>
