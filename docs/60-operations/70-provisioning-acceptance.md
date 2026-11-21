@@ -57,3 +57,15 @@ or deployed databases. Tests cover reversed/duplicate events, stop-before-create
 re-enable, versionless notifications, delayed read versions and tenant conflicts.
 ACK retry, signed-header binding, isolated read authority and paging also have
 regressions. These tests do not substitute for live C3 or Accounts acceptance.
+
+## Beta live gateway receipt
+
+Business subscription was verified active on the owner's designated workspace.
+On beta-20261121.7 /6295744, one owner-authorized empty-service call returned200.
+The real gateway inserted one service.api.call row (amount1); the automatic
+worker acknowledged it on its first attempt without a manual flush. C2 call
+remaining changed2000000 ->1999999. The bound temporary key was revoked and
+service paused through normal UI operations; read-only DB checks confirm both.
+This meets the gateway accounting path in item5, not quality execution or data
+egress acceptance. Live stop/re-enable and production reconcile/ACK still need
+their own evidence; no lifecycle event or usage was fabricated for this test.
