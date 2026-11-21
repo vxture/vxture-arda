@@ -16,7 +16,9 @@ import { getAtlasTokenSource, type AtlasTokenSource } from "./atlas-token";
 
 export interface ChatRequest {
   tenantId: string;
-  workspaceId?: string;
+  workspaceId: string;
+  taskId: string;
+  endpointCode?: string;
   modelCode?: string;
   taskProfile?: string;
   messages: { role: "system" | "user" | "assistant"; content: string }[];
@@ -35,7 +37,12 @@ export interface AtlasClientConfig {
 
 type FetchLike = typeof fetch;
 
-export const DEFAULT_ATLAS_CHAT_PATH = "/model-platform/chat";
+export const DEFAULT_ATLAS_CHAT_PATH = "/v1/chat";
+
+export class AtlasRequestError extends Error {
+  constructor(public status: number, public code: string, public retryable: boolean,
+    public retryAfterMs?: number) { super(`atlas_${code}`); }
+}
 
 export class CuratorAtlasClient {
   constructor(
@@ -44,17 +51,31 @@ export class CuratorAtlasClient {
   ) {}
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
-    const token = await this.cfg.tokenSource.tokenFor({ org: req.tenantId, ws: req.workspaceId ?? "" });
+    if (!req.tenantId || !req.workspaceId || !req.taskId) throw new Error("atlas_context_required");
+    if ([req.endpointCode, req.modelCode, req.taskProfile].filter(Boolean).length !== 1) {
+      throw new Error("atlas_route_required");
+    }
+    if (!this.cfg.chatPath.startsWith("/") || this.cfg.chatPath.startsWith("//")) throw new Error("atlas_path_invalid");
     const url = `${this.cfg.baseUrl.replace(/\/$/, "")}${this.cfg.chatPath}`;
     assertInternalTarget(url); // egress guard: cleartext http only to loopback/private/tailnet
+    const token = await this.cfg.tokenSource.tokenFor({ org: req.tenantId, ws: req.workspaceId });
     const res = await this.fetchImpl(url, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-      body: JSON.stringify(req),
+      // Atlas owns AI metering. Arda never sends a second consume for this call.
+      body: JSON.stringify({ ...req, stream: false, timeoutMs: 60_000 }),
       cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(65_000),
     });
-    if (!res.ok) throw new Error(`atlas chat endpoint ${res.status}`);
     const body: unknown = await res.json().catch(() => null);
+    if (!res.ok) {
+      const error = body as Record<string, unknown> | null;
+      const code = typeof error?.code === "string" && /^[A-Z0-9_]+$/.test(error.code) ? error.code : "UNAVAILABLE";
+      const retryAfterMs = typeof error?.retryAfterMs === "number" && Number.isFinite(error.retryAfterMs)
+        && error.retryAfterMs >= 0 ? error.retryAfterMs : undefined;
+      throw new AtlasRequestError(res.status, code, error?.retryable === true, retryAfterMs);
+    }
     const content = extractContent(body);
     if (content === null) throw new Error("atlas chat: no content in response");
     return { content };
@@ -92,20 +113,23 @@ export function getCuratorAtlasClient(): CuratorAtlasClient | null {
 }
 
 export interface CuratorModelSelection {
+  endpointCode?: string;
   modelCode?: string;
   taskProfile?: string;
 }
 
 /**
  * How the Curator picks a model on Atlas. Exactly one field is emitted so
- * there is no modelCode-vs-taskProfile precedence ambiguity (Atlas requires
- * at least one, and the two are alternatives):
- * - auto-adapt: if ATLAS_CURATOR_TASK_PROFILE is set, send that taskProfile
- *   label and let Atlas resolve a concrete model from the tenant's grant.
- * - pinned: otherwise send ATLAS_CURATOR_MODEL as an explicit modelCode.
+ * operators can repoint a granted endpoint without a caller release.
+ * Prefer ENDPOINT, then the legacy tenant TASK_PROFILE, then pinned MODEL.
+ * Missing configuration fails instead of inventing a model called default.
  */
 export function curatorModelSelection(): CuratorModelSelection {
+  const endpointCode = process.env.ATLAS_CURATOR_ENDPOINT;
+  if (endpointCode) return { endpointCode };
   const taskProfile = process.env.ATLAS_CURATOR_TASK_PROFILE;
   if (taskProfile) return { taskProfile };
-  return { modelCode: process.env.ATLAS_CURATOR_MODEL ?? "default" };
+  const modelCode = process.env.ATLAS_CURATOR_MODEL;
+  if (modelCode) return { modelCode };
+  throw new Error("atlas_route_unconfigured");
 }

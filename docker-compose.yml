@@ -82,6 +82,13 @@ services:
       RP_SESSION_COOKIE_DOMAIN: "${RP_SESSION_COOKIE_DOMAIN:-}"
       # -- Platform API (C2 entitlement + C3 consume) -----------------------
       PLATFORM_API_URL: "${PLATFORM_API_URL:-}"
+      # Atlas adapter remains inactive until an explicit runtime base/route is configured.
+      ATLAS_BASE_URL: "${ATLAS_BASE_URL:-}"
+      ATLAS_CHAT_PATH: "${ATLAS_CHAT_PATH:-}"
+      ATLAS_AUDIENCE: "${ATLAS_AUDIENCE:-atlas}"
+      ATLAS_CURATOR_ENDPOINT: "${ATLAS_CURATOR_ENDPOINT:-}"
+      ATLAS_CURATOR_TASK_PROFILE: "${ATLAS_CURATOR_TASK_PROFILE:-}"
+      ATLAS_CURATOR_MODEL: "${ATLAS_CURATOR_MODEL:-}"
       DATA_ENCRYPTION_KEY: "${DATA_ENCRYPTION_KEY:-}"
       INTERNAL_JOB_TOKEN: "${INTERNAL_JOB_TOKEN:-}"
       # -- Platform provisioning webhook (C3) --------------------------------

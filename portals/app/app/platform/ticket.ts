@@ -11,14 +11,16 @@ export interface PlatformContext {
   subjectToken?: string;
 }
 
-export function validatePlatformClaims(claims: JWTPayload, context: PlatformContext, now = Date.now() / 1000): void {
+export function validatePlatformClaims(claims: JWTPayload, context: PlatformContext, now = Date.now() / 1000,
+  audience = "vxture"): void {
   const act = claims.act as Record<string, unknown> | undefined;
-  if (!context.orgId || !context.workspaceId || claims.aud !== "vxture" || act?.sub !== "arda"
-    || claims.scope !== "tool:vxture" || claims.delegated !== undefined
+  if (!context.orgId || !context.workspaceId || claims.aud !== audience || act?.sub !== "arda"
+    || claims.scope !== `tool:${audience}` || claims.delegated !== undefined
     || claims.org_id !== context.orgId || claims.workspace_id !== context.workspaceId
     || claims.mode !== (context.subjectToken ? "obo" : "service")
     || (context.subjectToken ? !context.subject || claims.sub !== context.subject : claims.sub !== undefined)
     || typeof claims.iat !== "number" || typeof claims.exp !== "number"
+    || !Number.isInteger(claims.iat) || !Number.isInteger(claims.exp)
     || claims.iat > now + 30 || claims.exp <= now || claims.exp <= claims.iat || claims.exp - claims.iat > 300) {
     throw new Error("platform_ticket_scope_invalid");
   }
@@ -27,7 +29,8 @@ export function validatePlatformClaims(claims: JWTPayload, context: PlatformCont
 type Verify = (cfg: OidcConfig, token: string) => Promise<JWTPayload>;
 export class PlatformTicketSource {
   constructor(private cfg: OidcConfig, private fetcher: typeof fetch = fetch,
-    private verify: Verify = (cfg, token) => verifyToken(cfg, token, { audience: "vxture" })) {}
+    private verify: Verify = (cfg, token) => verifyToken(cfg, token, { audience: this.audience }),
+    private audience = "vxture") {}
 
   async tokenFor(context: PlatformContext): Promise<string> {
     if (!context.orgId || !context.workspaceId || Boolean(context.subjectToken) !== Boolean(context.subject)) {
@@ -36,7 +39,7 @@ export class PlatformTicketSource {
     assertInternalTarget(this.cfg.endpoints.token);
     const body = new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-      audience: "vxture",
+      audience: this.audience,
       requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
     });
     if (context.subjectToken) {
@@ -58,7 +61,7 @@ export class PlatformTicketSource {
     if (value.token_type !== "Bearer" || typeof value.access_token !== "string" || !value.access_token) {
       throw new Error("platform_ticket_invalid");
     }
-    validatePlatformClaims(await this.verify(this.cfg, value.access_token), context);
+    validatePlatformClaims(await this.verify(this.cfg, value.access_token), context, Date.now() / 1000, this.audience);
     return value.access_token;
   }
 }
