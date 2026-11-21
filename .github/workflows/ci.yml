@@ -229,6 +229,20 @@ jobs:
     name: test-coverage
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      provisioning-db:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-qa-only
+          POSTGRES_DB: arda_provisioning_test
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     # Same @vxture registry PAT scoping as `build`: pnpm install pulls @vxture/*.
     env:
       NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
@@ -310,8 +324,11 @@ jobs:
         if: ${{ steps.changes.outputs.run_tests == 'true' }}
         shell: bash
         working-directory: portals
+        env:
+          ARDA_PROVISIONING_TEST_DATABASE_URL: postgresql://postgres:local-qa-only@127.0.0.1:${{ job.services.provisioning-db.ports[5432] }}/arda_provisioning_test
         run: |
           set -euo pipefail
+          pnpm --filter @arda/app run prisma:generate
           pnpm --filter @arda/app run test --if-present
 
   # Secret scanning lives in .github/workflows/secret-scan.yml as its own
