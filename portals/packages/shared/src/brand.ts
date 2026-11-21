@@ -21,12 +21,12 @@ const COPYRIGHT = String.fromCharCode(0xa9);
 export const ardaBrandCore = {
   /** Default product wordmark. */
   productName: "Arda",
-  productDomain: "arda.vxture.com",
+  productDomain: "arda.ruyin.work",
   /** Parent studio masterbrand. */
   studioName: "Vxture",
   studioUrl: "https://vxture.com",
   /** Public marketing / canonical product front door. */
-  siteUrl: "https://arda.vxture.com",
+  siteUrl: "https://arda.ruyin.work",
   copyright: `${COPYRIGHT} 2026 Vxture. All rights reserved.`,
   legalLinks: [
     ["Terms of Service", "https://vxture.com/legal/terms"],

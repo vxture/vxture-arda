@@ -8,9 +8,18 @@ old domain; changing repository templates does not migrate a running stack.
 Owner correction: L2/L3 integration is configuration-managed. Product domains,
 OIDC clients, callbacks, edge routing and webhook credentials must be maintained
 through the platform product configuration. Do not edit server environment
-variables, add product-specific platform env keys, or install hand-written
+variables on platform hosts, add product-specific platform env keys, or install hand-written
 vhosts to perform this migration. Existing env-based Arda code/templates are
 legacy implementation evidence, not the target configuration workflow.
+
+Owner clarification, 2026-11-21: the prohibition applies to platform-side
+onboarding. Arda's own runtime connection settings may be updated through its
+normal product deployment. `deploy/config/integration-{production,beta}.env`
+now carries only non-secret product connection settings; the deploy loader
+applies that release profile after the legacy operator file, preserving client,
+webhook and database secrets. CI image pins retain precedence. Empty cookie
+Domain is now accepted by deployment validation. This is product configuration,
+not a new platform registration authority or a remote config-delivery API.
 
 ## Evidence and ownership
 
@@ -261,3 +270,20 @@ not evidence of live platform registration, billing, SSO or successful delivery.
   applies specifically to platform onboarding, or also to Arda's own normal
   deployment configuration. Current Arda deployment preserves the existing
   `etc/.env`; code release alone does not apply the new callback origin.
+
+## Runtime configuration clarification and DNS resolution
+
+The owner confirmed that the server-variable prohibition applies to the platform.
+Arda runtime settings may change through normal product deployment. The reviewed
+production/beta profiles now override legacy public origins and internal transport
+settings after loading persistent secrets, without rewriting those secrets.
+Deployment regression checks verify channel separation and retained image pins.
+Profiles are explicitly tracked despite the general secret-file ignore rule.
+Preference cookies are host-only, avoiding the former registrable-domain fallback
+that would spread preferences to sibling products on the new host.
+
+A subsequent resolver check returned A 39.103.62.17 with TTL 300. The prior
+NXDOMAIN observations above describe the earlier state. DNS-only (gray cloud)
+is appropriate for the existing TLS edge. Real authenticated acceptance and
+production runtime cutover still require the release below; remaining C3 lifecycle
+and resource-sharing work is not claimed complete by this deployment.

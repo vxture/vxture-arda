@@ -13,7 +13,9 @@ with a certificate covering the selected public domain and reverse-proxies over 
 ARDA_DEPLOY_HOST, which is private compute (tailnet-only, no public IP) running
 `arda-app` + `arda-redis` + `arda-db` only. Platform product configuration owns
 domain, callbacks, webhook registration and generated edge routing. Do not
-change server variables or manually install product vhosts for integration.
+change platform server variables or manually install product vhosts for integration.
+Arda's own non-secret connection settings ship through its normal deployment
+profiles in `deploy/config/`; product secrets remain in the existing secret store.
 The files in `configs/edge/*.conf` are legacy references. There is no on-host
 TLS or nginx in this repo - the app is published on ARDA_DEPLOY_HOST's tailnet
 (`APP_PUBLISH_PORT`, prod 3230 / beta 3231) and the edge is the only TLS hop.

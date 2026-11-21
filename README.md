@@ -119,7 +119,7 @@ same segment as the edge host). Two independent stacks live on that host: `/srv/
 (`arda-app`) and deploys the stack matching the pushed tag (`beta-*` -> beta,
 `v*.*.*` -> prod). The deploy starts `arda-app` + `arda-redis` + `arda-db` and publishes the
 app on `APP_PUBLISH_PORT`; TLS and the public domain are handled by the public
-edge, which fronts the app with the wildcard `*.vxture.com` cert.
+edge, whose certificate covers `*.ruyin.work` and `*.vxture.com`.
 
 ```bash
 ssh stone@<ARDA_DEPLOY_HOST-tailscale-ip>
@@ -133,8 +133,11 @@ above is for operator intervention. The two stacks must never share an `.env`
 file or data directory.
 
 Domain and routing changes use the existing product configuration and platform
-edge synchronization. Do not copy product vhosts or edit server variables for
-onboarding. See [edge references](configs/edge/README.md).
+edge synchronization. Do not copy product vhosts or edit platform server variables
+for onboarding. Arda runtime connection settings ship in reviewed non-secret
+`deploy/config/integration-{production,beta}.env` release profiles. The deployment
+loader applies the selected profile after the persistent operator environment,
+retaining secrets and CI image pins. Preference and session cookies are host-only. See [edge references](configs/edge/README.md).
 
 ---
 

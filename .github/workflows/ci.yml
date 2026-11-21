@@ -53,6 +53,7 @@ jobs:
           [ -d services ] && compile_targets+=(services)
           python -m compileall -q "${compile_targets[@]}"
           python scripts/checks/06-check-deploy-contracts.py
+          bash scripts/checks/10-check-integration-config.sh
           # The single arda app must consume @vxture/design-system only - no
           # self-built design primitives (raw colors, local fonts, duplicated
           # component CSS).

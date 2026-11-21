@@ -1,17 +1,9 @@
 "use client";
 
 /**
- * preferences.ts - Cross-subdomain user-preference sync for *.arda.vxture.com.
- *
- * Locale / theme / density / font-size are written to PARENT-DOMAIN cookies
- * (.arda.vxture.com) so they travel across every Arda app under that apex. Each
- * app, on boot, seeds its DS / provider localStorage from those cookies (see
- * `preferenceBootstrapScript`, injected in every <head>), and same-origin tabs
- * stay live via the storage event + a same-document custom event.
- *
- * Cookie keys are the canonical platform keys from @vxture/shared
- * (NEXT_LOCALE / vx-theme / vx-density); font-size has no platform key yet, so
- * it uses "vx-fontsize". Other apps adopt the same contract to participate.
+ * Host-local Arda preferences. Cookies seed localStorage on boot; same-origin
+ * tabs stay synchronized through storage events. Production and beta remain
+ * independent, and preferences never spread to sibling products.
  */
 
 import { useEffect, useRef } from "react";
@@ -28,11 +20,7 @@ export type PrefFontSize = "small" | "default" | "large";
 
 const FONT_SIZE_LS_KEY = "vx-fontsize";
 
-/** The Arda apex. Subdomain apps (e.g. app.arda.vxture.com) share preference
- *  cookies scoped to this parent so a choice on one travels to the others. */
-const ARDA_APEX = "arda.vxture.com";
-
-/** Cookie name per preference (parent-domain, cross-subdomain). */
+/** Cookie name per host-local preference. */
 const COOKIE = {
   locale: LOCALE_CONSTANTS.COOKIE_KEY, // "NEXT_LOCALE"
   theme: THEME_CONSTANTS.COOKIE_KEY, // "vx-theme"
@@ -63,30 +51,6 @@ const isFontSize = (v: unknown): v is PrefFontSize =>
   v === "small" || v === "default" || v === "large";
 const isLocale = isArdaLocale;
 
-/** Parent domain so the cookie is shared by every Arda subdomain app. Arda's
- *  apps live under the 3-label apex `arda.vxture.com`, so the cookie is scoped
- *  to `.arda.vxture.com` (not the registrable `.vxture.com`, which would leak
- *  Arda preferences to sibling Vxture products). Returns undefined on localhost
- *  / bare IPs (host-only cookie) and for hosts outside the Arda apex. */
-function parentDomain(): string | undefined {
-  if (typeof location === "undefined") return undefined;
-  const host = location.hostname;
-  if (
-    host === "localhost" ||
-    host.endsWith(".localhost") ||
-    /^\d+(\.\d+){3}$/.test(host)
-  ) {
-    return undefined;
-  }
-  if (host === ARDA_APEX || host.endsWith(`.${ARDA_APEX}`)) {
-    return `.${ARDA_APEX}`;
-  }
-  // Fallback: the registrable last-two labels for any other host.
-  const parts = host.split(".");
-  if (parts.length <= 2) return `.${host}`;
-  return `.${parts.slice(-2).join(".")}`;
-}
-
 function readCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -98,10 +62,8 @@ function readCookie(name: string): string | null {
 
 function writeCookie(name: string, value: string): void {
   if (typeof document === "undefined") return;
-  const domain = parentDomain();
   const secure = location.protocol === "https:" ? "; Secure" : "";
-  const domainPart = domain ? `; Domain=${domain}` : "";
-  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${PREFERENCE_CONSTANTS.COOKIE_MAX_AGE}; SameSite=Lax${domainPart}${secure}`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${PREFERENCE_CONSTANTS.COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
 }
 
 function setLocalStorage(key: string, value: string): void {
@@ -181,7 +143,7 @@ export function getFontSize(): PrefFontSize {
 
 /** Inline <head> script: cookie-first bootstrap that seeds each origin's
  *  localStorage and applies theme/density/font-size before first paint, so a
- *  preference set on one subdomain lands correctly on the next without FOUC.
+ *  stored preference is applied before first paint without FOUC.
  *  Supersedes the DS themeBootstrapScript (it also covers density + font-size +
  *  locale). Kept dependency-free and defensive for the pre-hydration context. */
 export const preferenceBootstrapScript = `(function(){try{
@@ -209,10 +171,9 @@ export interface PreferenceSetters {
 }
 
 /**
- * Keeps this tab's React preference state in sync with the cross-subdomain
- * cookies: reconciles once on mount (adopting a value set on another
- * subdomain), then live-updates on the storage event (other same-origin tabs)
- * and the same-document custom event. Pass the app's own provider setters.
+ * Keeps this tab's React preference state in sync with host-local cookies:
+ * reconciles once on mount, then updates on storage events from other
+ * same-origin tabs. Pass the app's own provider setters.
  */
 export function usePreferenceLiveSync(setters: PreferenceSetters): void {
   const ref = useRef(setters);
