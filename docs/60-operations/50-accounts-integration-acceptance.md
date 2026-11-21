@@ -61,10 +61,20 @@ refresh cannot recreate a deleted session.
 ## Remaining launch work
 
 - Diagnose C2 legacy-credential signal attribution and any remaining transient 503.
-- Verify reverse logout after beta release, including failure/retry handling.
-- Complete signed provisioning, monotonic concurrency, ACK and reconciliation.
+- Promote the validated beta Accounts changes after production approval.
+- Finish live lifecycle/ACK acceptance; implementation and concurrency tests are
+  recorded in 70-provisioning-acceptance.md.
 - Use an existing valid test subscription for real C3 usage acceptance; never
   fabricate usage or change customer subscriptions just to make checks green.
-- Resolve `seat.max` versus Arda `member.max` before publishing revised quotas.
-- Retire old product hostname through platform PR 716 after its CI blockers clear.
-- Keep commercial plan publication behind the owner's explicit confirmation.
+- Retire old product hostname through platform configuration (issue721).
+
+## Fresh beta isolation retest
+
+After the owner signed into both realms, Opera was reloaded and returned live
+provider/model data as superadmin. Stable Arda /auth/session returned
+authenticated:true. Beta /auth/logout then returned its signed-out screen;
+stable Arda /auth/session returned authenticated:false. Opera was reloaded again
+and still returned live data as superadmin. Customer logout and workforce
+isolation passed for these clients; other products were not independently tested.
+Screenshots are saved in local output as arda-opera-isolation-passed-20261121.jpg
+and arda-beta-logout-passed-20261121.jpg.

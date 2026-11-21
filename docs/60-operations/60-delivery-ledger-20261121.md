@@ -168,3 +168,38 @@ Production remains v0.13.0 /20bd3d2. No newer production tag was pushed.
   authorization is required before real paid-tier business acceptance.
 - Chinese cumulative handoff saved as output/arda-delivery-record-20261121.md;
   supporting probes and results are saved beside it, without token/secret output.
+
+## Business subscription and fresh isolation follow-up
+
+The owner subsequently purchased Business monthly for the designated workspace.
+Beta C2 returned200, matching product/workspace scope, status active, tier
+business, bundled true; limits: seat5, dataset20000, datasource100, services50,
+retention365. The purchased pools include calls2000000, quality100000 and
+AI1500. Other eligible shared/earmarked pools also exist: do not describe the
+combined workspace storage/AI balance as this plan's standalone allocation.
+
+This exposed a local first-pool-only parser defect: a zero bundled call pool
+preceded the purchased call pool. The parser now sums all matching eligible C2
+pools. Platform C2 owns sharing-policy filtering; Arda must not independently
+include unreturned pools. Regression covers pool ordering, zero bundled pools,
+multiple AI pools, missing metrics and negative storage remaining.
+
+Fresh isolation baseline: Opera reload returned live data as superadmin and
+stable Arda session was authenticated. Beta logout then signed out beta and
+stable Arda; another Opera reload retained live authenticated access. This
+supersedes the earlier inconclusive isolation round. It does not identify
+backchannel versus status-fallback delivery or validate every other product.
+
+The beta workspace has no datasets, sources or services. No API credentials,
+synthetic usage or production data were created for testing. Real C3 receipt
+acceptance and the unwired Curator feature remain open. One separate old local
+workspace anchor returned token-exchange500; this is not the subscribed target.
+
+Historical open Arda issues213/214 were checked against current implementation.
+The missing /api/ready route now probes DB and Redis with bounded operations,
+returning200 only when both pass and503 otherwise; /api/health remains liveness.
+It exposes identity and booleans only. Issue214 corrects the previous July
+assumption: Atlas is L1 infrastructure reporting four-dimensional raw tokens
+attributed to Arda; the platform converts/account credits (platform PR581,
+issue547). No Atlas ai.credit pre-deduct guarantee is claimed. Local comments
+and affected design documents were corrected; live inference remains pending.

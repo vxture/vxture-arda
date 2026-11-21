@@ -1,5 +1,7 @@
 # arda 商业化/计费模型 (arda-biz-260-billing)
 
+> Current AI accounting correction (2026-11-21; Arda issue214): Atlas is L1 infrastructure. It reports raw input/output/cache-write/cache-read tokens attributed to Arda. The platform converts/account credits (platform PR581 / issue547). Atlas does not pre-deduct ai.credit; Arda must not duplicate inference reporting. Earlier pre-deduct descriptions below are superseded. Storage gauge is available via PUT /usage/gauge, implemented in usage/lib/gauge.ts.
+
 > Status: authoritative design - pending platform configuration
 > Scope: arda product billing dimensions, tier matrix, C2 capability keys,
 >        C3 metric names. This document is the handoff to the vxture platform

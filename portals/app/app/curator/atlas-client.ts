@@ -1,8 +1,9 @@
 // The Atlas chat client for arda Curator (ADR-013 / arda-biz-270). Atlas is
-// an INDEPENDENT vxture product (repo vxture-atlas) - the platform's sole
+// L1 infrastructure (repo vxture-atlas) - the platform's sole
 // model-inference/metering gateway; every product (karda, arda, ...)
-// consumes models through it, never directly, and Atlas itself is the
-// metering system of record for ai.credit (see entitlement/quota.ts). So
+// consumes models through it, never directly. Atlas reports raw input/output/
+// cache-write/cache-read tokens attributed to Arda; the platform converts
+// them into credits. Arda never duplicates inference metering (issue214). So
 // Atlas has its OWN base (ATLAS_BASE_URL, NOT PLATFORM_API_URL) and its OWN
 // auth: an S2S token-exchange bearer (aud=atlas), NOT the C2/C3
 // x-vxture-internal-auth header. The bearer is minted per (org, ws) by

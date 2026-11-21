@@ -1,5 +1,7 @@
 # arda 权益门控 · 消费契约（arda-ent-120-consumption-contract）
 
+> Current AI accounting correction (2026-11-21; Arda issue214): Atlas is L1 infrastructure. It reports raw input/output/cache-write/cache-read tokens attributed to Arda. The platform converts/account credits (platform PR581 / issue547). Atlas does not pre-deduct ai.credit; Arda must not duplicate inference reporting. Earlier pre-deduct descriptions below are superseded. Storage gauge is available via PUT /usage/gauge, implemented in usage/lib/gauge.ts.
+
 > 状态：**契约 v2 定稿（2026-07-13 平台裁定 `arda_303_reply-03`：整体采纳并升格为 product_200 全产品契约）**——`capabilities`（功能键/features）整体退出契约，能力归产品本地档位矩阵；新增时间戳与 `limits` 块；`quota_pools`/consume/invalidate 原样保留。status 值域扩为**六值**（`overdue` 取代提案的 past_due，`@vxture/shared@1.4.0` 已发布）；新增**代表订阅规则**与**演进容错通则**（见 §1a/§4a）。平台**一步切换、不做双发**，切换窗口另函通知；arda 消费端已 v1 容错（平台仍发 `capabilities` 时忽略），两侧无需同步发版。C2/C3 端点 2026-07-07 已上生产；arda 侧消费实现见 `plat-200`
 > 层：第 2 层 · 消费契约（`ent` 系列，见 [`ent-000`](arda-ent-000-index.md) 索引）
 > 范围：arda 怎么调用平台的权益/计量端点、怎么解读响应体——**只是契约的形状（字段/请求/响应），不是平台内部怎么算出这些字段的**。平台侧的 Org/Workspace/Membership/Plan/Product 建模与权益解析合并算法、瀑布扣减算法，一律不在本文展开，见 [`ent-000`](arda-ent-000-index.md) §0 边界。
