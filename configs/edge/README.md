@@ -1,14 +1,15 @@
 # Edge vhosts (edge host)
 
-These `.conf` files are the SOURCE ARTIFACTS for arda's public vhosts. arda does
-not own the public edge - it only contributes these files. The edge itself lives
-in the separate vxture monorepo and is shared by every vxture app.
+These `.conf` files are legacy source artifacts retained for migration history.
+L2/L3 product ingress is now platform configuration-managed. Change the product's
+edge settings in the platform; do not install these files or edit server env
+variables to change integration. The shared public edge belongs to the platform.
 
 ## Topology
 
 ```
 Browser
-   |  https (:443, *.vxture.com wildcard cert)
+   |  https (:443, certificate SAN must cover the selected product domain)
    v
 EDGE HOST  = SHARED public edge (nginx, TLS termination)
    |  http over tailscale (WireGuard-encrypted)
@@ -17,9 +18,11 @@ ARDA_DEPLOY_HOST  = PRIVATE compute, tailnet-only, NO public IP
              arda-app (published on APP_PUBLISH_PORT) + arda-redis
 ```
 
-- the edge host terminates TLS once for all apps using the wildcard `*.vxture.com`
-  cert at `/etc/nginx/ssl/live/vxture.com/{fullchain,privkey}.pem`. arda reuses
-  that same cert - it issues no cert of its own.
+- The edge terminates TLS. The shared certificate path is
+  `/etc/nginx/ssl/live/vxture.com/{fullchain,privkey}.pem`. Before enabling
+  `arda.ruyin.work`, verify that the installed certificate includes
+  `arda.ruyin.work` or `*.ruyin.work` in its SANs. A certificate covering only
+  `*.vxture.com` is insufficient. Arda does not issue certificates itself.
 - ARDA_DEPLOY_HOST is private (tailnet IP `100.76.219.48`, MagicDNS short name
   `ARDA_DEPLOY_HOST`). It runs only `arda-app` + `arda-redis`. There is NO per-service
   nginx and NO second TLS hop on ARDA_DEPLOY_HOST: the edge proxies straight to the
@@ -29,16 +32,23 @@ ARDA_DEPLOY_HOST  = PRIVATE compute, tailnet-only, NO public IP
 
 | File                         | Domain                  | Upstream            |
 |------------------------------|-------------------------|---------------------|
-| `arda.vxture.com.conf`       | `arda.vxture.com`       | `ARDA_DEPLOY_HOST:3230`    |
+| `arda.vxture.com.conf`       | `arda.vxture.com` (migration only) | `ARDA_DEPLOY_HOST:3230` |
 | `beta-arda.vxture.com.conf`  | `beta-arda.vxture.com`  | `ARDA_DEPLOY_HOST:3231`    |
 
 Each file is a `:80` -> `:443` redirect plus a `:443` TLS server that proxies
 `location /` to the app over tailscale.
 
-## Install on the edge host
+## Activate platform routing
 
-1. Copy both `.conf` files into the vxture project repository.
-2. On the edge host, run `20-sync-nginx-config.sh` to sync and reload nginx.
+1. Complete the coordinated cutover in
+   [the platform alignment audit](../../docs/70-workplan/30-platform-l2-alignment.md).
+   DNS, certificate coverage and the platform client/edge/webhook registration
+   must be ready before changing the running app's public origin.
+2. Update platform product configuration and use its generated routing/sync;
+   do not install a hand-written production vhost.
+3. Retain the old vhost until the new domain passes login/logout verification.
+   Then remove old routing/allow-lists through platform configuration. Final
+   production has only `arda.ruyin.work`, with no old-domain redirect.
 
 That is the entire integration surface. Nothing in this directory is consumed by
 the arda compose stack; these files only ever live on the shared edge.

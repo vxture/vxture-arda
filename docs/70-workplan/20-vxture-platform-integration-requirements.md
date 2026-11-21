@@ -1,5 +1,9 @@
 # arda 对 vxture 平台端的对接要求（v1）
 
+> 2026-11-21 alignment: current gaps and domain cutover are tracked in the
+> [L2 audit](30-platform-l2-alignment.md). Historical claims/scopes, shared-secret
+> requirements and context-switch assumptions below do not override current platform APIs.
+
 > 状态：对接需求（交付给 vxture 平台团队）
 > 上游依据：`docs/30-design/decisions/ADR-001-entitlement-and-workspace.md`、`docs/10-standards/10-identity-app-integration-standard.md`、`docs/30-design/40-entitlement.md`、`docs/30-design/arda-biz-120-domain-entities-and-feature-keys.md`
 > 目的：把 arda「打通」所需平台侧提供的契约一次性讲清，逐项可被平台 implement / 确认。

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Shell } from "../ui/shell";
 import { AccountGate } from "../ui/account-gate";
 import { EntitlementGate } from "../entitlement/gate";
-import { getSession } from "../auth/lib/session";
+import { getSession, getProductSession } from "../auth/lib/session";
 import { isWorkspaceAdmin } from "../entitlement/roles";
 import { getWipeState } from "../lib/workspace-state";
 import { WipedNotice } from "../lifecycle/wiped-notice";
@@ -41,7 +41,8 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
         </AccountGate>
       );
     }
-    await fillWorkspaceIfNeeded(prisma, session.workspaceId, session.tenantId);
+    const admitted = await getProductSession();
+    if (admitted) await fillWorkspaceIfNeeded(prisma, admitted.workspaceId, admitted.tenantId);
   }
   // Role axis for the chrome: hides role-locked nav/boards (admin). Screen
   // content is enforced separately server-side (ScreenGate) - hiding is UX,

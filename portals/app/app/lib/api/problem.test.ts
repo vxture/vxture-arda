@@ -8,7 +8,7 @@ test("problem emits an RFC 9457 envelope with the stable code", async () => {
   assert.equal(res.headers.get("content-type"), "application/problem+json");
   const body = await res.json();
   assert.deepEqual(body, {
-    type: "https://arda.vxture.com/problems/insufficient_scope",
+    type: "https://arda.ruyin.work/problems/insufficient_scope",
     title: "Forbidden",
     status: 403,
     code: "insufficient_scope",

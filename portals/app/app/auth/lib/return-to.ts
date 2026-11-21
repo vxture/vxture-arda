@@ -1,7 +1,7 @@
 /**
  * Allowlist for the post-login landing URL. arda is a single host, so we permit
  * only the configured public app host (the origin of redirectUri, which equals
- * arda.vxture.com / beta-arda.vxture.com / dev localhost) and the configured
+ * arda.ruyin.work / beta-arda.vxture.com / dev localhost) and the configured
  * cookie host. No subdomain wildcard: we deliberately do NOT accept sibling
  * *.vxture.com hosts. Anything else is rejected to prevent an open redirect.
  *

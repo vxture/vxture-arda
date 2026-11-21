@@ -75,6 +75,8 @@ export class Rfc8693TokenSource implements AtlasTokenSource {
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body: body.toString(),
       cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) throw new Error(`token-exchange ${res.status}`);
     const j: unknown = await res.json().catch(() => null);
@@ -94,7 +96,8 @@ export function getAtlasTokenSource(): AtlasTokenSource | null {
   const oidc = getOidcConfig();
   if (!oidc || !oidc.issuer || !oidc.clientId || !oidc.clientSecret) return null;
   return new Rfc8693TokenSource({
-    issuer: oidc.issuer,
+    // Exchange over the configured internal transport, keeping public iss validation.
+    issuer: oidc.endpoints.token.replace(/\/oidc\/token$/, ""),
     clientId: oidc.clientId,
     clientSecret: oidc.clientSecret,
     audience: process.env.ATLAS_AUDIENCE ?? "atlas",

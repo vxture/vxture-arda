@@ -26,6 +26,8 @@ export interface AuthRequest {
  * the UI falls back to initials. Tenant context uses org/workspace/roles (the
  * live claim names). */
 export interface IdentityClaims {
+  /** Server status schedule only; never a renewable RP session lifetime. */
+  central_next_check_at?: number;
   sub: string;
   sid: string;
   display_name: string;
@@ -70,6 +72,18 @@ const sessKey = (rpsid: string) => `rpsess:${rpsid}`;
 const tokKey = (rpsid: string) => `rptok:${rpsid}`;
 const sidKey = (sid: string) => `sid:${sid}`;
 const seenLogoutKey = (jti: string) => `bclogout:${jti}`;
+
+/** Serialize central checks and rotating single-use refresh tokens across replicas. */
+export async function withSessionLock<T>(cfg: OidcConfig, rpsid: string, work: () => Promise<T>): Promise<T> {
+  const key = `rplock:${rpsid}`;
+  const owner = randomToken();
+  const acquired = await redis(cfg).set(key, owner, "PX", 60_000, "NX");
+  if (!acquired) throw new Error("session_resolution_busy");
+  try { return await work(); }
+  finally {
+    await redis(cfg).eval("if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end", 1, key, owner);
+  }
+}
 
 const AUTHREQ_TTL = 600;
 
@@ -128,13 +142,26 @@ export async function getTokens(cfg: OidcConfig, rpsid: string): Promise<TokenBu
 
 /** Replace the token bundle after a refresh, preserving the session TTL. */
 export async function putTokens(cfg: OidcConfig, rpsid: string, tokens: TokenBundle): Promise<void> {
-  await redis(cfg).set(tokKey(rpsid), JSON.stringify(tokens), "KEEPTTL");
+  const saved = await redis(cfg).set(tokKey(rpsid), JSON.stringify(tokens), "KEEPTTL", "XX");
+  if (!saved) throw new Error("session_ended_during_update");
+}
+
+/** Commit a refresh together and never resurrect a concurrently logged-out session. */
+export async function putRotatedSession(cfg: OidcConfig, rpsid: string,
+  identity: IdentityClaims, tokens: TokenBundle): Promise<void> {
+  const saved = await redis(cfg).eval(
+    "if redis.call('exists', KEYS[1]) == 0 or redis.call('exists', KEYS[2]) == 0 then return 0 end "
+    + "redis.call('set', KEYS[1], ARGV[1], 'KEEPTTL', 'XX'); "
+    + "redis.call('set', KEYS[2], ARGV[2], 'KEEPTTL', 'XX'); return 1",
+    2, sessKey(rpsid), tokKey(rpsid), JSON.stringify(identity), JSON.stringify(tokens));
+  if (saved !== 1) throw new Error("session_ended_during_update");
 }
 
 /** Replace the stored identity claims after a refresh, preserving the session
  * TTL. The sid (back-channel logout index) must be unchanged by the caller. */
 export async function putIdentity(cfg: OidcConfig, rpsid: string, identity: IdentityClaims): Promise<void> {
-  await redis(cfg).set(sessKey(rpsid), JSON.stringify(identity), "KEEPTTL");
+  const saved = await redis(cfg).set(sessKey(rpsid), JSON.stringify(identity), "KEEPTTL", "XX");
+  if (!saved) throw new Error("session_ended_during_update");
 }
 
 /** Destroy a single RP session and drop it from its sid index. */

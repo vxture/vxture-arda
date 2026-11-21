@@ -1,83 +1,39 @@
-/**
- * PlatformEntitlementResolver: calls GET /platform/entitlements (C2) with a
- * 45-second in-memory TTL cache per workspaceId (matching the platform's
- * Cache-Control: private, max-age=45 response directive).
- *
- * The cache is process-local and intentionally not shared across instances.
- * Stale-on-error: if the platform call fails, the last cached value (if any)
- * is returned rather than failing the page load. Falls through to free/none
- * if there is no cached value.
- */
-
+/** Short-lived C2 cache. Expired authority is never reused after a transport failure. */
 import type { EntitlementResolver } from "./resolver";
-import type { Subscription } from "./types";
-import type { ArdaClaim } from "./types";
+import type { Subscription, ArdaClaim } from "./types";
 import type { WorkspaceQuota } from "./quota";
-import { FREE_PLAN_LIMITS, FREE_QUOTA_POOLS } from "./quota";
-import { fetchPlatformEntitlement } from "./platform-client";
+import { fetchPlatformEntitlement, type PlatformEntitlementResult } from "./platform-client";
 
 const TTL_MS = 45_000;
-
-const FREE_FALLBACK_QUOTA: WorkspaceQuota = {
-  limits: FREE_PLAN_LIMITS,
-  bundled: false,
-  pools: FREE_QUOTA_POOLS,
-};
-
-interface CacheEntry {
-  subscription: Subscription;
-  quota: WorkspaceQuota;
-  expiresAt: number;
-}
+interface CacheEntry extends PlatformEntitlementResult { expiresAt: number; generation: number }
 
 export class PlatformEntitlementResolver implements EntitlementResolver {
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly generations = new Map<string, number>();
+  constructor(private read = fetchPlatformEntitlement, private now = Date.now) {}
 
-  constructor(
-    private readonly baseUrl: string,
-    private readonly authToken: string,
-  ) {}
-
-  async resolve(claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription> {
-    return (await this._fetch(workspaceId)).subscription;
+  async resolve(_claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription> {
+    return (await this.fetch(workspaceId)).subscription;
   }
-
   async resolveQuota(workspaceId?: string): Promise<WorkspaceQuota> {
-    return (await this._fetch(workspaceId)).quota;
+    return (await this.fetch(workspaceId)).quota;
   }
-
-  /** Explicit entry revalidation bypasses both TTL and stale-on-error fallback. */
   async resolveFresh(_claim: ArdaClaim | null, workspaceId?: string): Promise<Subscription> {
-    if (!workspaceId) throw new Error("workspace required");
-    const result = await fetchPlatformEntitlement(workspaceId, this.baseUrl, this.authToken);
-    this.cache.set(workspaceId, { ...result, expiresAt: Date.now() + TTL_MS });
-    return result.subscription;
+    return (await this.fetch(workspaceId, true)).subscription;
   }
-
   invalidateCache(workspaceId: string): void {
     this.cache.delete(workspaceId);
+    this.generations.set(workspaceId, (this.generations.get(workspaceId) ?? 0) + 1);
   }
-
-  private async _fetch(workspaceId?: string): Promise<{ subscription: Subscription; quota: WorkspaceQuota }> {
-    const wsId = workspaceId ?? "";
-    if (!wsId) {
-      return { subscription: { tier: null, status: null, bundled: false }, quota: FREE_FALLBACK_QUOTA };
-    }
-
-    const now = Date.now();
-    const cached = this.cache.get(wsId);
-    if (cached && cached.expiresAt > now) {
-      return { subscription: cached.subscription, quota: cached.quota };
-    }
-
-    try {
-      const result = await fetchPlatformEntitlement(wsId, this.baseUrl, this.authToken);
-      this.cache.set(wsId, { ...result, expiresAt: now + TTL_MS });
-      return result;
-    } catch (err) {
-      console.error(`[PlatformEntitlementResolver] fetch failed for ws=${wsId}:`, err);
-      if (cached) return { subscription: cached.subscription, quota: cached.quota };
-      return { subscription: { tier: null, status: null, bundled: false }, quota: FREE_FALLBACK_QUOTA };
-    }
+  private async fetch(workspaceId?: string, fresh = false): Promise<PlatformEntitlementResult> {
+    if (!workspaceId) throw new Error("workspace required");
+    const generation = this.generations.get(workspaceId) ?? 0;
+    const cached = this.cache.get(workspaceId);
+    if (!fresh && cached && cached.generation === generation && cached.expiresAt > this.now()) return cached;
+    const value = await this.read(workspaceId);
+    if ((this.generations.get(workspaceId) ?? 0) !== generation) throw new Error("entitlement_changed_during_read");
+    if (this.cache.size >= 512) this.cache.delete(this.cache.keys().next().value!);
+    this.cache.set(workspaceId, { ...value, generation, expiresAt: this.now() + TTL_MS });
+    return value;
   }
 }

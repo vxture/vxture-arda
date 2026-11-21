@@ -1,4 +1,4 @@
-import { getSession } from "../../../auth/lib/session";
+import { getProductSession as getSession } from "../../../auth/lib/session";
 import { isWorkspaceAdmin } from "../../../entitlement/roles";
 import { getDatasetOptions, getManagedServices } from "../publish-data";
 import { PublishForm } from "../publish-form";

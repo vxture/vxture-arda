@@ -1,5 +1,9 @@
 # arda 平台对接 · OIDC RP 契约（arda-plat-110-oidc-contract）
 
+> 2026-11-21 alignment: current gaps and domain cutover are tracked in the
+> [L2 audit](../70-workplan/30-platform-l2-alignment.md). Historical claims/scopes, shared-secret
+> requirements and context-switch assumptions below do not override current platform APIs.
+
 > 状态：权威设计（随代码演进更新）
 > 层：第 1 层 · OIDC 契约（`plat` 系列，见 [`plat-000`](arda-plat-000-index.md) 索引）
 > 范围：arda 作为 OIDC relying party 对 accounts.vxture.com 的完整契约——client 注册、endpoints、PKCE 流程、back-channel logout、session cookie、`MOCK_AUTH` 本地开发模式。这是 `plat` 系列**唯一详细展开**的内容层。
@@ -13,26 +17,26 @@
 |---|---|---|
 | Client ID | `arda` | `arda-beta` |
 | 认证方式 | `client_secret_basic` | `client_secret_basic` |
-| Redirect URI | `https://arda.vxture.com/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
-| Post-logout redirect URI | `https://arda.vxture.com/` | `https://beta-arda.vxture.com/` |
-| Back-channel logout URI | `https://arda.vxture.com/auth/backchannel-logout` | `https://beta-arda.vxture.com/auth/backchannel-logout` |
-| Scopes | `openid profile email phone arda` | 同左 |
+| Redirect URI | `https://arda.ruyin.work/auth/callback` | `https://beta-arda.vxture.com/auth/callback` |
+| Post-logout redirect URI | `https://arda.ruyin.work/` | `https://beta-arda.vxture.com/` |
+| Back-channel logout URI | `https://arda.ruyin.work/auth/backchannel-logout` | `https://beta-arda.vxture.com/auth/backchannel-logout` |
+| Scopes | `openid profile email phone` | 同左 |
 
 两个 client（而非一个 client 配两个 redirect URI）是必须的：OIDC back-channel logout 每个 client 只能注册一条登出 URI，且两个 client 分离了 token 受众与密钥爆炸半径（prod 泄露不连累 beta）。两个 client 认证**同一个用户目录**（同一 IdP realm）——分离的是应用注册，不是用户。
 
-> **scope 名修正（2026-07-03）**：`10-identity-app-integration-standard.md` 此前写 `arda:subscription` 为当前 scope，已过期——真实代码（`auth/lib/config.ts` 第 78/113 行）的 scope 字符串是 `openid profile email phone arda`，且可由 `OIDC_SCOPES` 环境变量覆盖。`arda:subscription` 是**历史 scope 名**，`20-vxture-platform-integration-requirements.md` §2.3 已经记录了它的退役过程（过渡期仍下发 `arda` claim），本文件与代码现状同步为准。
+> **scope 名修正（2026-07-03）**：`10-identity-app-integration-standard.md` 此前写 `arda:subscription` 为当前 scope，已过期——真实代码（`auth/lib/config.ts` 第 78/113 行）的 scope 字符串是 `openid profile email phone`，且可由 `OIDC_SCOPES` 环境变量覆盖。`arda:subscription` 是**历史 scope 名**，`20-vxture-platform-integration-requirements.md` §2.3 已经记录了它的退役过程（过渡期仍下发 `arda` claim），本文件与代码现状同步为准。
 
 ---
 
-## 2. Endpoints（从 issuer 派生，不走 discovery）
+## 2. Endpoints（public issuer / internal transport）
 
-`OIDC_ISSUER` = `https://accounts.vxture.com`；全部 endpoint 由此派生，**每次请求不重新 discovery**：
+`OIDC_ISSUER` = `https://accounts.vxture.com`. Browser endpoints and signature issuer stay public. Token/JWKS requests use `OIDC_BACKCHANNEL_ISSUER` when set; no per-request discovery.
 
 | Endpoint | URL |
 |---|---|
 | Authorization | `{issuer}/oidc/authorize` |
-| Token exchange | `{issuer}/oidc/token` |
-| JWKS（验签） | `{issuer}/oidc/jwks` |
+| Token exchange | `{OIDC_BACKCHANNEL_ISSUER or issuer}/oidc/token` |
+| JWKS（验签） | `{OIDC_BACKCHANNEL_ISSUER or issuer}/oidc/jwks` |
 | End session | `{issuer}/oidc/end_session` |
 
 ---
@@ -57,7 +61,7 @@
 
 `config.ts` 里的 `appOrigin` **不取自请求 host**，而是从注册的 `redirectUri` 派生（`new URL(redirectUri).origin`）。原因：arda 部署在共享边缘代理之后，请求 host 在内部会解析成绑定地址（如 `0.0.0.0:3230`）——若直接用请求 host 拼跳转地址，会把这个内部地址泄漏进 `Location` header。所有用户可见的跳转（callback 落地、登出后落地、`returnTo` 基址）一律锚定 `appOrigin`，不用请求 host。
 
-> 这正是 [`plat-300`](arda-plat-300-tracking.md) §1 记录的生产 bug（`https://arda.vxture.com/?sso=failed` 背后曾出现 `0.0.0.0:3230`）的相关机制——该 bug 经判定是 `DEFAULT_RETURN_TO`/`ALLOWED_RETURN_ORIGINS` 环境变量配置问题，不是 `appOrigin` 机制本身的缺陷，但理解这个机制是排查同类问题的关键背景。
+> 这正是 [`plat-300`](arda-plat-300-tracking.md) §1 记录的生产 bug（`https://arda.ruyin.work/?sso=failed` 背后曾出现 `0.0.0.0:3230`）的相关机制——该 bug 经判定是 `DEFAULT_RETURN_TO`/`ALLOWED_RETURN_ORIGINS` 环境变量配置问题，不是 `appOrigin` 机制本身的缺陷，但理解这个机制是排查同类问题的关键背景。
 
 ---
 
@@ -82,7 +86,7 @@
 | 属性 | 值 |
 |---|---|
 | 名称 | `vx_rp_session`（可由 `RP_SESSION_COOKIE_NAME` 覆盖）|
-| Domain | 精确 host，**无前导点**（`RP_SESSION_COOKIE_DOMAIN`）|
+| Domain | Omitted (host-only); leave legacy `RP_SESSION_COOKIE_DOMAIN` empty |
 | HttpOnly | 是 |
 | Secure | 生产环境为 `true`（`cfg.isProd`）|
 | SameSite | `Lax` |

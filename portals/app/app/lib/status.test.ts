@@ -18,7 +18,7 @@ const FULL_ENV = {
   NEXT_PUBLIC_APP_ENV: "production",
   OIDC_ISSUER: "https://accounts.vxture.com",
   OIDC_CLIENT_ID: "arda",
-  OIDC_REDIRECT_URI: "https://arda.vxture.com/auth/callback",
+  OIDC_REDIRECT_URI: "https://arda.ruyin.work/auth/callback",
   OIDC_SCOPES: "openid profile email phone",
   RP_SESSION_COOKIE_NAME: "vx_rp_session",
   PLATFORM_API_URL: "http://platform.internal",
@@ -37,7 +37,7 @@ test("NO SECRET VALUE ever appears in the status output", () => {
 test("secrets are reported as presence booleans only", () => {
   const s = buildStatus(FULL_ENV, "t");
   assert.equal(s.c1.clientSecretConfigured, true);
-  assert.equal(s.c2.authTokenConfigured, true);
+  assert.equal(s.c2.exchangeCredentialsConfigured, true);
   assert.equal(s.c3.webhookSecretConfigured, true);
   assert.equal(s.c3.webhookRotationConfigured, true);
   assert.equal(s.c3.internalJobTokenConfigured, true);
@@ -46,10 +46,12 @@ test("secrets are reported as presence booleans only", () => {
   assert.equal(empty.c3.internalJobTokenConfigured, false);
 });
 
-test("resolver = platform only when both API url and token are set", () => {
+test("resolver requires product exchange configuration; legacy token never enables it", () => {
   assert.equal(buildStatus(FULL_ENV, "t").c2.resolver, "platform");
-  assert.equal(buildStatus({ PLATFORM_API_URL: "x" }, "t").c2.resolver, "mock");
-  assert.equal(buildStatus({}, "t").c2.resolver, "mock");
+  assert.equal(buildStatus({ PLATFORM_API_URL: "x", ...SECRETS }, "t").c2.resolver, "unavailable");
+  assert.equal(buildStatus({}, "t").c2.resolver, "unavailable");
+  assert.equal(buildStatus({ MOCK_AUTH: "true" }, "t").c2.resolver, "mock");
+  assert.equal(buildStatus({ MOCK_AUTH: "true", NODE_ENV: "production" }, "t").c2.resolver, "unavailable");
 });
 
 test("c1.enabled requires both issuer and client secret", () => {

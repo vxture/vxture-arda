@@ -45,7 +45,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = (next: ArdaLocale) => {
     setLocaleState(next);
     // Mirror to the parent-domain cookie (+ localStorage + lang + broadcast) so
-    // the choice syncs across every *.arda.vxture.com app.
+    // the choice syncs across same-origin Arda tabs.
     persistLocale(next);
   };
 

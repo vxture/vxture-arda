@@ -33,7 +33,7 @@ RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
 # NEXT_PUBLIC_* vars are baked into the browser bundle at build time. Pass them
 # as build args so CI can inject the correct value per stack (prod vs beta).
 ARG NEXT_PUBLIC_APP_ENV=prod
-ARG NEXT_PUBLIC_PROD_URL=https://arda.vxture.com
+ARG NEXT_PUBLIC_PROD_URL=https://arda.ruyin.work
 ARG NEXT_PUBLIC_BETA_URL=https://beta-arda.vxture.com
 ARG NEXT_PUBLIC_CONSOLE_URL=https://console.vxture.com
 ENV NEXT_PUBLIC_APP_ENV=${NEXT_PUBLIC_APP_ENV}

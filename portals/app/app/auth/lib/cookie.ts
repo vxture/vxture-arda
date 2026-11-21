@@ -2,11 +2,9 @@
  * The opaque RP session cookie. It carries only the random rpsid (a pointer to
  * the server-side session); no tokens or claims live in the browser.
  *
- * arda is a single host (arda.vxture.com). The cookie is HOST-ONLY: the
- * configured cookieDomain has no leading dot, so it is passed verbatim and the
- * browser scopes the cookie to exactly that host (never to sibling
- * *.vxture.com apps). When no domain is configured (dev) the cookie is
- * host-only by default.
+ * Arda uses a host-only cookie on arda.ruyin.work (or the beta/dev host).
+ * Omitting Domain is essential: an explicit Domain, even without a leading
+ * dot, is a domain cookie and also covers subdomains of that host.
  */
 import type { NextRequest, NextResponse } from "next/server";
 import type { OidcConfig } from "./config";
@@ -20,8 +18,6 @@ export function setSessionCookie(res: NextResponse, cfg: OidcConfig, rpsid: stri
     sameSite: "lax",
     path: "/",
     maxAge: cfg.sessionTtlSeconds,
-    // Host-only: never force a leading dot. Empty -> omit -> host-only default.
-    domain: cfg.cookieDomain || undefined,
   });
 }
 
@@ -34,7 +30,6 @@ export function clearSessionCookie(res: NextResponse, cfg: OidcConfig): void {
     sameSite: "lax",
     path: "/",
     maxAge: 0,
-    domain: cfg.cookieDomain || undefined,
   });
 }
 

@@ -13,10 +13,11 @@ const NO_STORE = { "Cache-Control": "no-store" };
  * Bootstrap endpoint: resolves the opaque session cookie to the current user's
  * identity claims. Tokens never leave the server; when the access token is
  * within 60s of expiry the shared resolver rotates it (refresh_token grant) and
- * keeps the same rpsid cookie. A revoked refresh family tears the local session
- * down and clears the cookie.
+ * keeps the same rpsid cookie. Explicit central invalidation clears the cookie;
+ * an unavailable check returns 503 and preserves the local session.
  */
 export async function GET(request: NextRequest) {
+ try {
   const ANON = { authenticated: false, signedOut: request.cookies.get("arda_signed_out")?.value === "1" } as const;
   const cfg = getOidcConfig();
   if (!cfg) return NextResponse.json(ANON, { status: 200, headers: NO_STORE });
@@ -56,4 +57,7 @@ export async function GET(request: NextRequest) {
     },
     { headers: NO_STORE },
   );
+ } catch {
+  return NextResponse.json({ error: "session_unavailable" }, { status: 503, headers: NO_STORE });
+ }
 }

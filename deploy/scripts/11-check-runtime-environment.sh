@@ -62,7 +62,7 @@ REQUIRED_VARS=(
   APP_PUBLISH_PORT
   OIDC_ISSUER OIDC_CLIENT_ID OIDC_CLIENT_SECRET OIDC_REDIRECT_URI
   OIDC_SCOPES OIDC_POST_LOGOUT_REDIRECT_URI
-  REDIS_URL RP_SESSION_TTL RP_SESSION_COOKIE_NAME RP_SESSION_COOKIE_DOMAIN
+  REDIS_URL RP_SESSION_TTL RP_SESSION_COOKIE_NAME
   DEFAULT_LANDING MOCK_TIER
   IMAGE_REGISTRY IMAGE_NAMESPACE IMAGE_TAG
 )
@@ -112,13 +112,11 @@ else
   fail "REDIS_URL must be a redis:// URL"
 fi
 
-# Host-only cookie: scoped to the exact domain, so it must not lead with a dot.
-if [[ "${RP_SESSION_COOKIE_DOMAIN:-}" == .* ]]; then
-  fail "RP_SESSION_COOKIE_DOMAIN must be host-only (no leading dot)"
-elif is_valid_host "${RP_SESSION_COOKIE_DOMAIN:-}"; then
-  log_ok "RP_SESSION_COOKIE_DOMAIN is host-only"
+# Host-only cookies omit the Domain attribute entirely.
+if [[ -z "${RP_SESSION_COOKIE_DOMAIN:-}" ]]; then
+  log_ok "RP_SESSION_COOKIE_DOMAIN omitted (host-only cookie)"
 else
-  fail "RP_SESSION_COOKIE_DOMAIN is not a valid host"
+  fail "RP_SESSION_COOKIE_DOMAIN must be empty; app cookies omit Domain"
 fi
 
 # -- Docker --------------------------------------------------------------------

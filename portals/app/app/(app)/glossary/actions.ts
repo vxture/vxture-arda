@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSession } from "../../auth/lib/session";
+import { getProductSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
 import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { getEntitlementResolver } from "../../entitlement/resolver";

@@ -31,6 +31,23 @@ if [[ "$_ENV_LOADED" == "0" ]]; then
     fi
     set +a
 
+    # Platform registration stays in Opera. Arda's reviewed non-secret runtime
+    # settings ship with this release; operator-held secrets are never replaced.
+    case "${DEPLOY_STAGE:-}" in
+      production|beta) ;;
+      *) echo "[ERROR] DEPLOY_STAGE must be production or beta" >&2; exit 1 ;;
+    esac
+    _integration_profile="$DEPLOY_DIR/config/integration-${DEPLOY_STAGE}.env"
+    if [[ ! -f "$_integration_profile" ]]; then
+      echo "[ERROR] Missing reviewed integration profile" >&2
+      exit 1
+    fi
+    set -a
+    # shellcheck disable=SC1090
+    source "$_integration_profile"
+    set +a
+    unset _integration_profile
+
     # Restore caller-provided vars (CI wins over operator defaults).
     for _v in "${!_pre_env[@]}"; do
       export "$_v"="${_pre_env[$_v]}"

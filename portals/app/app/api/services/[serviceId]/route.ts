@@ -26,6 +26,7 @@ import { recordUsage } from "../../../usage/lib/buffer";
 import { getConnector } from "../../../(app)/sources/connectors";
 import { levelAllowed, maskedColumnsFor, resolveEgressPolicy } from "../../../(app)/service/egress-policy";
 import { writeAudit } from "../../../lib/audit";
+import { checkWorkspaceEntitlement } from "../../../lib/api/auth";
 
 const ROW_LIMIT_DEFAULT = 20;
 
@@ -46,6 +47,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ serviceId: 
   const { getWipeState } = await import("../../../lib/workspace-state");
   const wipe = await getWipeState(key.workspaceId);
   if (wipe.wiped) return NextResponse.json({ error: "workspace_wiped" }, { status: 410 });
+  const gate = await checkWorkspaceEntitlement(key.workspaceId);
+  if (gate) return gate;
 
   // Workspace scoping comes from the KEY, never from the caller.
   const service = await prisma.dataService.findFirst({

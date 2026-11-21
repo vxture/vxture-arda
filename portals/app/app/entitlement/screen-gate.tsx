@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { getSession } from "../auth/lib/session";
+import { getProductSession as getSession } from "../auth/lib/session";
 import { canUseFeature } from "./capability";
 import { isWorkspaceAdmin } from "./roles";
 import { ADMIN_SCREENS, SCREEN_FEATURES } from "./screen-features";

@@ -1,4 +1,4 @@
-import { getSession } from "../../../auth/lib/session";
+import { getProductSession as getSession } from "../../../auth/lib/session";
 import { isWorkspaceAdmin } from "../../../entitlement/roles";
 import { getTags } from "../tags-data";
 import { TagsList } from "../tags-list";

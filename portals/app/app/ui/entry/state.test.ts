@@ -14,11 +14,16 @@ test("active subscription still requires a known usage role", () => {
   assert.equal(accessState(sub, { ...user, roles: ["org:member", "other:owner"] }), "unassigned");
 });
 
+test("platform assignment denial overrides workspace owner role without becoming a role or billing prompt", () => {
+  assert.equal(accessState({ ...sub, productAssigned: false }, { ...user, roles: ["workspace:owner"] }), "access-unavailable");
+});
+
 test("unknown context and operational suspension never become a purchase prompt", () => {
   assert.equal(accessState(sub, { ...user, workspaceId: "" }), "access-unavailable");
-  assert.equal(accessState({ ...sub, status: "suspended" }, user), "access-unavailable");
+  assert.equal(accessState({ ...sub, status: "suspended", tier: null }, user), "access-unavailable");
   assert.equal(accessState({ ...sub, status: null, tier: null }, user), "subscription");
-  assert.equal(accessState({ ...sub, status: "expired" }, user), "expired");
+  assert.equal(accessState({ ...sub, status: "expired", tier: null }, user), "expired");
+  assert.equal(accessState({ ...sub, status: null }, user), "connected");
 });
 
 test("recovery scope changes invalidate old work, role ordering does not", () => {

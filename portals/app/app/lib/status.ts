@@ -44,9 +44,9 @@ export interface IntegrationStatus {
     clientSecretConfigured: boolean;
   };
   c2: {
-    resolver: "platform" | "mock";
+    resolver: "platform" | "mock" | "unavailable";
     platformApiConfigured: boolean;
-    authTokenConfigured: boolean;
+    exchangeCredentialsConfigured: boolean;
     consoleUrl: string | null;
     cacheTtlMs: number;
   };
@@ -86,6 +86,8 @@ function redisHost(url: string | undefined): string | undefined {
 export function buildStatus(env: Env, now: string): IntegrationStatus {
   const showInfra = (env.STATUS_SHOW_INFRA ?? "on").toLowerCase() !== "off";
   const db = parseDbUrl(env.DATABASE_URL);
+  const exchangeConfigured = Boolean(env.OIDC_ISSUER && env.OIDC_CLIENT_SECRET
+    && env.OIDC_REDIRECT_URI && env.REDIS_URL);
   return {
     identity: {
       productCode: serviceIdentity({ service: "arda-app", product: "arda" }).service,
@@ -103,9 +105,10 @@ export function buildStatus(env: Env, now: string): IntegrationStatus {
       clientSecretConfigured: Boolean(env.OIDC_CLIENT_SECRET),
     },
     c2: {
-      resolver: env.PLATFORM_API_URL && env.PLATFORM_INTERNAL_AUTH_TOKEN ? "platform" : "mock",
+      resolver: env.PLATFORM_API_URL && exchangeConfigured ? "platform"
+        : !env.PLATFORM_API_URL && env.NODE_ENV !== "production" && env.MOCK_AUTH === "true" ? "mock" : "unavailable",
       platformApiConfigured: Boolean(env.PLATFORM_API_URL),
-      authTokenConfigured: Boolean(env.PLATFORM_INTERNAL_AUTH_TOKEN),
+      exchangeCredentialsConfigured: exchangeConfigured,
       consoleUrl: env.NEXT_PUBLIC_CONSOLE_URL ?? null,
       cacheTtlMs: 45_000,
     },

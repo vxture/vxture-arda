@@ -16,9 +16,8 @@ export interface EntitlementResolver {
 }
 
 /**
- * Local dev / CI fallback. When PLATFORM_API_URL is not set the app is still
- * usable: a real claim passes through unchanged; absent claim falls back to
- * MOCK_STATE + MOCK_TIER env vars.
+ * Explicit local MOCK_AUTH adapter only. Never selected as a production
+ * fallback. A supplied test claim passes through; otherwise use mock settings.
  */
 export class MockEntitlementResolver implements EntitlementResolver {
   async resolve(claim: ArdaClaim | null): Promise<Subscription> {
@@ -37,21 +36,16 @@ export class MockEntitlementResolver implements EntitlementResolver {
   }
 }
 
-/**
- * Factory. Switches to PlatformEntitlementResolver (real C2 API call) when
- * PLATFORM_API_URL and PLATFORM_INTERNAL_AUTH_TOKEN are both set; otherwise
- * stays on MockEntitlementResolver so local dev and CI work without secrets.
- */
+/** Missing production configuration must not create a mock subscription. */
 let _resolver: EntitlementResolver | null = null;
-
 export function getEntitlementResolver(): EntitlementResolver {
   if (_resolver) return _resolver;
-  const url = process.env.PLATFORM_API_URL;
-  const token = process.env.PLATFORM_INTERNAL_AUTH_TOKEN;
-  if (url && token) {
-    _resolver = new PlatformEntitlementResolver(url, token);
-  } else {
+  if (process.env.PLATFORM_API_URL) {
+    _resolver = new PlatformEntitlementResolver();
+  } else if (process.env.NODE_ENV !== "production" && process.env.MOCK_AUTH === "true") {
     _resolver = new MockEntitlementResolver();
+  } else {
+    throw new Error("platform_api_unconfigured");
   }
   return _resolver;
 }
