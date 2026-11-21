@@ -989,6 +989,9 @@
       "desc": "密钥用于外部调用方访问已发布的数据服务。",
       "name": "密钥名称",
       "scopes": "权限范围（/api/v1）",
+      "service": "\u7ed1\u5b9a\u670d\u52a1",
+      "allServices": "\u5f53\u524d\u5de5\u4f5c\u7a7a\u95f4\u5168\u90e8\u670d\u52a1",
+      "serviceHint": "\u7ed1\u5b9a\u540e\u4ec5\u53ef\u8c03\u7528\u6240\u9009\u6570\u636e\u670d\u52a1\u7f51\u5173\uff1b\u4e0b\u65b9 API \u8303\u56f4\u5355\u72ec\u63a7\u5236 /api/v1 \u7aef\u70b9\u3002",
       "scopesHint": "不勾选任何范围时，密钥仅可调用数据服务网关；每个范围解锁对应的 /api/v1 端点。",
       "scopeDesc": {
         "catalog_read": "读取数据目录与资产画像",

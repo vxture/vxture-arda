@@ -989,6 +989,9 @@
       "desc": "The key authenticates external callers of your published data services.",
       "name": "Key name",
       "scopes": "Scopes (/api/v1)",
+      "service": "Data service",
+      "allServices": "All services in this workspace",
+      "serviceHint": "Binding limits access to the selected data-service gateway. API scopes below separately control /api/v1 endpoints.",
       "scopesHint": "With no scope selected the key can only call the data-service gateway; each scope unlocks the matching /api/v1 endpoints.",
       "scopeDesc": {
         "catalog_read": "Read the catalog and asset profiles",
