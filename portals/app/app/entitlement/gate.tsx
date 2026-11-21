@@ -1,99 +1,54 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { Button, EmptyState, Icon, Skeleton } from "@vxture/design-system";
-import { useTranslations } from "@arda/shared/i18n";
-import { type Subscription, hasProductAccess } from "./types";
-import { consoleDeepLink } from "./deeplink";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { SUBSCRIPTION_STATUSES } from "@vxture/shared";
+import { type Subscription } from "./types";
+import { EntrySessionContext } from "../ui/api";
+import { EntryScreen } from "../ui/entry/entry-screen";
+import { accessState } from "../ui/entry/state";
 
-/** The resolved subscription, provided to everything inside the gate so client
- *  chrome (sidebar badges, header plan tag) can evaluate the capability matrix
- *  without a second fetch. Null until the gate has passed. */
 const SubscriptionContext = createContext<Subscription | null>(null);
+export function useSubscription(): Subscription | null { return useContext(SubscriptionContext); }
 
-export function useSubscription(): Subscription | null {
-  return useContext(SubscriptionContext);
-}
-
-type GateState =
-  | { phase: "loading" }
-  | { phase: "ready"; subscription: Subscription }
-  | { phase: "error" };
-
-/**
- * Subscription gate. Renders INSIDE the AccountGate, so a session is already
- * present; here we only check entitlement. We fetch the workspace's
- * subscription from /api/entitlement (an out-of-band lookup - tokens carry no
- * entitlement claims) and, unless it is active, show a DS upgrade screen.
- */
+/** Errors remain unknown access; only an authoritative result can suggest purchase. */
 export function EntitlementGate({ children }: { children: ReactNode }) {
-  const t = useTranslations("entitlement");
-  const [state, setState] = useState<GateState>({ phase: "loading" });
+  const account = useContext(EntrySessionContext);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [entered, setEntered] = useState(false);
+  const lock = useRef(false);
+  const controller = useRef<AbortController | null>(null);
+  const user = account?.session?.authenticated ? account.session.user : undefined;
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/entitlement", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`entitlement ${res.status}`);
-        return res.json() as Promise<Subscription>;
-      })
-      .then((subscription) => {
-        if (!cancelled) setState({ phase: "ready", subscription });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ phase: "error" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const check = useCallback(async () => {
+    if (lock.current || !user) return;
+    lock.current = true;
+    const abort = new AbortController(); controller.current = abort;
+    setChecking(true); setFailed(false);
+    try {
+      const res = await fetch("/api/entitlement", { credentials: "include", cache: "no-store", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(15_000)]) });
+      if (res.status === 401) { window.dispatchEvent(new Event("arda:session-invalid")); throw new Error("session expired"); }
+      if (!res.ok) throw new Error(`entitlement ${res.status}`);
+      const next = await res.json() as Subscription;
+      if (!next || !Object.hasOwn(next, "status") || (next.status !== null && !(SUBSCRIPTION_STATUSES as readonly string[]).includes(next.status))) throw new Error("invalid entitlement");
+      if (!abort.signal.aborted) {
+        setSubscription(next);
+        if (accessState(next, user) === "connected") setEntered(true);
+      }
+    } catch { if (!abort.signal.aborted) { setFailed(true); setSubscription(null); } }
+    finally { if (!abort.signal.aborted) setChecking(false); if (controller.current === abort) lock.current = false; }
+  }, [user]);
 
-  if (state.phase === "loading") {
-    return (
-      <div className="entitlement-pending">
-        <Skeleton variant="line" lines={3} />
-      </div>
-    );
-  }
+  useEffect(() => { void check(); return () => { controller.current?.abort(); lock.current = false; }; }, [check, account?.revision]);
 
-  // Treat an error the same as "not entitled": fail closed to the upgrade
-  // screen rather than leaking the workspace on an inconclusive check.
-  // Product-UI access = a standalone active subscription (product_220 §3).
-  const active =
-    state.phase === "ready" && hasProductAccess(state.subscription);
-
-  if (!active) {
-    // CTA branches on the subscription fact (arda_200 2.3): never-subscribed
-    // (null) -> subscribe; expired/cancelled/suspended -> renew. The console
-    // landing is state-aware either way; the link fires only on explicit
-    // click (owner ruling: no auto-redirect), new tab, noopener.
-    const status = state.phase === "ready" ? state.subscription.status : null;
-    const lapsed = status === "expired" || status === "cancelled" || status === "suspended";
-    return (
-      <div className="entitlement-pending">
-        <EmptyState
-          title={t("title")}
-          description={t("description")}
-          action={
-            <Button asChild variant="default">
-              <a
-                href={consoleDeepLink({ intent: lapsed ? "renew" : "upgrade" })}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon name="sparkles" size="sm" />
-                {lapsed ? t("renew") : t("subscribe")}
-              </a>
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
-  return (
-    <SubscriptionContext.Provider value={state.phase === "ready" ? state.subscription : null}>
-      {children}
-    </SubscriptionContext.Provider>
-  );
+  const state = failed || !subscription || !user ? "access-unavailable" : accessState(subscription, user);
+  const connected = !checking && state === "connected";
+  return <>
+    {entered && <div hidden={!connected} inert={!connected}><SubscriptionContext.Provider value={subscription}>{children}</SubscriptionContext.Provider></div>}
+    {!connected && <EntryScreen state={checking || state === "connected" ? "checking-access" : state} user={user}
+    onRetry={checking ? undefined : async () => { await account?.recheck(); }}
+    // Workspace management alone does not grant organization billing authority.
+    canManage={Boolean(user?.roles.some(role => role.trim().toLowerCase() === "org:owner"))} />}
+  </>;
 }

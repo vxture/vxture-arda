@@ -22,12 +22,12 @@
     "@vxture/shared": "^1.5.0",
     "ioredis": "^5.4.1",
     "jose": "^6.2.3",
-    "next": "^16.2.12",
+    "next": "^16.4.5",
     "pg": "^8.22.0",
     "prisma": "^7.8.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

@@ -6,7 +6,6 @@ import { clearSessionCookie } from "../lib/cookie";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const ANON = { authenticated: false } as const;
 // Identity-bearing responses must never be cached by the browser or any proxy.
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -18,6 +17,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
  * down and clears the cookie.
  */
 export async function GET(request: NextRequest) {
+  const ANON = { authenticated: false, signedOut: request.cookies.get("arda_signed_out")?.value === "1" } as const;
   const cfg = getOidcConfig();
   if (!cfg) return NextResponse.json(ANON, { status: 200, headers: NO_STORE });
 

@@ -1,39 +1,86 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
-import { Skeleton } from "@vxture/design-system";
-import { ssoStartUrl, useSession } from "./api";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { EntrySessionContext, fetchSession, ssoStartUrl, type SessionResponse } from "./api";
+import { EntryScreen, type EntryState } from "./entry/entry-screen";
+import { sessionScope } from "./entry/state";
 
-/**
- * Session gate for the whole app. Loads /auth/session once on mount. Anonymous
- * visitors are bounced to the unified Vxture sign-in (no app-owned login page);
- * children render only once a session is present, so everything below
- * (EntitlementGate, the app shell) can assume an authenticated user.
- *
- * arda is a single host: the OIDC callback lands back on this same origin, so a
- * top-level navigation to /auth/login?returnTo=<current> resumes here after
- * sign-in. On sign-in failure the callback lands on the app home with ?sso=...,
- * so this cannot loop forever.
- */
+/** Shared session boundary. Recovery retains the same member's mounted work. */
 export function AccountGate({ children }: { children: ReactNode }) {
-  const { loading, session } = useSession();
-  const authenticated = session?.authenticated === true;
+  const [session, setSession] = useState<SessionResponse | null>(null);
+  const [phase, setPhase] = useState<EntryState>("connecting");
+  const [revision, setRevision] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const scope = useRef<string | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  const inflight = useRef<Promise<SessionResponse | null> | null>(null);
+  const alive = useRef(true);
+
+  const recheck = useCallback((): Promise<SessionResponse | null> => {
+    if (inflight.current) return inflight.current;
+    const abort = new AbortController(); controller.current = abort;
+    const operation = (async () => {
+      try {
+        const next = await fetchSession(abort.signal);
+        if (!alive.current || abort.signal.aborted) return null;
+        if (next.authenticated) {
+          const nextScope = sessionScope(next.user);
+          if (scope.current !== null && scope.current !== nextScope) {
+            // Never resume an old server payload or drafts under a different identity/scope.
+            setReady(false); setMounted(false); window.location.reload(); return null;
+          }
+          scope.current = nextScope;
+          setSession(next); setReady(true); setMounted(true);
+          setRevision(n => n + 1);
+        } else {
+          setSession(next); setReady(false);
+          setPhase(scope.current ? "recovery" : next.signedOut ? "signedout" : "signin");
+        }
+        return next;
+      } catch {
+        if (!alive.current || abort.signal.aborted) return null;
+        setReady(false); setPhase("unavailable");
+        return null;
+      } finally { if (controller.current === abort) inflight.current = null; }
+    })();
+    inflight.current = operation;
+    return operation;
+  }, []);
 
   useEffect(() => {
-    if (!loading && session && !session.authenticated) {
-      window.location.assign(ssoStartUrl());
-    }
-  }, [loading, session]);
+    alive.current = true;
+    void recheck();
+    const checkVisible = () => { if (document.visibilityState === "visible") void recheck(); };
+    const invalid = () => { setReady(false); setPhase("recovery"); void recheck(); };
+    window.addEventListener("focus", checkVisible);
+    window.addEventListener("storage", checkVisible);
+    window.addEventListener("arda:session-invalid", invalid);
+    document.addEventListener("visibilitychange", checkVisible);
+    const timer = window.setInterval(checkVisible, 60_000);
+    return () => {
+      alive.current = false; controller.current?.abort(); inflight.current = null;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", checkVisible);
+      window.removeEventListener("storage", checkVisible);
+      window.removeEventListener("arda:session-invalid", invalid);
+      document.removeEventListener("visibilitychange", checkVisible);
+    };
+  }, [recheck]);
 
-  if (loading || !authenticated) {
-    // Loading, or anonymous and about to be redirected to sign-in: show a
-    // lightweight placeholder rather than any app surface.
-    return (
-      <div className="account-gate-pending">
-        <Skeleton variant="line" lines={3} />
-      </div>
-    );
+  function login() {
+    if (scope.current) {
+      window.open(ssoStartUrl(), "_blank", "noopener,noreferrer");
+      setPhase("recovery");
+    } else {
+      setPhase("restoring"); window.location.assign(ssoStartUrl());
+    }
   }
 
-  return <>{children}</>;
+  return <EntrySessionContext.Provider value={{ loading: phase === "connecting" && !session, session, revision, recheck }}>
+    {mounted && <div hidden={!ready} inert={!ready}>{children}</div>}
+    {!ready && <EntryScreen state={phase} user={session?.authenticated ? session.user : undefined}
+      onLogin={["signin", "signedout", "recovery"].includes(phase) ? login : undefined}
+      onRetry={["recovery", "unavailable"].includes(phase) ? async () => { await recheck(); } : undefined} />}
+  </EntrySessionContext.Provider>;
 }

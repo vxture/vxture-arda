@@ -46,6 +46,8 @@ async function handleLogout(request: NextRequest): Promise<NextResponse> {
   const dest = cfg.postLogoutRedirectUri ? buildEndSessionUrl(cfg, randomToken()) : localHome;
   const res = NextResponse.redirect(dest, { status: 303 });
   clearSessionCookie(res, cfg);
+  // Display a completion state only after the local session was destroyed.
+  res.cookies.set("arda_signed_out", "1", { httpOnly: true, secure: cfg.isProd, sameSite: "lax", path: "/", maxAge: 300 });
   return res;
 }
 
