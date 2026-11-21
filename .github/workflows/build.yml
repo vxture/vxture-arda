@@ -195,6 +195,10 @@ jobs:
           # `runner` would silently ship the wrong entrypoint.
           target: runner
           push: true
+          # Personal ACR rejects buildx attestation manifests (OCI empty config).
+          # Match the Karda publisher; health build provenance and scans remain.
+          provenance: false
+          sbom: false
           # GitHub Actions cache backend: reuses unchanged layers (e.g. npm
           # install) across separate build runs instead of building from
           # scratch every time (GH-hosted runners are otherwise always a cold
