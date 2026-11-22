@@ -216,3 +216,11 @@ Owner confirmed199/499/1499 monthly base prices for both products. The Karda
 workload review r3 and calculator include20% coupon and95% joint stacking,
 without assuming prior margin targets still pass. Resources are retained as
 candidates; no published offer, saved draft, subscription or deployment changed.
+
+## Final commercial design v1
+
+Owner confirmed final packages, including connections and service counts
+20/100/500. Added30-design/70 summary pointing to the sole Karda final catalog
+and Chinese specification. Prices199/499/1499; resources, addons and discount
+rules are finalized as a design. No commercial versions, subscriptions, platform
+configuration or deployment changed. Implementation and acceptance remain open.

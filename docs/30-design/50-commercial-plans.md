@@ -1,5 +1,8 @@
 # Commercial plans - November 2026
 
+Final owner-confirmed design: [70-final-commercial-packages-20261122.md](70-final-commercial-packages-20261122.md).
+Existing published offers remain unchanged; earlier proposal tables are historical.
+
 This supersedes the numeric tier presets and individual feature locks in
 arda-biz-260-billing.md. Platform plan versions own all commercial limits;
 this document is the release specification, not a local quota override.
