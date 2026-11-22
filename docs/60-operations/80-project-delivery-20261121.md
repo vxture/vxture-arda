@@ -191,3 +191,12 @@ decisions. See [Karda next-step plan](../70-workplan/40-karda-rectification-hand
 Readable Chinese local records: output/arda-project-delivery-20261121.md and
 output/karda-rectification-plan-20261121.md. They are local delivery artifacts;
 this tracked document preserves the consolidated project history independently.
+
+## November22 joint pricing review
+
+Owner requested Arda and Karda cost/pricing analysis together, including Arda
+revision candidates. See30-design/60-joint-commercial-review-20261122.md and
+the linked Karda authoritative review/calculator. The proposed199/599/2199
+ladder, common resources, expansion prices and95% joint discount are unapproved.
+No published price, customer subscription, runtime setting or platform source
+was changed. Cost estimates are scenario budgets, not measured net profit.

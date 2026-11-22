@@ -4,6 +4,10 @@ This supersedes the numeric tier presets and individual feature locks in
 arda-biz-260-billing.md. Platform plan versions own all commercial limits;
 this document is the release specification, not a local quota override.
 
+November22 joint Arda/Karda cost review is a NEW, unapproved proposal in
+[60-joint-commercial-review-20261122.md](60-joint-commercial-review-20261122.md).
+It does not change the current offer below or authorize publication/migration.
+
 ## Public offer
 
 | Metric | Starter | Pro | Business | Enterprise |
