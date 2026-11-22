@@ -1,6 +1,16 @@
 # Arda / Karda joint commercial review - proposal r1
 
 Date: 2026-11-22. Status: PROPOSAL ONLY, not approved for publication.
+Latest workload-driven review supersedes the equal-resource r1 recommendation:
+[Workload review](https://github.com/vxture/vxture-karda/blob/main/docs/20-specs/70-ai-workload-review-20261122.md).
+The owner accepts one pricing system, with different AI allocations by product.
+Arda's Curator registry is currently empty: SQL assistance and analysis workload
+examples are prospective capabilities, not delivered features. New candidates
+are Arda150/600/2000 and Karda300/1200/4000 credits per month. Prices remain
+unconfirmed references. Karda's workload examples depend on an unimplemented
+retrieval optimization; current100-candidate scenarios exceed candidate grants.
+The r1 tables below are historical budget scenarios, not the latest offer.
+
 The owner requested joint pricing and cost review, including possible Arda
 revisions. This does not change the current 99/299/999 offer, published grants,
 existing subscriptions, addons, annual billing or production application.
