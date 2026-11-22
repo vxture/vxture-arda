@@ -200,3 +200,12 @@ the linked Karda authoritative review/calculator. The proposed199/599/2199
 ladder, common resources, expansion prices and95% joint discount are unapproved.
 No published price, customer subscription, runtime setting or platform source
 was changed. Cost estimates are scenario budgets, not measured net profit.
+
+## Workload-driven joint AI review
+
+Owner authorized work-content/volume reassessment. Karda20-specs/70 is the
+authoritative report with offline inputs and calculator. Arda Curator task
+registry is empty; AI workload profiles are prospective, not shipped features.
+Different candidate grants follow mixed task volumes, while keeping one credit
+currency. Current/optimized Karda chains are separated; optimizations and the
+prices are unapproved. No inference, platform changes or deployment occurred.
