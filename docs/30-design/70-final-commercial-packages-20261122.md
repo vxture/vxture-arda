@@ -60,3 +60,21 @@ validate actual limits/pools/discounts/model costs and Karda retrieval quality,
 then update drafts with readback evidence. Existing subscriptions stay pinned.
 Authorization does not establish live publication. Save/readback evidence and
 publish acceptance are tracked separately; existing subscriptions stay pinned.
+
+
+Publication readback (2026-11-22): Starter/Pro/Business v3 are now frozen/current,
+public, at the monthly/yearly prices above. Each numeric quota was read back in
+Admin and on the public pricing comparison. Enterprise retains public unpriced
+v2; the public page visibly renders Contact Sales. Existing two subscriptions
+remain on their previous versions. Free was not published.
+
+Alpha was left absent, using platform DEFAULT_CONSUMABLE_SHARE=0.5 for upgrade
+proration and window refunds. It does not multiply price, credits or grants.
+Upgrade credit = prior paid amount * ((1-alpha)*time remaining + alpha*quota
+remaining). No consumable pools makes upgrade alpha0. This is platform policy,
+not a measured AI supplier-cost ratio. No product-specific alpha was introduced.
+
+Website names/order, stale feature-tier claims and Enterprise's inferred1 seat
+remain platform issue717. Karda publication remains held on issue728's hard
+zero business pools and its product-side optional content-cap release. These
+facts are separate from Arda's completed package publication.
