@@ -7,7 +7,9 @@ The owner accepts one pricing system, with different AI allocations by product.
 Arda's Curator registry is currently empty: SQL assistance and analysis workload
 examples are prospective capabilities, not delivered features. New candidates
 are Arda150/600/2000 and Karda300/1200/4000 credits per month. Prices remain
-unconfirmed references. Karda's workload examples depend on an unimplemented
+owner-confirmed at199/499/1499 monthly for both products (r3), not published.
+The20% coupon and95% joint discount are recalculated together; historical
+65%/50% margin targets are no longer guaranteed. Resources remain candidates. Karda's workload examples depend on an unimplemented
 retrieval optimization; current100-candidate scenarios exceed candidate grants.
 The r1 tables below are historical budget scenarios, not the latest offer.
 

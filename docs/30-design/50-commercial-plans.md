@@ -6,7 +6,9 @@ this document is the release specification, not a local quota override.
 
 November22 joint Arda/Karda cost review is a NEW, unapproved proposal in
 [60-joint-commercial-review-20261122.md](60-joint-commercial-review-20261122.md).
-It does not change the current offer below or authorize publication/migration.
+Owner confirmed revised base prices199/499/1499 in the r3 workload review;
+resources remain candidates. This does not change the current offer below or
+authorize publication/migration.
 
 ## Public offer
 
