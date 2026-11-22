@@ -1,5 +1,8 @@
 # Arda / Karda joint commercial review - proposal r1
 
+Final owner-confirmed design: [70-final-commercial-packages-20261122.md](70-final-commercial-packages-20261122.md).
+Existing published offers remain unchanged; earlier proposal tables are historical.
+
 Date: 2026-11-22. Status: PROPOSAL ONLY, not approved for publication.
 Latest workload-driven review supersedes the equal-resource r1 recommendation:
 [Workload review](https://github.com/vxture/vxture-karda/blob/main/docs/20-specs/70-ai-workload-review-20261122.md).
