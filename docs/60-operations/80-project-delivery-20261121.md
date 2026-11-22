@@ -209,3 +209,10 @@ registry is empty; AI workload profiles are prospective, not shipped features.
 Different candidate grants follow mixed task volumes, while keeping one credit
 currency. Current/optimized Karda chains are separated; optimizations and the
 prices are unapproved. No inference, platform changes or deployment occurred.
+
+## Confirmed base-price revision
+
+Owner confirmed199/499/1499 monthly base prices for both products. The Karda
+workload review r3 and calculator include20% coupon and95% joint stacking,
+without assuming prior margin targets still pass. Resources are retained as
+candidates; no published offer, saved draft, subscription or deployment changed.
