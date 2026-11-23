@@ -125,3 +125,13 @@ route stubs behind the auth-gated layout. CI/CD is fully operational:
    data directory, Redis instance, and container network. Cross-env state is a
    deployment invariant violation.
 10. **Deploy scripts are idempotent** - safe to re-run without destroying state.
+
+## Explicit roles implementation checkpoint - 2026-11-23
+
+Owner/administrator/member/readonly/guest implementation is under verification.
+New authorized members receive a persisted readonly assignment once; existing
+roleless/inactive members stay denied. Owner transfer/bootstrap is explicit and
+audited. Platform authorization revocation overrides all retained local roles.
+See [R1-R5 delivery tracker](../70-workplan/60-explicit-product-roles-20261123.md).
+Production migration and application deployment remain pending. Do not rerun the
+cancelled implicit-member candidates or modify platform sources/variables.

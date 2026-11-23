@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getDatasetOptions, getPolicies, getSecurity } from "./data";
 import { SecurityList } from "./security-list";
 
@@ -12,5 +12,5 @@ export default async function SecurityPage() {
   const [data, policies, datasets] = session
     ? await Promise.all([getSecurity(session.workspaceId), getPolicies(session.workspaceId), getDatasetOptions(session.workspaceId)])
     : [{ dist: [], total: 0, coreCount: 0, coverage: 0 }, { maxExternalLevel: "internal" as const, maskingRules: [] }, []];
-  return <SecurityList data={data} policies={policies} datasets={datasets} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <SecurityList data={data} policies={policies} datasets={datasets} isAdmin={permits(session?.productAccess,"product.manage")} />;
 }

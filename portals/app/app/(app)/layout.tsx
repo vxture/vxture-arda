@@ -1,9 +1,10 @@
+import { AccessDeniedPanel } from "../entitlement/access-denied-panel";
 import type { ReactNode } from "react";
 import { Shell } from "../ui/shell";
 import { AccountGate } from "../ui/account-gate";
 import { EntitlementGate } from "../entitlement/gate";
 import { getSession, getProductSession } from "../auth/lib/session";
-import { isWorkspaceAdmin } from "../entitlement/roles";
+import { permits, isProductManager } from "../authz/policy";
 import { getWipeState } from "../lib/workspace-state";
 import { WipedNotice } from "../lifecycle/wiped-notice";
 import { prisma } from "../lib/db";
@@ -27,6 +28,7 @@ export const dynamic = "force-dynamic";
 // single indexed WorkspaceRef lookup per navigation.
 export default async function AppGroupLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
+  const admittedAccess = (await getProductSession())?.productAccess;
 
   // Wipe chokepoint (Lc-BL3): a workspace carrying the soft-delete mark shows
   // nothing - one anchor lookup replaces per-row deletedAt filters everywhere.
@@ -42,7 +44,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
       );
     }
     const admitted = await getProductSession();
-    if (admitted) await fillWorkspaceIfNeeded(prisma, admitted.workspaceId, admitted.tenantId);
+    if (admitted && permits(admitted.productAccess,"data.write")) await fillWorkspaceIfNeeded(prisma, admitted.workspaceId, admitted.tenantId);
   }
   // Role axis for the chrome: hides role-locked nav/boards (admin). Screen
   // content is enforced separately server-side (ScreenGate) - hiding is UX,
@@ -50,7 +52,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
   return (
     <AccountGate>
       <EntitlementGate>
-        <Shell isAdmin={isWorkspaceAdmin(session?.roles)}>{children}</Shell>
+        <Shell isAdmin={isProductManager(admittedAccess)}>{admittedAccess && !permits(admittedAccess,"data.read") ? <AccessDeniedPanel/> : children}</Shell>
       </EntitlementGate>
     </AccountGate>
   );

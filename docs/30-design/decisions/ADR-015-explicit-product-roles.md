@@ -15,6 +15,7 @@ Do not put fabricated product roles in platform governance-token claims.
 
 | Role code | Purpose | Permission boundary | Default |
 | --- | --- | --- | --- |
+| owner | Single anchored product owner; audited bootstrap/transfer; never billing or seat authority | Full product administration plus ownership transfer | Trusted initial bootstrap only |
 | administrator | Product administration | Product settings/member roles plus business operations, subject to resource scope; never platform billing or seats | No |
 | member | Normal business work | Read/create/edit within permitted resource scopes; no member-role or product-settings management | No |
 | readonly | Read existing business information | View and permitted read-only queries; no create/edit/delete/import/publish or management | Yes, new authorized members |
@@ -80,7 +81,15 @@ role changes, authority failure and out-of-order notifications fail safely.
 ## Superseded candidates
 
 Arda v0.13.4 deploy45107304781 was cancelled before production deployment.
-KArda v0.13.4 deploy45107304781 was cancelled before production deployment.
+Karda v0.11.7 deploy45107365314 was cancelled before production deployment.
 Neither cancelled candidate is evidence of this explicit-role implementation.
 Do not approve or re-run those application deployments. Database DDL0004 for
 Arda events remains verified and is independent of the pending role storage.
+
+## Implementation checkpoint - 2026-11-23
+
+The role catalog includes owner/administrator/member/readonly/guest. Owner is a
+unique persisted anchor, not a permanent platform-claim bypass. R2-R4 are now
+authored in the product repository; production DDL/application and R5 live
+acceptance are pending. Current evidence and adoption/owner recovery procedure:
+[role delivery tracker](../../70-workplan/60-explicit-product-roles-20261123.md).

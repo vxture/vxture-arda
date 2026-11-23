@@ -1,3 +1,4 @@
+import { permits } from "../../authz/policy";
 import type { SessionUser } from "../api";
 import { hasProductAccess, type Subscription } from "../../entitlement/types";
 
@@ -16,7 +17,6 @@ export function accessState(subscription: Subscription, user: SessionUser): "con
   }
   // Product assignment denial is not a missing Arda business role or a renewal prompt.
   if (subscription.productAssigned !== true) return "access-unavailable";
-  // Platform-admitted users have baseline member use. Governance roles only
-  // elevate management; do not manufacture claims or require a second grant.
+  if (!permits(subscription.productAccess,"product.enter")) return "unassigned";
   return "connected";
 }

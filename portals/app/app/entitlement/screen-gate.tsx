@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { getProductSession as getSession } from "../auth/lib/session";
 import { canUseFeature } from "./capability";
-import { isWorkspaceAdmin } from "./roles";
+import { isProductManager } from "../authz/policy";
 import { ADMIN_SCREENS, SCREEN_FEATURES } from "./screen-features";
 import { getSubscription } from "./server";
 import { AccessDeniedPanel } from "./access-denied-panel";
@@ -25,7 +25,7 @@ import { UpgradePanel } from "./upgrade-panel";
 export async function ScreenGate({ screen, children }: { screen: string; children: ReactNode }) {
   if (ADMIN_SCREENS.has(screen)) {
     const session = await getSession();
-    if (!session || !isWorkspaceAdmin(session.roles)) return <AccessDeniedPanel />;
+    if (!session || !isProductManager(session.productAccess)) return <AccessDeniedPanel />;
   }
 
   const featureKey = SCREEN_FEATURES[screen];

@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "../dashboard/seed";
@@ -34,9 +34,8 @@ export interface ServiceInput {
 type Authed = NonNullable<Awaited<ReturnType<typeof getSession>>>;
 
 async function authorizeWrite(): Promise<{ ok: true; session: Authed } | { ok: false; error: "unauthenticated" | "forbidden" | "tier" }> {
-  const session = await getSession();
+  const session = await getSession("service.publish");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.services.publish_api")) return { ok: false, error: "tier" };
   return { ok: true, session };
@@ -198,9 +197,8 @@ export type PublishServiceResult =
  * Blocked attempts are audited too - a refused publish is a governance event.
  */
 export async function publishDataService(serviceId: string): Promise<PublishServiceResult> {
-  const session = await getSession();
+  const session = await getSession("service.publish");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.services.publish_api")) return { ok: false, error: "tier" };

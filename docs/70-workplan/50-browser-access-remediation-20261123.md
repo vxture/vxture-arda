@@ -184,3 +184,13 @@ catalog. Existing roleless members must remain denied, including after repeated
 login. No role or seat should be silently restored. Product role storage and
 full operation enforcement are NOT delivered by the previously merged roster
 reader. R1-R5 are tracked in ADR-015-explicit-product-roles.md; R2-R5 remain pending.
+
+## Explicit roles implementation checkpoint - 2026-11-23
+
+Owner/administrator/member/readonly/guest implementation is under verification.
+New authorized members receive a persisted readonly assignment once; existing
+roleless/inactive members stay denied. Owner transfer/bootstrap is explicit and
+audited. Platform authorization revocation overrides all retained local roles.
+See [R1-R5 delivery tracker](../70-workplan/60-explicit-product-roles-20261123.md).
+Production migration and application deployment remain pending. Do not rerun the
+cancelled implicit-member candidates or modify platform sources/variables.

@@ -1,6 +1,6 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { getEntitlementResolver } from "../../entitlement/resolver";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { permits } from "../../authz/policy";
 import { getDataSources } from "./data";
 import { SourcesList } from "./sources-list";
 
@@ -15,5 +15,5 @@ export default async function SourcesPage() {
 
   const quota = await getEntitlementResolver().resolveQuota(session.workspaceId);
   const data = await getDataSources(session.workspaceId, quota.limits.datasourceMax);
-  return <SourcesList sources={data.sources} metrics={data.metrics} isAdmin={isWorkspaceAdmin(session.roles)} />;
+  return <SourcesList sources={data.sources} metrics={data.metrics} isAdmin={permits(session.productAccess,"data.write")} />;
 }

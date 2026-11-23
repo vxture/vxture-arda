@@ -441,7 +441,7 @@ export const BOARD_NAV: Record<string, NavGroup[]> = {
         { key: "audit", route: "/audit", icon: "list-checks" },
         { key: "adminDict", route: "/admin/dictionary", icon: "book-bookmark", future: true },
         { key: "adminNotif", route: "/admin/notifications", icon: "bell", future: true },
-        { key: "adminPlatform", route: "/admin/platform", icon: "arrow-square-out", future: true },
+        { key: "adminPlatform", route: "/admin/platform", icon: "arrow-square-out" },
       ],
     },
   ],

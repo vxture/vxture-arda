@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getApprovalData } from "./data";
 import { ApprovalsView } from "./approvals-view";
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ApprovalsPage() {
   const session = await getSession();
-  const isAdmin = isWorkspaceAdmin(session?.roles);
+  const isAdmin = permits(session?.productAccess,"product.manage");
   const data = session
     ? await getApprovalData(session.workspaceId, session.sub, isAdmin)
     : { pending: [], mine: [], pendingCount: 0 };

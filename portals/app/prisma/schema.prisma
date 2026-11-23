@@ -534,3 +534,72 @@ model UsageRaw {
   @@map("raw")
   @@schema("local_usage")
 }
+
+model Member {
+  id String @id @default(uuid()) @db.Uuid
+  workspace_id String @db.Uuid
+  sub String @db.VarChar(128)
+  display_name String? @db.VarChar(255)
+  avatar_hash String? @db.VarChar(128)
+  status String @default("active") @db.VarChar(32)
+  first_seen_at DateTime @default(now()) @db.Timestamptz()
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @default(now()) @db.Timestamptz()
+  @@unique([workspace_id, sub], map: "uidx_member_ws_sub")
+  @@map("member")
+  @@schema("local_authz")
+}
+model Role {
+  id String @id @default(uuid()) @db.Uuid
+  role_code String @unique(map: "uidx_role_role_code") @db.VarChar(64)
+  name String @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@map("role")
+  @@schema("local_authz")
+}
+model Permission {
+  id String @id @default(uuid()) @db.Uuid
+  perm_code String @unique(map: "uidx_permission_perm_code") @db.VarChar(64)
+  name String @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@map("permission")
+  @@schema("local_authz")
+}
+model MemberRole {
+  id String @id @default(uuid()) @db.Uuid
+  member_id String @db.Uuid
+  role_id String @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@unique([member_id, role_id], map: "uidx_member_role_member_role")
+  @@map("member_role")
+  @@schema("local_authz")
+}
+model RolePermission {
+  id String @id @default(uuid()) @db.Uuid
+  role_id String @db.Uuid
+  permission_id String @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@unique([role_id, permission_id], map: "uidx_role_permission_role_perm")
+  @@map("role_permission")
+  @@schema("local_authz")
+}
+
+model OwnerAnchor {
+  workspace_id String @id @db.Uuid
+  member_id String @unique @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@map("owner_anchor")
+  @@schema("local_authz")
+}
+model RoleAudit {
+  id String @id @default(uuid()) @db.Uuid
+  workspace_id String @db.Uuid
+  actor_sub String @db.VarChar(128)
+  target_sub String @db.VarChar(128)
+  action String @db.VarChar(64)
+  roles_before Json
+  roles_after Json
+  created_at DateTime @default(now()) @db.Timestamptz()
+  @@map("role_audit")
+  @@schema("local_authz")
+}

@@ -1,4 +1,4 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { getApiKeys } from "./data";
 import { ApiKeysList } from "./apikeys-list";
 import { prisma } from "../../lib/db";

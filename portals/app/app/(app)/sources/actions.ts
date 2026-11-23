@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import { seal, unseal, type SealedSecret } from "../../lib/seal";
@@ -37,9 +37,8 @@ export type RegisterSourceResult =
  * the registration writes an AuditLog row.
  */
 export async function registerDataSource(input: RegisterSourceInput): Promise<RegisterSourceResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const name = input.name?.trim();
   const featureKey = featureKeyForSourceType(input.type);
@@ -124,9 +123,8 @@ export type SyncSourceResult =
  * discoveries (no silent caps).
  */
 export async function syncDataSource(sourceId: string): Promise<SyncSourceResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const source = await prisma.dataSource.findFirst({
     where: { workspaceId: session.workspaceId, id: sourceId },
@@ -254,9 +252,8 @@ export type UnbindSourceResult =
  * revocation upstream signal (invalidate channel) rides the sharing phase.
  */
 export async function unbindDataSource(sourceId: string): Promise<UnbindSourceResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const source = await prisma.dataSource.findFirst({
     where: { workspaceId: session.workspaceId, id: sourceId },

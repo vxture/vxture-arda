@@ -1,3 +1,5 @@
+import { resolveProductAccess } from "../../authz/store";
+import { hasProductAccess } from "../../entitlement/types";
 import { NextResponse } from "next/server";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import type { Subscription } from "../../entitlement/types";
@@ -21,7 +23,10 @@ export async function GET() {
     ? (await fetchPlatformEntitlement(session.workspaceId, context)).subscription
     : await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   const assigned = context ? await productAssigned(context) : true;
-  return NextResponse.json({ ...subscription, productAssigned: assigned }, { headers: NO_STORE });
+  const productAccess = assigned && hasProductAccess(subscription) && context
+    ? await resolveProductAccess({ workspaceId: session.workspaceId, sub: session.sub, roles: session.roles })
+    : mock ? { roles: ["owner"], permissions: ["product.enter", "data.read", "data.write", "product.manage"] } : { roles: [], permissions: [] };
+  return NextResponse.json({ ...subscription, productAssigned: assigned, productAccess }, { headers: NO_STORE });
  } catch {
   return NextResponse.json({ error: "entitlement_unavailable" }, { status: 503, headers: NO_STORE });
  }

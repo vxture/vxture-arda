@@ -208,7 +208,7 @@
     "adminFlows": "流程配置",
     "adminDict": "参数与字典",
     "adminNotif": "通知与告警配置",
-    "adminPlatform": "平台管理",
+    "adminPlatform": "\u4ea7\u54c1\u6210\u5458",
     "storIngest": "数据入库",
     "storTables": "库表管理",
     "storJobs": "入库任务"

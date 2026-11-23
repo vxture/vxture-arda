@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getLineage } from "./data";
 import { LineageCanvas } from "./lineage-view";
 
@@ -18,5 +18,5 @@ export default async function LineagePage({
   const view = session
     ? await getLineage(session.workspaceId, dataset)
     : { nodes: [], edges: [], datasets: [], subjectId: null, impact: { datasets: 0, services: 0, names: [] }, truncated: false };
-  return <LineageCanvas view={view} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <LineageCanvas view={view} isAdmin={permits(session?.productAccess,"data.write")} />;
 }

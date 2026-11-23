@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getGlossary } from "./data";
 import { GlossaryList } from "./glossary-list";
 
@@ -9,5 +9,5 @@ export const dynamic = "force-dynamic";
 export default async function GlossaryPage() {
   const session = await getSession();
   const terms = session ? await getGlossary(session.workspaceId) : [];
-  return <GlossaryList terms={terms} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <GlossaryList terms={terms} isAdmin={permits(session?.productAccess,"data.write")} />;
 }

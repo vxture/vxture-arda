@@ -59,6 +59,7 @@ export interface Subscription {
   readonly statusKnown?: boolean;
   /** User-bound platform decision; never stored in the workspace C2 cache. */
   readonly productAssigned?: boolean;
+  readonly productAccess?: import("../authz/policy").ProductAccess;
   /** Effective product tier from C2; null means no product UI coverage. */
   readonly tier: Tier | null;
   /** Raw platform subscription status (SubscriptionStatus), or null = never

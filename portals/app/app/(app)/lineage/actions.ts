@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import { wouldCreateCycle } from "./graph-core";
@@ -23,9 +23,8 @@ export async function addLineageEdge(input: {
   downstreamDatasetId: string;
   transform?: string;
 }): Promise<AddEdgeResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.lineage")) return { ok: false, error: "tier" };

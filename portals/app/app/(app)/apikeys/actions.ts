@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+
 import { isKnownScope } from "../../lib/api/scopes";
 import { prisma } from "../../lib/db";
 import { writeAudit } from "../../lib/audit";
@@ -15,9 +15,8 @@ import { writeAudit } from "../../lib/audit";
  * write points).
  */
 export async function revokeApiKey(keyId: string): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   // Workspace-scoped compound filter: a key id from another workspace never matches.
   const key = await prisma.apiKey.findFirst({ where: { workspaceId: session.workspaceId, id: keyId } });
@@ -55,9 +54,8 @@ export async function createApiKey(input: {
   dataServiceId?: string | null;
   scopes?: string[];
 }): Promise<CreateKeyResult> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const name = input.name?.trim();
   if (!name || name.length > 120) return { ok: false, error: "invalid" };
