@@ -2,13 +2,13 @@ import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 import { getOidcConfig } from "../../auth/lib/config";
 import { resolveIdentity } from "../../auth/lib/session";
-import { getIdentity, getTokens } from "../../auth/lib/session-store";
+import { getIdentity, getTokens, sessionRemainingMs } from "../../auth/lib/session-store";
 import { getEventBus, sessionTarget, workspaceTarget, type Invalidation } from "../../events/bus";
 import { reserveAccessStream } from "../../events/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const headers = { "Cache-Control": "no-store", "X-Accel-Buffering": "no" };
+const headers = { "Cache-Control": "no-store, no-transform", "X-Accel-Buffering": "no" };
 
 export async function GET(req: Request): Promise<Response> {
   const cfg = getOidcConfig();
@@ -16,7 +16,7 @@ export async function GET(req: Request): Promise<Response> {
   // Same-origin cookie authentication. No tokens, session IDs or workspace IDs
   // are accepted from query parameters. The stream carries invalidation only.
   const origin = req.headers.get("origin");
-  if (origin && origin !== new URL(req.url).origin
+  if (origin && origin !== cfg.appOrigin
     || req.headers.get("sec-fetch-site") === "cross-site") return new Response(null, { status: 403, headers });
   const rpsid = (await cookies()).get(cfg.cookieName)?.value;
   if (!rpsid) return new Response(null, { status: 401, headers });
@@ -42,8 +42,8 @@ export async function GET(req: Request): Promise<Response> {
       if (deliver) deliver(event); else if (queue.length < 32) queue.push(event); else { lost = true; disconnect?.(); }
     }, () => { lost = true; disconnect?.(); });
     stop = () => { unsubscribe(); release?.(); };
-    const [session, tokens] = await Promise.all([getIdentity(cfg, rpsid), getTokens(cfg, rpsid)]);
-    if (!session || !tokens) { stop(); return new Response(null, { status: 401, headers }); }
+    const [session, tokens, remainingMs] = await Promise.all([getIdentity(cfg, rpsid), getTokens(cfg, rpsid), sessionRemainingMs(cfg, rpsid)]);
+    if (!session || !tokens || remainingMs <= 0) { stop(); return new Response(null, { status: 401, headers }); }
     if (fingerprint(session) !== context) { stop(); return new Response(null, { status: 409, headers }); }
     const revision = await bus.version(ws);
     if (lost || req.signal.aborted) { stop(); return new Response(null, { status: 503, headers }); }
@@ -78,7 +78,7 @@ export async function GET(req: Request): Promise<Response> {
         }, 25000);
         // No authority check in the keepalive. Reauthenticate at token expiry
         // or at a bounded stream lifetime; this never calls C2 periodically.
-        deadline = setTimeout(finish, Math.max(1000, Math.min(600000, tokens.access_exp * 1000 - Date.now())));
+        deadline = setTimeout(finish, Math.max(1, Math.min(600000, remainingMs, tokens.access_exp * 1000 - Date.now())));
         if (closed) { clearInterval(heartbeat); clearTimeout(deadline); }
         if (req.signal.aborted) finish();
         else if (!closed) req.signal.addEventListener("abort", finish, { once: true });

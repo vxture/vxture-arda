@@ -141,6 +141,10 @@ export async function getIdentity(cfg: OidcConfig, rpsid: string): Promise<Ident
   }
 }
 
+export async function sessionRemainingMs(cfg: OidcConfig, rpsid: string): Promise<number> {
+  return redis(cfg).pttl(sessKey(rpsid));
+}
+
 export async function getTokens(cfg: OidcConfig, rpsid: string): Promise<TokenBundle | null> {
   const raw = await redis(cfg).get(tokKey(rpsid));
   if (!raw) return null;
