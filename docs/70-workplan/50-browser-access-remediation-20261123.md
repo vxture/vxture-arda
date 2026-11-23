@@ -7,10 +7,10 @@ This tracker separates implementation, release and live acceptance.
 
 | Batch | Deliverable | Acceptance | Status |
 | --- | --- | --- | --- |
-| A1 | Decouple background verification from the blocking entry screen | An already admitted, unchanged scope keeps its page and drafts during verification; explicit denial and failures still block; first entry still verifies | Implemented; local type-check passes; CI/live acceptance pending |
-| A2 | Durable workspace revision/outbox and atomic session revocation notifications | Commit/publish crash recovery, duplicate/out-of-order events and multi-replica invalidation; no dropped logout on Redis failure | Implemented; isolated PostgreSQL/Redis CI and DDL0004 application pending |
-| A3 | Authenticated same-origin SSE and authoritative reconnect handshake | Session/workspace isolation, expiry, slow consumers, Redis disconnect/reset and missed-event recovery; no tokens in browser | Implemented; real edge and failure acceptance pending |
-| A4 | Browser message coordinator and removal of focus/input permission triggers | 100 ordinary tab switches cause zero session/entitlement reads and zero gate flashes; change bursts coalesce; same-scope drafts persist | Implemented; coordinator tests pass; browser acceptance pending |
+| A1 | Decouple background verification from the blocking entry screen | An already admitted, unchanged scope keeps its page and drafts during verification; explicit denial and failures still block; first entry still verifies | Merged; PR/main CI pass; production acceptance pending |
+| A2 | Durable workspace revision/outbox and atomic session revocation notifications | Commit/publish crash recovery, duplicate/out-of-order events and multi-replica invalidation; no dropped logout on Redis failure | Merged; real PostgreSQL/Redis CI pass; production DDL0004 verified |
+| A3 | Authenticated same-origin SSE and authoritative reconnect handshake | Session/workspace isolation, expiry, slow consumers, Redis disconnect/reset and missed-event recovery; no tokens in browser | Merged; CI pass; real edge and failure acceptance pending |
+| A4 | Browser message coordinator and removal of focus/input permission triggers | 100 ordinary tab switches cause zero session/entitlement reads and zero gate flashes; change bursts coalesce; same-scope drafts persist | Merged; coordinator CI passes; browser acceptance pending |
 | A5 | Direct production deployment and end-to-end acceptance | Real edge streaming, logout to idle browser, reconnect/restart, subscription changes and authorization regression; record actual results | Pending |
 | A6 | Production acceptance and delivery | Required human production approval; promote validated commit/image; repeat production checks and record limitations | Pending |
 
@@ -154,3 +154,21 @@ do not claim the currently missing seat event contract has been accepted.
 Five roster regression cases cover pagination, revision race recovery, removed
 members, OBO reader denial, invalid scope/eligibility, cursor loops and authority
 outage. Production authorization mutation was not performed on real members.
+
+
+### Release checkpoint
+
+- PR236 merged a764c21; main CI45104178256 passed. Production migration
+  45104288046 succeeded after owner approval:23 tables,3 enums,service role.
+- Default-member correction PR237 merged f613834; main CI45106292956 passed.
+- Authorized-roster PR238 merged6a136f9eb0bba70be4095922f6380516274fe296;
+  PR CI45106931547 and main CI45107050445 passed:93 tests,92 pass,0 fail,
+  one pre-existing hosted-storage integration skip. Real Redis/PG checks passed.
+- v0.13.2 and v0.13.3 application runs were cancelled before deployment to
+  combine the new member/roster requirements. Do not approve these old runs.
+- Final application candidate v0.13.4 pins6a136f9; deploy45107304781.
+  Image/reviewer/live acceptance outcomes are not yet established here.
+- Karda mirrors the authorized-roster contract in PR256/25ac496;892 tests
+  pass with zero failures/skips. Its separate v0.11.7 release is tracked there.
+- Platform issue731 excludes automatic seat grants and tracks reliable access
+  revocation notifications. This is distinct from single-request access denial.
