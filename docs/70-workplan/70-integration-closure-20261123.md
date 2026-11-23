@@ -67,7 +67,7 @@ A browser/member/platform dependency does not block independent work.
 - [x] I1.3 Prior Karda logout/workforce isolation and Arda-to-idle-Karda logout accepted.
 - [x] I1.4 Both current production releases reached authenticated member pages (2026-11-23 21:15 CST).
 - [ ] I1.5 Full actual tab-visibility and authority-request trace,including repeated switches.
-- [ ] I1.6 Current-release reverse logout and signed-backchannel delivery evidence.
+- [ ] I1.6 Reverse logout failed twice, including after fresh Accounts SSO; trace pending in platform726.
 - [x] I1.7 Arda strict logout-event validation and explicit retryable503 deployed;
   Karda equivalent behavior retained. Implementation/test progress below is
   separate from production acceptance.
@@ -324,3 +324,11 @@ admission, delegated revocation and logout; Arda coordinator also verifies that
 unchanged reconnects do not read authority. Source inspection found no Arda
 visibility/focus-triggered authority checks. I1.5 remains open for a real tab
 visibility and network trace. I1 and I2 remain partial.
+
+Fresh SSO retest: both product member pages loaded from one newly established
+Accounts login without a second credential prompt. Karda logout returned to its
+gate; Arda stayed admitted, including after reload and /auth/session read.
+Shared SID and exact signed HTTP delivery remain unverified.
+[Trace follow-up](https://github.com/vxture-platform/vxture-platform/issues/726#issuecomment-7103075672).
+I1.5 remains open: browser tooling reported both tabs visible and provided no
+network trace, so foreground/background switching was not accepted.
