@@ -7,7 +7,7 @@ docs/70-workplan/70-integration-closure-20261123.md.
 Old product functions will be rebuilt; stop Curator/source/quality feature work
 and old-feature acceptance. Keep Accounts,authorization/roles/messages,managed
 configuration/domains,subscriptions/C2/C3/gauge/lifecycle/OBO and handoff.
-Current production:v0.13.5/e3b9802. Platform code,server variables,manual edge
+Current production:v0.13.6/df69583. Platform code,server variables,manual edge
 routes and real customer privileges are outside this task.
 
 Authoritative working agreement for this repo. The goal is a clean, predictable
