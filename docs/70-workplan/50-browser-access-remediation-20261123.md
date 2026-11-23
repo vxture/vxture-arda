@@ -129,3 +129,28 @@ mandatory and cannot be synthesized locally.
 Production db-init45104288046 succeeded on a764c21:23 tables,3 enums,service role
 present. v0.13.2 application run45105672438 was cancelled before release to include
 this newly requested entry correction in the next production candidate.
+
+
+### Platform-authorized roster and revocation boundary - 2026-11-23
+
+Owner clarified: platform subscription management alone grants/revokes product
+seats. Do not add an automatic seat grant policy. Baseline member use applies
+only after affirmative live platform authorization and valid coverage.
+Platform issue731 was corrected to this scope; it now requests reliable seat
+change/revocation notification semantics, linked to726, not automatic access.
+
+Consume the existing GET /platform/product-roster with a ticket-bound complete
+snapshot: validate product/org/workspace, assigned_seats mode, eligible subjects,
+page version and unique members. Restart a changing snapshot once; never return
+partial/stale authorization on failure. No periodic roster refresh or persisted
+authorization copy. A no-store manager-only GET /api/platform/members reads the
+current authorized roster without accepting browser-provided scope selectors.
+No member-management UI or local role administration is introduced by this API.
+Every protected business request still checks the subject's live product-access;
+roster snapshots and previous local roles never override explicit revocation.
+A cancelled seat denies subsequent requests even if the account remains logged
+in. Immediate idle-page withdrawal still depends on reliable upstream events;
+do not claim the currently missing seat event contract has been accepted.
+Five roster regression cases cover pagination, revision race recovery, removed
+members, OBO reader denial, invalid scope/eligibility, cursor loops and authority
+outage. Production authorization mutation was not performed on real members.
