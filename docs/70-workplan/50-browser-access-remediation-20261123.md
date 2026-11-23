@@ -172,3 +172,15 @@ outage. Production authorization mutation was not performed on real members.
   pass with zero failures/skips. Its separate v0.11.7 release is tracked there.
 - Platform issue731 excludes automatic seat grants and tracks reliable access
   revocation notifications. This is distinct from single-request access denial.
+
+
+## Owner correction: explicit roles required - 2026-11-23
+
+The earlier implicit member baseline is rejected: no role means no permission.
+Cancelled the pending production application candidate before deployment.
+New authorized members need a real readonly assignment, not a fallback when roles
+are empty. Administrator/member/readonly/guest define the initial product role
+catalog. Existing roleless members must remain denied, including after repeated
+login. No role or seat should be silently restored. Product role storage and
+full operation enforcement are NOT delivered by the previously merged roster
+reader. R1-R5 are tracked in ADR-015-explicit-product-roles.md; R2-R5 remain pending.

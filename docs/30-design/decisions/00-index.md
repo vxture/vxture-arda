@@ -251,3 +251,5 @@ a wipe prerequisite.
 business tables need NO soft-delete columns. Any future per-dataset archive
 feature must NOT reuse wipedAt semantics - it gates access to one
 workspace's everything, not one row.
+
+- [ADR-015: Explicit product roles and default assignment](ADR-015-explicit-product-roles.md) - runtime implementation pending; supersedes implicit member access.
