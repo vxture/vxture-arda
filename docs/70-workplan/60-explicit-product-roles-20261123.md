@@ -181,3 +181,43 @@ Application builds and independent production reviewer approval are separate
 from the completed DB approval. Until each application run succeeds and public
 version/readiness is checked, do not describe the new role behavior as live.
 No platform variable, product registry, route, seat or customer-role change.
+
+## Production application delivery - 2026-11-23
+
+Both owner-approved application deployments succeeded:
+Arda v0.13.5 / e3b9802 / run45119134449 (completed05:47:28Z);
+Karda v0.11.8 / 01e7065a / run45119134160 (completed05:46:09Z).
+Public readiness on both canonical domains at05:48Z confirms production,
+the pinned release versions and db/redis ok; Karda storageConfig is also ok.
+DDL0005/DDL0015 had already succeeded before the application deployments.
+
+Anonymous production checks: both /api/platform/members endpoints return401
+unauthenticated with private/no-store headers; Arda /api/v1/datasets returns401
+missing_api_key; Karda /api/pipeline/tasks returns401 unauthenticated.
+An exploratory /api/tasks request returned404 and is not acceptance evidence;
+the supported Karda task endpoint above was then verified.
+
+Both production customer sessions were initially signed out. After owner login,
+normal Accounts flows admitted both products. Arda /admin/platform and Karda
+/members loaded the authorized roster with Stone Smoker as product owner.
+Both disable the ordinary role editor for the anchored owner. Karda account
+menu also labels the role as product owner. No member/owner/seat was changed
+through the management UI. No manual ownership bootstrap was submitted.
+
+Arda Ctrl+Tab then Ctrl+Shift+Tab inputs left its member page unchanged; no
+full-screen permission gate was observed. This automation did not independently
+capture the background/foreground transition, so a full browser-switch trace
+remains pending. A full document navigation can still show initial admission
+verification; it is distinct from a tab-visibility event.
+
+Only the owner is present in the available roster. Fresh-member readonly,
+roleless denial, role removal/regrant/transfer, seat revocation and notification
+recovery need a designated synthetic member and action-time authorization for
+real security changes. Live OBO credentials are not available in this browser
+acceptance. These checks remain open rather than modifying the real owner.
+
+R2 schema and application rollout are complete. R3/R4 implementation is live;
+owner admission/roster acceptance passes. R5 release/readiness/anonymous
+rejection checks pass; the full production acceptance is not complete.
+Platform731/726 notification guarantees and Atlas147 indexing/AI chain remain
+separate external gaps. No platform code/configuration/server variable changed.
