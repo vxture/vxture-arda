@@ -194,3 +194,11 @@ audited. Platform authorization revocation overrides all retained local roles.
 See [R1-R5 delivery tracker](../70-workplan/60-explicit-product-roles-20261123.md).
 Production migration and application deployment remain pending. Do not rerun the
 cancelled implicit-member candidates or modify platform sources/variables.
+
+### Explicit roles merged; production DB review pending
+
+Arda PR241 merged19b9865; main45115216329 passes (96 cases,95 pass,one existing
+storage skip). Karda PR259 mergedf37a421; main45115081992 passes (899/899,no skips).
+Production DB review: Arda45115384853/DDL0005 and Karda45115340531/DDL0015.
+No new application release yet. Full evidence and ordered continuation:
+[roles delivery](60-explicit-product-roles-20261123.md).

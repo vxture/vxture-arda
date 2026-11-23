@@ -55,7 +55,7 @@ No real customer account was promoted, removed or transferred for testing.
 
 ## Member administration
 
-Arda: management board -> platform settings (/admin/platform).
+Arda: management board -> product members (/admin/platform).
 Karda: workspace scope panel -> product members (/members).
 Only currently authorized roster members are selectable. Uninitialized members
 show their future readonly default separately from actual assigned roles.
@@ -111,3 +111,49 @@ Arda reloads server-rendered business content only after the authoritative produ
 role/permission fingerprint actually changes. Karda remounts data/header state
 after a successfully checked context/revision change. Same-version transport
 heartbeats and browser tab switches do not request business authorization.
+
+## Merged delivery and production review checkpoint
+
+| Product | Merged PR and fixed implementation | Required main CI | Verified suite | Pending production DB |
+| --- | --- | --- | --- | --- |
+| Arda | [PR241](https://github.com/vxture/vxture-arda/pull/241),19b9865144e178b8a482fa173b840bfe3385663e | [45115216329](https://github.com/vxture/vxture-arda/actions/runs/45115216329), all pass | 96 cases,95 pass,0 fail,1 pre-existing hosted-storage skip; real PG/Redis pass | [45115384853](https://github.com/vxture/vxture-arda/actions/runs/45115384853),DDL0005,migrate,pinned19b9865 |
+| Karda | [PR259](https://github.com/vxture/vxture-karda/pull/259),f37a421d1db754ebcf9451969aec6b896d5d9599 | [45115081992](https://github.com/vxture/vxture-karda/actions/runs/45115081992), all pass | 899 cases,899 pass,0 fail,0 skip; real PG/Redis pass | [45115340531](https://github.com/vxture/vxture-karda/actions/runs/45115340531),DDL0015,apply,pinnedf37a421 |
+
+PR source checks also passed: Arda45114969686 and Karda45114886327. Main
+secret scans passed: Arda45115216348 and Karda45115082068. Production builds
+passed in both PR and main CI. These are pre-release evidence, not live access
+acceptance. Owner was asked to review the two DB workflows together; no required
+reviewer was impersonated. The first Karda dispatch attempt used an unsupported
+raw-SHA workflow ref and returned422 without creating a run; the actual run uses
+main with expected_sha=f37a421 and its recorded head SHA matches exactly.
+
+Platform boundary update:
+[platform731 comment7091962768](https://github.com/vxture-platform/vxture-platform/issues/731#issuecomment-7091962768).
+No platform source/worktree/configuration/variable change; no real seat/member
+role mutation. Existing Arda untracked design/runtime artifacts were preserved.
+
+R1 complete. R2 schema implementation and replay tests complete, production
+application pending. R3/R4 code, management UI and regressions complete; live
+permission/roster/revocation acceptance remains pending. R5 PR/main CI complete,
+DB human review and subsequent application release/live acceptance pending.
+
+## Ordered continuation after human review
+
+1. Verify both pinned DB jobs succeeded: Arda30tables/3enums, Karda41tables;
+   validate runtime role grants and that the existing applications remain ready.
+2. Build/release only the checked implementation (or its docs-only successor):
+   next unused tags expected Arda v0.13.5 and Karda v0.11.8; verify remote tags
+   first. Application production review is separate; never deploy before DDL.
+3. Confirm readiness/version on arda.ruyin.work and karda.ruyin.work. Request
+   customer login only if expired; use current subscribed workspace context.
+4. Verify member management/role label and roleless rejection. Use an explicitly
+   designated synthetic member for actual role changes, transfer and seat
+   revocation; do not alter unrelated customer/admin roles for acceptance.
+5. Verify ordinary tab switching preserves Arda work without full-screen
+   permission checks. Verify a real local role event updates both product UIs;
+   test reconnect version recovery and repeated events without polling.
+6. Run direct OBO live roster/role checks via supported credentials, plus platform
+   revocation-message acceptance when731/726 supplies reliable delivery evidence.
+7. Record every run, release, readiness and acceptance result here and in the
+   delivery handoff; do not label the whole integration complete while live
+   checks or the Atlas147 business chain remain unverified.
