@@ -157,3 +157,27 @@ DB human review and subsequent application release/live acceptance pending.
 7. Record every run, release, readiness and acceptance result here and in the
    delivery handoff; do not label the whole integration complete while live
    checks or the Atlas147 business chain remain unverified.
+
+## Production database completed; application candidate started
+
+Owner confirmed both production DB approvals. Arda migrate45115384853 succeeded
+at2026-11-23T05:37:48Z: pinned19b9865,30/30tables,3/3enums,all five increments
+replayed and schema verification passed. Karda apply45115340531 succeeded
+at2026-11-23T05:38:07Z: pinnedf37a421,41/41baseline tables present and service-role
+password set from its existing deployment connection. Both are additive
+role-storage deliveries; no business-data reset. Post-migration public readiness
+confirmed the old Arda v0.13.1 and Karda v0.11.6 remain ready with db/redis ok;
+Karda storageConfig is also ok.
+
+The docs-only successors also passed their main gates: Arda45115742649 at
+e3b98026c5e1b132292bda0a2fb74052222ee398; Karda45115744368 at
+01e7065a24a139852840e33ce4592acfee9d72ae. These exact commits now have release
+candidates Arda v0.13.5 and Karda v0.11.8. Remote tag names were checked unused.
+
+- [Arda application45119134449](https://github.com/vxture/vxture-arda/actions/runs/45119134449)
+- [Karda application45119134160](https://github.com/vxture/vxture-karda/actions/runs/45119134160)
+
+Application builds and independent production reviewer approval are separate
+from the completed DB approval. Until each application run succeeds and public
+version/readiness is checked, do not describe the new role behavior as live.
+No platform variable, product registry, route, seat or customer-role change.

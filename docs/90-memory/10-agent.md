@@ -140,3 +140,8 @@ Implementation merged: Arda PR241/19b9865 and Karda PR259/f37a421; both full mai
 CI runs pass. DB jobs45115384853 (Arda) and45115340531 (Karda) await human review.
 Do not cut role-dependent app releases until the correct DB job succeeds.
 Continue from60-explicit-product-roles-20261123.md; current prod remains unchanged.
+
+Both production DB jobs now SUCCEEDED after owner approval: Arda45115384853
+(30tables/3enums),Karda45115340531(41tables). Application candidates are
+Arda v0.13.5/run45119134449 and Karda v0.11.8/run45119134160; approval and live
+acceptance remain separate. See the roles delivery tracker for exact SHAs.
