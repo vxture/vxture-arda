@@ -44,7 +44,7 @@ Historical financial assumptions are not a promise for the reconstructed apps.
 
 | ID | Deliverable and exit condition | Current state | Owner/dependency |
 | --- | --- | --- | --- |
-| I0 | One scope/status baseline, reconstruction-replaced items, linked evidence and issue ownership | Scope/status/issue matrix updated; local docs guards pass; PR/main checks pending | Both product repos |
+| I0 | One scope/status baseline, reconstruction-replaced items, linked evidence and issue ownership | Scope/status/issue matrix delivered; gate/merge receipts on linked delivery PRs | Both product repos |
 | I1 | Accounts login/refresh/logout, workforce isolation, full tab-visibility trace; ordinary switching makes no authority read or gate flash | Existing acceptance retained; anonymous contract checks pass; fresh authenticated/browser trace blocked by browser access | Both products;726 for context notifications |
 | I2 | New authorized member gets persisted readonly once; roleless/guest deny; revoked platform eligibility overrides local role; owner protection/isolation | Implemented/deployed; owner roster accepted; test member display ID supplied,actual subject/workspace unresolved | Both products; platform roster/browser access |
 | I3 | Actual local role event and upstream context/seat events; duplicates/out-of-order/reconnect/multi-replica recovery; bounded idle convergence | Deployed local revision/outbox/SSE; anonymous/origin denial passes; live delivery and upstream contract open | Products plus platform731/726 |
@@ -107,6 +107,11 @@ Likewise an open historical issue is not proof that its original defect persists
 ready/path/token-doc fixes need evidence-based issue triage.
 
 ## Execution log
+
+Delivery PRs:
+[Arda245](https://github.com/vxture/vxture-arda/pull/245),
+[Karda263](https://github.com/vxture/vxture-karda/pull/263).
+Required checks gate squash merges; neither PR publishes an application.
 
 - 2026-11-23 14:38 CST: canonical readiness passes; both legacy domains still
   serve the current app at /api/ready with200 and no redirect.
