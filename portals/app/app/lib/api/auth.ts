@@ -1,3 +1,4 @@
+import { delegatedAccess } from "../../authz/obo";
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "../db";
@@ -49,6 +50,12 @@ export async function authenticateApiRequest(
     const v = await verifyS2sBearer(authz.slice(7));
     if (!v.ok) {
       return problem(v.code === "invalid_token" ? 401 : 403, v.code);
+    }
+    if(v.id.mode === "obo") {
+      try {
+        const access=await delegatedAccess({orgId:v.id.orgId,workspaceId:v.id.workspaceId,subject:v.id.sub??undefined,subjectToken:authz.slice(7)},requiredScope.endsWith(":write")?"data.write":"data.read");
+        if(!access) return problem(403,"permission_denied");
+      } catch { return problem(503,"authority_unavailable"); }
     }
     const rate = await checkRateLimit(`s2s:${v.id.actSub}:${v.id.workspaceId}`);
     if (!rate.allowed) {

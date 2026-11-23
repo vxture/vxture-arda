@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+
 import { prisma } from "../../lib/db";
 import { writeAudit } from "../../lib/audit";
 
@@ -14,9 +14,8 @@ import { writeAudit } from "../../lib/audit";
 export type DecisionResult = { ok: true } | { ok: false; error: "unauthenticated" | "forbidden" | "not_found" | "not_pending" };
 
 export async function decideRequest(id: string, approve: boolean, note?: string): Promise<DecisionResult> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const req = await prisma.accessRequest.findFirst({ where: { workspaceId: session.workspaceId, id } });
   if (!req) return { ok: false, error: "not_found" };
@@ -39,7 +38,7 @@ export async function decideRequest(id: string, approve: boolean, note?: string)
 
 /** Requester withdraws their own still-pending request. */
 export async function cancelRequest(id: string): Promise<DecisionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
 
   const req = await prisma.accessRequest.findFirst({ where: { workspaceId: session.workspaceId, id } });

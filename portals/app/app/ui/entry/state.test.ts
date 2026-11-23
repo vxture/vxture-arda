@@ -7,9 +7,9 @@ import type { SessionUser } from "../api";
 import type { Subscription } from "../../entitlement/types";
 
 const user: SessionUser = { sub: "u1", displayName: "User", username: "user", avatarUrl: "", email: "", emailVerified: false, phone: "", phoneVerified: false, accountStatus: "active", orgId: "o1", orgType: "team", orgName: "Org", workspaceId: "w1", workspaceName: "Workspace", roles: ["workspace:member"], userType: "user", ardaClaim: null };
-const sub: Subscription = { tier: "pro", status: "active", bundled: false, productAssigned: true };
+const sub: Subscription = { tier: "pro", status: "active", bundled: false, productAssigned: true, productAccess: { roles: ["readonly"], permissions: ["product.enter", "data.read"] } };
 
-test("platform-admitted new members have baseline use without governance role assignment", () => {
+test("explicit default readonly admits eligible members independently of platform governance roles", () => {
   assert.equal(accessState(sub, user), "connected");
   assert.equal(accessState(sub, { ...user, roles: [] }), "connected");
   assert.equal(isWorkspaceAdmin([]), false);
@@ -40,4 +40,8 @@ test("commercial entry uses public product pricing without order intent", () => 
   assert.equal(productSubscriptionUrl(), "https://vxture.com/zh-CN/pricing?product=arda");
   assert.equal(productSubscriptionUrl("en-US"), "https://vxture.com/en-US/pricing?product=arda");
   assert.equal(productSubscriptionUrl("https://untrusted.test"), productSubscriptionUrl());
+});
+
+test("missing product roles never imply entry, even for platform owners", () => {
+  assert.equal(accessState({ ...sub, productAccess: {roles: [], permissions: []} }, {...user, roles: ["workspace:owner"]}), "unassigned");
 });

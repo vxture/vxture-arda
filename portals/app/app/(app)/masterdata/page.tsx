@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getMasterData } from "./data";
 import { MasterDataList } from "./masterdata-list";
 
@@ -16,7 +16,7 @@ export default async function MasterDataPage() {
     <MasterDataList
       records={data.records}
       metrics={data.metrics}
-      isAdmin={isWorkspaceAdmin(session?.roles)}
+      isAdmin={permits(session?.productAccess,"data.write")}
     />
   );
 }

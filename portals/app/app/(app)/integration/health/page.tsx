@@ -1,4 +1,4 @@
-import { getProductSession as getSession } from "../../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../../auth/lib/session";
 import { getSourceHealth } from "../health-data";
 import { HealthView } from "../health-view";
 

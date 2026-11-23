@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getServices } from "./data";
 import { ServiceList } from "./service-list";
 
@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
 export default async function ServicePage() {
   const session = await getSession();
   const services = session ? await getServices(session.workspaceId) : [];
-  return <ServiceList services={services} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <ServiceList services={services} isAdmin={permits(session?.productAccess,"service.publish")} />;
 }

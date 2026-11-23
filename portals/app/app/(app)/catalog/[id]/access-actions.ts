@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../../auth/lib/session";
 import { prisma } from "../../../lib/db";
 import { writeAudit } from "../../../lib/audit";
 
@@ -23,7 +23,7 @@ export interface AccessRequestInput {
 }
 
 export async function submitAccessRequest(input: AccessRequestInput): Promise<AccessRequestResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
 
   const useCase = input.useCase.trim();

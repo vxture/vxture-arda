@@ -93,3 +93,16 @@ REVOKE DELETE ON "vx_provision"."access_revision" FROM arda_svc;
 -- Flush bookkeeping only; the metering identity of a usage record is locked.
 GRANT UPDATE ("flushed", "flushAttempts", "flushError", "flushedAt")
   ON "local_usage"."raw" TO arda_svc;
+
+-- Explicit product-role grant boundary.
+
+GRANT USAGE ON SCHEMA local_authz TO arda_svc;
+GRANT SELECT, INSERT ON local_authz.member TO arda_svc;
+GRANT SELECT, INSERT, DELETE ON local_authz.member_role, local_authz.owner_anchor TO arda_svc;
+REVOKE DELETE ON local_authz.member FROM arda_svc;
+GRANT SELECT, INSERT ON local_authz.role_audit TO arda_svc;
+GRANT SELECT ON local_authz.role, local_authz.permission, local_authz.role_permission TO arda_svc;
+REVOKE INSERT, UPDATE, DELETE ON local_authz.role, local_authz.permission, local_authz.role_permission FROM arda_svc;
+REVOKE UPDATE ON local_authz.member, local_authz.member_role, local_authz.owner_anchor FROM arda_svc;
+GRANT UPDATE (display_name, avatar_hash, status, updated_at) ON local_authz.member TO arda_svc;
+REVOKE UPDATE, DELETE ON local_authz.role_audit FROM arda_svc;

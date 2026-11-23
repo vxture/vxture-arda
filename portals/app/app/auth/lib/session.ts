@@ -26,6 +26,8 @@ import type { ArdaClaim } from "../../entitlement/types";
 import type { PlatformContext } from "../../platform/ticket";
 import { cache } from "react";
 import { checkCentralSession } from "./central-session";
+import { resolveProductAccess } from "../../authz/store";
+import { permits, type ProductPermission } from "../../authz/policy";
 import { admitProductUser } from "../../platform/admission";
 
 export interface SessionResolution {
@@ -100,6 +102,7 @@ async function resolveLockedIdentity(cfg: OidcConfig, rpsid: string): Promise<Se
 /** Typed session returned by getSession(). tenantId is the active org and
  * workspaceId is the active workspace (the entitlement lookup keys). */
 export interface Session {
+  productAccess?: import("../../authz/policy").ProductAccess;
   sub: string;
   sid: string;
   displayName: string;
@@ -183,5 +186,16 @@ export const getProductSession = cache(async (): Promise<Session | null> => {
   if (!session) return null;
   if (process.env.NODE_ENV !== "production" && process.env.MOCK_AUTH === "true") return session;
   const context = await getPlatformUserContext(session);
-  return await admitProductUser(context) ? session : null;
+  if (!await admitProductUser(context)) return null;
+  const productAccess = await resolveProductAccess({ workspaceId: session.workspaceId, sub: session.sub, roles: session.roles });
+  if (!permits(productAccess,"product.enter")) return null;
+  return { ...session, productAccess };
 });
+
+/** Writes and exports call this explicitly; basic pages request data.read. */
+export async function getPermissionSession(permission: ProductPermission = "data.read"): Promise<Session | null> {
+  const session = await getProductSession();
+  if (!session) return null;
+  if (process.env.NODE_ENV !== "production" && process.env.MOCK_AUTH === "true") return session;
+  return permits(session.productAccess,permission) ? session : null;
+}

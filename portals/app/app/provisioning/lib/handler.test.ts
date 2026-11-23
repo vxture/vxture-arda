@@ -1,3 +1,5 @@
+import { verifyRoleTransactions } from "../../authz/store.integration";
+import type { RoleDatabase } from "../../authz/store";
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
@@ -24,14 +26,14 @@ test("real PG serializes reversed/duplicate events and versionless notifications
     // Each file gets a fresh public search_path, as separate psql invocations do.
     await pg.query("CREATE ROLE arda_svc NOLOGIN");
     const increments = ["0001_access_request.sql", "0002_drop_platform_sentinel.sql",
-      "0003_schema_split.sql", "0004_access_revision.sql"];
+      "0003_schema_split.sql", "0004_access_revision.sql", "0005_product_roles.sql"];
     const replay = async () => {
       for (const name of increments) {
         await pg.query("SET search_path TO public");
         await pg.query(await readFile(new URL(`../../../../../deploy/database/ddl/incr/${name}`, import.meta.url), "utf8"));
       }
       const count = await pg.query("SELECT count(*)::int AS n FROM pg_tables WHERE schemaname IN ('public','catalog','vx_provision','local_usage','local_authz')");
-      assert.equal(count.rows[0].n, 23, "replay must not create public shadow tables");
+      assert.equal(count.rows[0].n, 30, "replay must not create public shadow tables");
       assert.equal((await pg.query(`SELECT to_regclass('public."AccessRequest"') AS shadow`)).rows[0].shadow, null);
     };
     await replay();
@@ -54,6 +56,7 @@ test("real PG serializes reversed/duplicate events and versionless notifications
     await pg.query("DROP SCHEMA catalog");
     await replay();
     await replay();
+    await verifyRoleTransactions(db as unknown as RoleDatabase);
     const event = (seq: number, type: "tenant.provisioned" | "tenant.deprovisioned" = "tenant.provisioned"): ProvisioningPayload => ({
       id: `d${seq}`, type, seq, occurred_at: 1_795_000_000,
       workspace_id: "w1", tenant_id: "o1", application: "arda", data: {},

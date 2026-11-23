@@ -1,4 +1,4 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { getDashboard, type DashboardData, type Period } from "./data";
 import { DashboardClient } from "./dashboard-client";
 

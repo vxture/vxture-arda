@@ -1,4 +1,4 @@
-import { getProductSession as getSession } from "../../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../../auth/lib/session";
 import { getAssetInventory } from "../inventory-data";
 import { InventoryView } from "../inventory-view";
 

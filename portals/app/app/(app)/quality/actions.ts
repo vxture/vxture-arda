@@ -2,9 +2,9 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { METRICS } from "../../entitlement/quota";
 import { prisma } from "../../lib/db";
@@ -32,9 +32,8 @@ export interface CreateQualityRuleInput {
  *  be authored). Config stays empty in v1 - connectors run with per-type
  *  defaults; a config editor can follow once a real per-rule need shows up. */
 export async function createQualityRule(input: CreateQualityRuleInput): Promise<RuleActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
@@ -83,9 +82,8 @@ export async function createQualityRule(input: CreateQualityRuleInput): Promise<
 
 /** Enable/disable a rule without deleting its result history. */
 export async function setQualityRuleEnabled(ruleId: string, enabled: boolean): Promise<RuleActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
@@ -111,9 +109,8 @@ export async function setQualityRuleEnabled(ruleId: string, enabled: boolean): P
 
 /** Delete a rule (cascades its result history, schema onDelete: Cascade). */
 export async function deleteQualityRule(ruleId: string): Promise<RuleActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.quality_rules")) return { ok: false, error: "tier" };
@@ -151,9 +148,8 @@ export type RunChecksResult =
  * remaining, executed checks are buffered via recordUsage and flushed async.
  */
 export async function runWorkspaceChecks(): Promise<RunChecksResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const resolver = getEntitlementResolver();
   const [subscription, quota] = await Promise.all([

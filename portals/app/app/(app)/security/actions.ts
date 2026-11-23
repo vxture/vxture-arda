@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "../dashboard/seed";
@@ -20,9 +20,8 @@ const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
  *  last valid maxExternalLevel across enabled access policies, so keeping
  *  exactly one keeps resolution deterministic. */
 export async function setMaxExternalLevel(level: string): Promise<PolicyActionResult> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.policies")) return { ok: false, error: "tier" };
@@ -68,9 +67,8 @@ export interface MaskingRuleInput {
 
 /** Add a masking rule (Sec-BL1). datasetId null applies workspace-wide. */
 export async function createMaskingRule(input: MaskingRuleInput): Promise<PolicyActionResult> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.policies")) return { ok: false, error: "tier" };
@@ -110,9 +108,8 @@ export async function createMaskingRule(input: MaskingRuleInput): Promise<Policy
 
 /** Remove a masking rule. */
 export async function deleteMaskingRule(id: string): Promise<PolicyActionResult> {
-  const session = await getSession();
+  const session = await getSession("product.manage");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.policies")) return { ok: false, error: "tier" };

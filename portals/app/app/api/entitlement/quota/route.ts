@@ -11,7 +11,7 @@
 
 import { NextResponse } from "next/server";
 import { getEntitlementResolver } from "../../../entitlement/resolver";
-import { getSession, getPlatformUserContext } from "../../../auth/lib/session";
+import { getPermissionSession as getSession, getPlatformUserContext } from "../../../auth/lib/session";
 import { productAssigned } from "../../../platform/access";
 import { fetchPlatformEntitlement } from "../../../entitlement/platform-client";
 

@@ -1,4 +1,4 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { getAuditLog } from "./data";
 import { AuditList } from "./audit-list";
 

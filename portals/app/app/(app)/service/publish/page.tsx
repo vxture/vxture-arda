@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../../auth/lib/session";
+import { permits } from "../../../authz/policy";
 import { getDatasetOptions, getManagedServices } from "../publish-data";
 import { PublishForm } from "../publish-form";
 
@@ -12,5 +12,5 @@ export default async function SvcPublishPage() {
   const [services, datasets] = session
     ? await Promise.all([getManagedServices(session.workspaceId), getDatasetOptions(session.workspaceId)])
     : [[], []];
-  return <PublishForm services={services} datasets={datasets} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <PublishForm services={services} datasets={datasets} isAdmin={permits(session?.productAccess,"service.publish")} />;
 }

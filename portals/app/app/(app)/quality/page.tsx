@@ -1,5 +1,5 @@
-import { getProductSession as getSession } from "../../auth/lib/session";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
+import { permits } from "../../authz/policy";
 import { getDatasetOptions, getQuality } from "./data";
 import { QualityList } from "./quality-list";
 
@@ -12,5 +12,5 @@ export default async function QualityPage() {
   const [data, datasets] = session
     ? await Promise.all([getQuality(session.workspaceId), getDatasetOptions(session.workspaceId)])
     : [{ rules: [], metrics: { score: 0, rules: 0, issues: 0, pending: 0 } }, []];
-  return <QualityList rules={data.rules} metrics={data.metrics} datasets={datasets} isAdmin={isWorkspaceAdmin(session?.roles)} />;
+  return <QualityList rules={data.rules} metrics={data.metrics} datasets={datasets} isAdmin={permits(session?.productAccess,"data.write")} />;
 }

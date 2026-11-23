@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getProductSession as getSession } from "../../auth/lib/session";
+import { getPermissionSession as getSession } from "../../auth/lib/session";
 import { canUseFeature } from "../../entitlement/capability";
-import { isWorkspaceAdmin } from "../../entitlement/roles";
+
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import type { AssetLevel } from "./seed";
@@ -16,9 +16,8 @@ const ASSET_LEVELS: readonly AssetLevel[] = ["public", "internal", "sensitive", 
 /** Attach a tag to a dataset, creating the tag on first use (MD-BL3 curation;
  *  audited per MD-BL6). Everything workspace-scoped from the session. */
 export async function attachTag(datasetId: string, name: string): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.assets.edit_metadata")) return { ok: false, error: "tier" };
@@ -54,9 +53,8 @@ export async function attachTag(datasetId: string, name: string): Promise<TagAct
 
 /** Detach a tag from a dataset (the tag itself survives for reuse). */
 export async function detachTag(datasetId: string, tagId: string): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.assets.edit_metadata")) return { ok: false, error: "tier" };
@@ -84,9 +82,8 @@ export async function detachTag(datasetId: string, tagId: string): Promise<TagAc
 
 /** Toggle the golden-record mark (M-BL1, gated arda.governance.master_data). */
 export async function setGoldenRecord(datasetId: string, golden: boolean): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.master_data")) return { ok: false, error: "tier" };
@@ -113,9 +110,8 @@ export async function setGoldenRecord(datasetId: string, golden: boolean): Promi
 /** Change a dataset's classification level (Sec-BL2 input, gated
  *  arda.governance.classification). */
 export async function setDatasetClassification(datasetId: string, level: string): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.classification")) return { ok: false, error: "tier" };
@@ -146,9 +142,8 @@ export async function setDatasetClassification(datasetId: string, level: string)
 /** Link a standard to a dataset (S-BL1, gated arda.governance.standards).
  *  Platform-scope standards are linkable (read-only overlay reference). */
 export async function attachStandard(datasetId: string, standardId: string): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.standards")) return { ok: false, error: "tier" };
@@ -181,9 +176,8 @@ export async function attachStandard(datasetId: string, standardId: string): Pro
 
 /** Unlink a standard from a dataset. */
 export async function detachStandard(datasetId: string, standardId: string): Promise<TagActionResult> {
-  const session = await getSession();
+  const session = await getSession("data.write");
   if (!session) return { ok: false, error: "unauthenticated" };
-  if (!isWorkspaceAdmin(session.roles)) return { ok: false, error: "forbidden" };
 
   const subscription = await getEntitlementResolver().resolve(session.ardaClaim, session.workspaceId);
   if (!canUseFeature(subscription, "arda.governance.standards")) return { ok: false, error: "tier" };
