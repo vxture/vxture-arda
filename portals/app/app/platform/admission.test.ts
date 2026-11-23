@@ -22,3 +22,13 @@ test("business admission requires effective tier and propagates unavailable deci
   await assert.rejects(admitProductUser(context, { ...deps,
     assigned: async () => { throw new Error("platform unavailable"); } }), /platform unavailable/);
 });
+
+
+test("a formerly admitted member is denied on the next request after platform revocation", async () => {
+  let assigned = true;
+  const subscription = parseEntitlementEnvelope({ workspace_id: "w1", product: "arda", status: "active", tier: "pro", bundled: false });
+  const deps = { assigned: async () => assigned, entitlement: async () => subscription };
+  assert.equal(await admitProductUser(context, deps), true);
+  assigned = false;
+  assert.equal(await admitProductUser(context, deps), false);
+});
