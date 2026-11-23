@@ -65,7 +65,7 @@ A browser/member/platform dependency does not block independent work.
 - [x] I1.1 Anonymous session response and no-store boundary accepted.
 - [x] I1.2 Prior production login/owner admission evidence retained.
 - [x] I1.3 Prior Karda logout/workforce isolation and Arda-to-idle-Karda logout accepted.
-- [ ] I1.4 Fresh authenticated baseline on current releases.
+- [x] I1.4 Both current production releases reached authenticated member pages (2026-11-23 21:15 CST).
 - [ ] I1.5 Full actual tab-visibility and authority-request trace,including repeated switches.
 - [ ] I1.6 Current-release reverse logout and signed-backchannel delivery evidence.
 - [x] I1.7 Arda strict logout-event validation and explicit retryable503 deployed;
@@ -303,3 +303,24 @@ Zero means the measured hosted inventory is empty. This change does not expand
 the retention sweep's deletion scope or backfill all historical workspaces.
 The snapshot tracks existing measurement points; old product code is not
 being rebuilt to add new measurement points.
+
+## I1/I2 production checkpoint - 2026-11-23 21:15 CST
+
+Browser control recovered. Arda v0.13.7 and Karda v0.11.8 authenticated member
+pages loaded and each listed only the owner, whose ordinary role edit control
+was disabled. I1.4 passes for product admission; common central session binding
+was not verified. I2.3 stays open: the designated member was not identifiable
+in the currently visible rosters, and no role or seat change was made.
+
+Karda normal logout returned to its login gate. Idle Arda stayed on its member
+page; a subsequent Arda /auth/session read still reported authenticated:true.
+I1.6 reverse direction did not pass in this run. The signed delivery, effective
+backchannel registration and a shared central session were not captured.
+[Platform726 evidence and trace request](https://github.com/vxture-platform/vxture-platform/issues/726#issuecomment-7102327429).
+No definitive product/platform root cause is assigned yet.
+
+Focused regressions: Arda 11 and Karda 13 passed with no skips, covering product
+admission, delegated revocation and logout; Arda coordinator also verifies that
+unchanged reconnects do not read authority. Source inspection found no Arda
+visibility/focus-triggered authority checks. I1.5 remains open for a real tab
+visibility and network trace. I1 and I2 remain partial.
