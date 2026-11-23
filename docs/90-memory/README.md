@@ -1,5 +1,7 @@
 # Memory
 
+Current scope and resumption rules: [platform integration handoff](20-platform-integration-handoff.md).
+
 Claude's persistent memory for this project is stored outside this repository
 tree, in the user-level Claude Code memory directory:
 

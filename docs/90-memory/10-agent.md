@@ -1,5 +1,10 @@
 # Arda - Agent Entry Point
 
+当前对接范围和恢复条件以[平台对接交接与长期记忆](20-platform-integration-handoff.md)为准。
+先看平台交付，再按批次验收；I1 登录、退出和切换标签页已由用户暂缓。
+下文旧版本、旧业务模块和历史验收记录只作背景，不作为当前任务。
+
+
 > Master entry point for AI assistants (Claude Code, Codex, DeepSeek).
 > Read this first. Follow document links for detail.
 
