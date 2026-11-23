@@ -1,20 +1,24 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { accessState, sessionScope } from "./state";
+import { isWorkspaceAdmin } from "../../entitlement/roles";
 import { productSubscriptionUrl } from "../../entitlement/deeplink";
 import type { SessionUser } from "../api";
 import type { Subscription } from "../../entitlement/types";
 
 const user: SessionUser = { sub: "u1", displayName: "User", username: "user", avatarUrl: "", email: "", emailVerified: false, phone: "", phoneVerified: false, accountStatus: "active", orgId: "o1", orgType: "team", orgName: "Org", workspaceId: "w1", workspaceName: "Workspace", roles: ["workspace:member"], userType: "user", ardaClaim: null };
-const sub: Subscription = { tier: "pro", status: "active", bundled: false };
+const sub: Subscription = { tier: "pro", status: "active", bundled: false, productAssigned: true };
 
-test("active subscription still requires a known usage role", () => {
+test("platform-admitted new members have baseline use without governance role assignment", () => {
   assert.equal(accessState(sub, user), "connected");
-  assert.equal(accessState(sub, { ...user, roles: [] }), "unassigned");
-  assert.equal(accessState(sub, { ...user, roles: ["org:member", "other:owner"] }), "unassigned");
+  assert.equal(accessState(sub, { ...user, roles: [] }), "connected");
+  assert.equal(isWorkspaceAdmin([]), false);
+  assert.equal(accessState(sub, { ...user, roles: ["org:member", "other:owner"] }), "connected");
+  assert.equal(isWorkspaceAdmin(["org:member", "other:owner"]), false);
 });
 
 test("platform assignment denial overrides workspace owner role without becoming a role or billing prompt", () => {
+  assert.equal(accessState({ ...sub, productAssigned: undefined }, user), "access-unavailable");
   assert.equal(accessState({ ...sub, productAssigned: false }, { ...user, roles: ["workspace:owner"] }), "access-unavailable");
 });
 

@@ -1,9 +1,6 @@
 import type { SessionUser } from "../api";
 import { hasProductAccess, type Subscription } from "../../entitlement/types";
 
-/** Existing Arda role vocabulary; org membership alone is not a usage role. */
-const USAGE_ROLES = ["org:owner", "workspace:owner", "workspace:manager", "workspace:member", "workspace:readonly", "workspace:guest"];
-
 export function sessionScope(user: SessionUser): string {
   return JSON.stringify([user.sub, user.orgId, user.workspaceId, [...user.roles].sort(), user.accountStatus]);
 }
@@ -18,7 +15,8 @@ export function accessState(subscription: Subscription, user: SessionUser): "con
     return "access-unavailable";
   }
   // Product assignment denial is not a missing Arda business role or a renewal prompt.
-  if (subscription.productAssigned === false) return "access-unavailable";
-  if (!user.roles.some(role => USAGE_ROLES.includes(role.trim().toLowerCase()))) return "unassigned";
+  if (subscription.productAssigned !== true) return "access-unavailable";
+  // Platform-admitted users have baseline member use. Governance roles only
+  // elevate management; do not manufacture claims or require a second grant.
   return "connected";
 }

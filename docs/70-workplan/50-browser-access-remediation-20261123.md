@@ -112,3 +112,20 @@ No platform configuration or server variables are changed.
 
 Successful migrate now runs the read-only schema/role verification in the same
 approved job, so release readiness does not depend on a separate manual action.
+
+### Baseline member entry follow-up
+
+Owner requires new members to have baseline product use without a manual role
+assignment. Arda had an extra frontend USAGE_ROLES list after platform assignment
+and commercial admission; a roleless authorized member therefore saw unassigned.
+Remove this extra governance-role requirement. Require affirmative productAssigned
+instead; missing/false assignment cannot admit anyone. Platform token roles remain
+unchanged and explicit owner/manager checks still protect management operations.
+Regression covers roleless entry, no admin elevation and unknown/denied assignment.
+Karda already admits on platform access plus subscription; its shell defaults to
+member and separate claim checks protect management. Platform-owned seats remain
+mandatory and cannot be synthesized locally.
+
+Production db-init45104288046 succeeded on a764c21:23 tables,3 enums,service role
+present. v0.13.2 application run45105672438 was cancelled before release to include
+this newly requested entry correction in the next production candidate.
