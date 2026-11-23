@@ -1,3 +1,22 @@
+-- Resolve domain objects before and after the ADR-012 schema move.
+-- Keep the whole increment atomic when replayed by db-init.
+BEGIN;
+SET LOCAL search_path TO catalog, public;
+
+-- An older replay could create an empty public shadow before failing in 0002.
+-- Remove only that empty artifact; refuse to discard any rows.
+DO $$
+BEGIN
+  IF to_regclass('catalog."AccessRequest"') IS NOT NULL
+     AND to_regclass('public."AccessRequest"') IS NOT NULL THEN
+    IF EXISTS (SELECT 1 FROM public."AccessRequest") THEN
+      RAISE EXCEPTION 'Nonempty public AccessRequest shadow requires manual reconciliation';
+    END IF;
+    DROP TABLE public."AccessRequest";
+  END IF;
+END
+$$;
+
 -- 0001_access_request.sql - Sec-BL4 AccessRequest table (idempotent increment).
 --
 -- The AUTHORITATIVE definition (fresh apply + the data-architecture guardrail)
@@ -30,3 +49,5 @@ CREATE TABLE IF NOT EXISTS "AccessRequest" (
 
 CREATE INDEX IF NOT EXISTS "AccessRequest_workspaceId_idx" ON "AccessRequest"("workspaceId");
 CREATE INDEX IF NOT EXISTS "AccessRequest_workspaceId_status_idx" ON "AccessRequest"("workspaceId", "status");
+
+COMMIT;

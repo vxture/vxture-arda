@@ -104,7 +104,8 @@ migrate() {
     echo "[db] applying increment $(basename "$f")..."
     psql_exec < "$f"
   done
-  echo "[db] migrate done (${#files[@]} increment(s)); run 'verify' to confirm"
+  verify
+  echo "[db] migrate done (${#files[@]} increment(s)); schema verification passed"
 }
 
 verify() {

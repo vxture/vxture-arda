@@ -11,8 +11,8 @@ This tracker separates implementation, release and live acceptance.
 | A2 | Durable workspace revision/outbox and atomic session revocation notifications | Commit/publish crash recovery, duplicate/out-of-order events and multi-replica invalidation; no dropped logout on Redis failure | Implemented; isolated PostgreSQL/Redis CI and DDL0004 application pending |
 | A3 | Authenticated same-origin SSE and authoritative reconnect handshake | Session/workspace isolation, expiry, slow consumers, Redis disconnect/reset and missed-event recovery; no tokens in browser | Implemented; real edge and failure acceptance pending |
 | A4 | Browser message coordinator and removal of focus/input permission triggers | 100 ordinary tab switches cause zero session/entitlement reads and zero gate flashes; change bursts coalesce; same-scope drafts persist | Implemented; coordinator tests pass; browser acceptance pending |
-| A5 | Beta deployment and end-to-end acceptance | Real edge streaming, logout to idle browser, reconnect/restart, subscription changes and authorization regression; record actual results | Pending |
-| A6 | Production promotion and delivery | Required human production approval; promote validated commit/image; repeat production checks and record limitations | Pending |
+| A5 | Direct production deployment and end-to-end acceptance | Real edge streaming, logout to idle browser, reconnect/restart, subscription changes and authorization regression; record actual results | Pending |
+| A6 | Production acceptance and delivery | Required human production approval; promote validated commit/image; repeat production checks and record limitations | Pending |
 
 A1 was first prepared while retaining return/activity checks. The combined A1-A4
 candidate now removes those triggers with the event/recovery path in the same
@@ -75,12 +75,11 @@ Existing untracked local design/output files are outside the change and retained
 
 ## Rollout order
 
-Merge only after all required checks pass. Apply DDL0004 to beta via db-init
-migrate pinned to the checked SHA; deploy the candidate beta tag. Perform A5
-with real authenticated sessions before production promotion. Apply the same
-non-destructive increment to production via its human approval gate, then
-promote the accepted image through the separate production release approval.
-Do not deploy code requiring the new table before that environment's migration.
+User explicitly selected direct production deployment and validation instead of
+beta login/acceptance. Merge only after required checks pass. Apply DDL0004
+through pinned production db-init and its human reviewer gate, verify schema,
+then deploy the checked commit through the separate production release gate.
+Do not deploy code requiring the new table before successful migration.
 
 ### A1-A4 CI and first beta migration attempt
 
@@ -95,3 +94,21 @@ release-owned deploy/config required by01-env.sh. This is an Arda workflow defec
 not a platform configuration/variable problem. The follow-up includes the reviewed
 profiles in staging, tests both release and db-init layouts, and guards that
 transfer contract. No beta application tag or production operation was started.
+
+### Migration replay correction
+
+PR235 (23d19e8) includes reviewed profiles in db-init staging; required PR/main
+CI passed. Production migrate45103034254 was human-approved but failed in0002:
+Dataset had already moved to catalog while the historical increment searched
+public. The earlier0001 also created an empty public AccessRequest shadow.
+DDL0004 was not reached; no application release occurred.
+
+The correction resolves domain objects through catalog/public in atomic0001
+and0002 increments. It removes an empty public AccessRequest shadow only when
+catalog already owns the real table, and fails closed if the shadow contains
+rows. Real PostgreSQL regression replays all increments repeatedly against
+split and legacy domain layouts, including the failed-run shadow artifact.
+No platform configuration or server variables are changed.
+
+Successful migrate now runs the read-only schema/role verification in the same
+approved job, so release readiness does not depend on a separate manual action.

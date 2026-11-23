@@ -1,3 +1,8 @@
+-- Resolve domain objects before and after the ADR-012 schema move.
+-- Keep the whole increment atomic when replayed by db-init.
+BEGIN;
+SET LOCAL search_path TO catalog, public;
+
 -- 0002_drop_platform_sentinel.sql - retire the __platform__ workspaceId sentinel
 -- in favor of the explicit axis (rectification C4; data_platform_100 2.3.2).
 --
@@ -58,3 +63,5 @@ BEGIN
   END IF;
 END
 $$;
+
+COMMIT;
