@@ -28,7 +28,7 @@ No grant escalation, silent role restoration or default-role bypass is allowed.
 
 | Product | Production release | Approved application run | Database |
 | --- | --- | --- | --- |
-| Arda | v0.13.6 / df69583 | 45130411354, success | DDL0006, run45174539919, verified |
+| Arda | v0.13.7 / 2827161 | 45176524060, success | DDL0006, run45174539919, verified |
 | Karda | v0.11.8 / 01e7065a | 45119134160, success | DDL0015, run45115340531,41tables |
 
 Canonical origins: https://arda.ruyin.work and https://karda.ruyin.work.
@@ -295,8 +295,8 @@ Published plans, runtime emission and platform configuration did not change.
   receipt. No new metrics, processes or server settings.
 - [x] PR250 merged as 2827161; main CI45174311013 and isolated PostgreSQL recovery tests passed.
 - [x] Production DDL0006 applied and verified in run45174539919.
-- [ ] Arda v0.13.7 production deployment (run45176524060) and public readback.
-- [ ] Live platform storage receipt and recovery acceptance.
+- [x] Arda v0.13.7 production deployment (run45176524060) and public readback (2026-11-23 20:51 CST): 2827161, DB/Redis ready, 7/7 public probes pass.
+- [ ] Live platform storage receipt and recovery acceptance on an isolated workspace; public probes do not exercise storage reporting.
 - [ ] AI attribution, external-call deduplication and monthly reset acceptance.
 
 Zero means the measured hosted inventory is empty. This change does not expand
