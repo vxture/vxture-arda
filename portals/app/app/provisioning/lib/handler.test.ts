@@ -9,10 +9,11 @@ import { PrismaClient } from "../../../generated/prisma/client";
 import { handleProvisioningEvent, applyLifecycle, lockWorkspace } from "./handler";
 import type { ProvisioningPayload } from "./payload";
 import { advanceAccessRevision, publishWorkspaceRevision } from "../../events/outbox";
+import { flushStorageGauges, queueStorageGauge } from "../../usage/lib/gauge";
 
 const databaseUrl = process.env.ARDA_PROVISIONING_TEST_DATABASE_URL;
 test("real PG serializes reversed/duplicate events and versionless notifications without watermark regression",
-  { skip: !databaseUrl }, async () => {
+  { skip: !databaseUrl }, async t => {
   const url = new URL(databaseUrl!);
   assert.ok(["127.0.0.1", "localhost"].includes(url.hostname));
   assert.equal(url.pathname, "/arda_provisioning_test");
@@ -26,17 +27,24 @@ test("real PG serializes reversed/duplicate events and versionless notifications
     // Each file gets a fresh public search_path, as separate psql invocations do.
     await pg.query("CREATE ROLE arda_svc NOLOGIN");
     const increments = ["0001_access_request.sql", "0002_drop_platform_sentinel.sql",
-      "0003_schema_split.sql", "0004_access_revision.sql", "0005_product_roles.sql"];
+      "0003_schema_split.sql", "0004_access_revision.sql", "0005_product_roles.sql", "0006_storage_gauge.sql"];
     const replay = async () => {
       for (const name of increments) {
         await pg.query("SET search_path TO public");
         await pg.query(await readFile(new URL(`../../../../../deploy/database/ddl/incr/${name}`, import.meta.url), "utf8"));
       }
       const count = await pg.query("SELECT count(*)::int AS n FROM pg_tables WHERE schemaname IN ('public','catalog','vx_provision','local_usage','local_authz')");
-      assert.equal(count.rows[0].n, 30, "replay must not create public shadow tables");
+      assert.equal(count.rows[0].n, 31, "replay must not create public shadow tables");
       assert.equal((await pg.query(`SELECT to_regclass('public."AccessRequest"') AS shadow`)).rows[0].shadow, null);
     };
+    // Simulate the 30-table deployment before the additive gauge increment.
+    await pg.query("DROP TABLE local_usage.storage_gauge");
     await replay();
+    const grants = await pg.query(`SELECT
+      has_column_privilege('arda_svc', 'local_usage.storage_gauge', 'value', 'UPDATE') AS writable,
+      has_column_privilege('arda_svc', 'local_usage.storage_gauge', 'workspaceId', 'UPDATE') AS anchor_write,
+      has_table_privilege('arda_svc', 'local_usage.storage_gauge', 'DELETE') AS removable`);
+    assert.deepEqual(grants.rows[0], { writable: true, anchor_write: false, removable: false });
     await pg.query('CREATE TABLE public."AccessRequest" (LIKE catalog."AccessRequest" INCLUDING ALL)');
     await replay();
     await pg.query(`CREATE TABLE public."AccessRequest" (id TEXT); INSERT INTO public."AccessRequest" VALUES ('must-preserve')`);
@@ -102,6 +110,58 @@ test("real PG serializes reversed/duplicate events and versionless notifications
     assert.equal((await db.workspaceRef.findUnique({ where: { id: "w1" } }))!.status, "provisioned");
     await assert.rejects(handleProvisioningEvent({ ...event(7), tenant_id: "other" }, db), /tenant_conflict/);
     assert.equal((await db.provisionSeq.findFirst())!.lastSeq, 6);
+    await t.test("storage gauge survives rollback, lost response and replay of a zero observation", async () => {
+      const workspaceId = "gauge-workspace";
+      const where = { workspaceId };
+      const snapshot = () => db.storageGauge.findUniqueOrThrow({ where });
+      const receipt = (row: Awaited<ReturnType<typeof snapshot>>, applied = true) => ({
+        workspace_id: row.workspaceId, product: "arda", metric: "storage.bytes",
+        value: row.value.toString(), observed_at: row.observedAt.toISOString(), applied,
+      });
+      await assert.rejects(db.$transaction(async tx => {
+        await queueStorageGauge(tx, workspaceId);
+        throw new Error("abort-storage");
+      }), /abort-storage/);
+      assert.equal(await db.storageGauge.findUnique({ where }), null);
+
+      await db.$transaction(async tx => {
+        await tx.tag.create({ data: { name: "hosted", workspaceId } });
+        await queueStorageGauge(tx, workspaceId);
+      });
+      const original = await snapshot();
+      assert.ok(original.value > 0n);
+      await flushStorageGauges(db, async row => {
+        assert.equal(row.observedAt.getTime(), original.observedAt.getTime());
+        await db.$transaction(async tx => {
+          await tx.tag.deleteMany({ where });
+          await queueStorageGauge(tx, workspaceId);
+        });
+        return receipt(original);
+      });
+      const zero = await snapshot();
+      assert.equal(zero.value, 0n);
+      assert.ok(zero.observedAt > original.observedAt);
+      assert.ok(zero.retryAt, "late acknowledgement must not clear zero");
+
+      const failed = await flushStorageGauges(db, async () => { throw new Error("response-lost"); });
+      assert.equal(failed.failed, 1);
+      const pending = await snapshot();
+      assert.ok(pending.retryAt);
+      const restarted = new PrismaClient({ adapter: new PrismaPg({ connectionString: databaseUrl }) });
+      try {
+        const whenDue = new Date(pending.retryAt.getTime() + 1);
+        await flushStorageGauges(restarted, async () => ({ ...receipt(zero), value: "1" }), whenDue);
+        assert.ok((await snapshot()).retryAt, "wrong receipt must not acknowledge the observation");
+        const nextDue = (await snapshot()).retryAt!;
+        const retried = await flushStorageGauges(restarted, async row => {
+          assert.equal(row.observedAt.getTime(), zero.observedAt.getTime());
+          assert.equal(row.value, 0n);
+          return receipt(zero, false);
+        }, new Date(nextDue.getTime() + 1));
+        assert.equal(retried.failed, 0);
+        assert.equal((await snapshot()).retryAt, null);
+      } finally { await restarted.$disconnect(); }
+    });
   } finally {
     await db.$disconnect();
     await pg.query('DROP SCHEMA IF EXISTS catalog CASCADE; DROP SCHEMA IF EXISTS vx_provision CASCADE; DROP SCHEMA IF EXISTS local_usage CASCADE; DROP SCHEMA IF EXISTS local_authz CASCADE');

@@ -15,7 +15,7 @@ import { unseal, type SealedSecret } from "../lib/seal";
 import { getEntitlementResolver } from "../entitlement/resolver";
 import { METRICS } from "../entitlement/quota";
 import { recordUsage } from "../usage/lib/buffer";
-import { reportStorageGauge } from "../usage/lib/gauge";
+import { queueStorageGauge } from "../usage/lib/gauge";
 import { getConnector } from "../(app)/sources/connectors";
 import type { QualityCheckSpec } from "../(app)/sources/connectors/types";
 import { datasetCode, planSync } from "../(app)/sources/sync-core";
@@ -57,7 +57,7 @@ export async function refreshAll(): Promise<RefreshResult> {
 
     result.sourcesSynced += await syncWorkspaceSources(workspaceId, result);
     result.checksRun += await runWorkspaceChecksScheduled(workspaceId);
-    await reportStorageGauge(workspaceId);
+    await prisma.$transaction(tx => queueStorageGauge(tx, workspaceId));
   }
   return result;
 }
@@ -121,6 +121,7 @@ async function syncWorkspaceSources(workspaceId: string, result: RefreshResult):
             skippedByQuota: plan.skippedByQuota,
           },
         });
+        await queueStorageGauge(tx, workspaceId);
       });
       synced += 1;
     } catch (err) {
