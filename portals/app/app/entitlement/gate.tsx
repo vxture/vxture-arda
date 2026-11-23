@@ -18,6 +18,7 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [entered, setEntered] = useState(false);
   const lock = useRef(false);
+  const roleFingerprint = useRef<string | null>(null);
   const controller = useRef<AbortController | null>(null);
   const user = account?.session?.authenticated ? account.session.user : undefined;
 
@@ -33,6 +34,11 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
       const next = await res.json() as Subscription;
       if (!next || !Object.hasOwn(next, "status") || (next.status !== null && !(SUBSCRIPTION_STATUSES as readonly string[]).includes(next.status))) throw new Error("invalid entitlement");
       if (!abort.signal.aborted) {
+        const fingerprint=JSON.stringify([...(next.productAccess?.roles??[])].sort())+JSON.stringify([...(next.productAccess?.permissions??[])].sort());
+        if(roleFingerprint.current!==null&&roleFingerprint.current!==fingerprint){
+          setEntered(false); setSubscription(next); window.location.reload(); return;
+        }
+        roleFingerprint.current=fingerprint;
         setSubscription(next);
         if (accessState(next, user) === "connected") setEntered(true);
       }

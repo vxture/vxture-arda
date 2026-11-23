@@ -11,8 +11,9 @@ export interface AuthorizedRoster {
 class RosterChanged extends Error {}
 
 /** Read a complete live snapshot, never a cached list of historical local roles.
- * A snapshot supports member management; per-request product-access remains
- * the authority for use and revocation. No roles or seats are written here. */
+ * Browser requests use product-access. Received OBO tickets use this current
+ * eligible roster through workspace service tickets (RP re-exchange is invalid).
+ * No snapshot is reused as a permanent allow-list; no roles/seats are written. */
 export async function authorizedRoster(context: PlatformContext,
   request: typeof platformRequest = platformRequest): Promise<AuthorizedRoster> {
   if (!context.orgId || !context.workspaceId) throw new Error("roster_context_required");

@@ -71,8 +71,12 @@ Browser-selected org/workspace identifiers are not accepted as authority.
 
 User-delegated S2S/OBO calls check live platform assignment and existing local
 permissions, without creating a default role. Reads, writes and AI are distinct.
-If downstream OBO ticket exchange is unavailable, calls fail closed; this chain
-still needs live contract acceptance. Independent workspace service credentials
+Received OBO tickets cannot be re-exchanged as RP tokens: platform main
+resolveOboContext requires active_workspace, while OBO tickets carry workspace_id.
+Products therefore use their existing workspace service-ticket roster reader to
+check the verified OBO subject against current eligible assignments. No chained
+user exchange, platform code or server variable change is required. Authority
+outage still denies the call; real direct-OBO acceptance remains pending. Independent workspace service credentials
 and API keys keep their existing machine grants and subscription gates; they do
 not act as a member's product role.
 
@@ -100,3 +104,10 @@ Live acceptance still needs authenticated sessions and designated test members;
 no arbitrary customer role/seat mutation is authorized by this implementation.
 Immediate idle-browser seat revocation remains a platform event-contract gap,
 not a reason to restore focus polling or the full-screen tab-switch splash.
+
+## Permission-message UI handling
+
+Arda reloads server-rendered business content only after the authoritative product
+role/permission fingerprint actually changes. Karda remounts data/header state
+after a successfully checked context/revision change. Same-version transport
+heartbeats and browser tab switches do not request business authorization.
