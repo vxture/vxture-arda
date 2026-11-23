@@ -133,15 +133,20 @@ New authorized members receive a persisted readonly assignment once; existing
 roleless/inactive members stay denied. Owner transfer/bootstrap is explicit and
 audited. Platform authorization revocation overrides all retained local roles.
 See [R1-R5 delivery tracker](../70-workplan/60-explicit-product-roles-20261123.md).
-Production migration and application deployment remain pending. Do not rerun the
+Production migration and application deployment succeeded. Do not rerun the
 cancelled implicit-member candidates or modify platform sources/variables.
 
 Implementation merged: Arda PR241/19b9865 and Karda PR259/f37a421; both full main
-CI runs pass. DB jobs45115384853 (Arda) and45115340531 (Karda) await human review.
-Do not cut role-dependent app releases until the correct DB job succeeds.
-Continue from60-explicit-product-roles-20261123.md; current prod remains unchanged.
+CI runs pass. DB jobs45115384853 (Arda) and45115340531 (Karda) succeeded.
+Continue from60-explicit-product-roles-20261123.md for remaining live acceptance.
 
 Both production DB jobs now SUCCEEDED after owner approval: Arda45115384853
-(30tables/3enums),Karda45115340531(41tables). Application candidates are
-Arda v0.13.5/run45119134449 and Karda v0.11.8/run45119134160; approval and live
-acceptance remain separate. See the roles delivery tracker for exact SHAs.
+(30tables/3enums),Karda45115340531(41tables). Application deployments succeeded:
+Arda v0.13.5/e3b9802/run45119134449 and Karda v0.11.8/01e7065a/run45119134160.
+Canonical-domain readiness confirms the releases and healthy dependencies.
+Anonymous members APIs and supported business APIs reject unauthenticated access.
+Owner login restored; both members pages show the authorized product owner and
+disable ordinary role editing of that owner. No manual bootstrap submitted.
+Tab-switch inputs preserved Arda's page; full visibility trace is still open.
+Synthetic-member/roleless/revocation/notification/OBO acceptance remains pending.
+No real member/owner/seat changes. Platform731/726 and Atlas147 remain open.
