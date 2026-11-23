@@ -28,7 +28,7 @@ No grant escalation, silent role restoration or default-role bypass is allowed.
 
 | Product | Production release | Approved application run | Database |
 | --- | --- | --- | --- |
-| Arda | v0.13.5 / e3b9802 | 45119134449, success | DDL0005, run45115384853,30tables/3enums |
+| Arda | v0.13.6 / df69583 | 45130411354, success | DDL0005, run45115384853,30tables/3enums |
 | Karda | v0.11.8 / 01e7065a | 45119134160, success | DDL0015, run45115340531,41tables |
 
 Canonical origins: https://arda.ruyin.work and https://karda.ruyin.work.
@@ -68,7 +68,7 @@ A browser/member/platform dependency does not block independent work.
 - [ ] I1.4 Fresh authenticated baseline on current releases.
 - [ ] I1.5 Full actual tab-visibility and authority-request trace,including repeated switches.
 - [ ] I1.6 Current-release reverse logout and signed-backchannel delivery evidence.
-- [ ] I1.7 Arda strict logout-event validation and explicit retryable503 deployed;
+- [x] I1.7 Arda strict logout-event validation and explicit retryable503 deployed;
   Karda equivalent behavior retained. Implementation/test progress below is
   separate from production acceptance.
 - [x] I2.1 Explicit role storage/enforcement deployed;owner roster/protection accepted.
@@ -216,3 +216,22 @@ report outbox. Karda has a persistent gauge snapshot/retry implementation.
 I5 must decide the generic reconstruction-safe gauge/report recovery contract
 before calling cross-product gauge recovery complete; no old storage feature is
 being rebuilt to manufacture that evidence.
+
+## I1 production receipt - 2026-11-23 15:34 CST
+
+Arda PR246 merged df695838cb0cc2034b00310e199274607174248f.
+Main CI45130158489 and secret scan45130158505 passed. Owner approved production
+run45130411354; v0.13.6 deployed successfully. Canonical readiness returns
+v0.13.6/df69583,production,db/redis ok. All7 anonymous probes passed,including
+missing-token backchannel400 with no-store. Retryable503 and malformed verified
+claims are covered by the merged handler regressions,not live signed delivery.
+Karda PR264 merged929f6d20c1553e5d5c96dc8c0c3448afd16a741f;main CI45130112257
+and secret scan45130112250 passed. No Karda application deployment was needed;
+v0.11.8/01e7065a readiness and all7 anonymous probes passed at the same checkpoint.
+I1.7 implementation/deployment is complete. Earlier candidate-only paragraphs
+are historical checkpoints. I1.4-I1.6 and overall I1 remain PARTIAL: authenticated
+baseline,tab/network trace and reverse/signed-delivery acceptance are not done.
+Browser access remains unavailable;no customer permissions were changed.
+Next: I2 resolve the designated member's actual subject/workspace through the
+supported roster,then isolated role acceptance;I3 awaits reliable platform events.
+No platform code,server variable,DDL or customer subscription change occurred.
