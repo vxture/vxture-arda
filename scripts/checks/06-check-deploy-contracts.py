@@ -215,6 +215,7 @@ CHECKS: list[tuple[str, Path, list[str]]] = [
             "inputs.confirm != 'yes'",
             "environment: ${{ inputs.environment }}",
             "database/apply.sh",
+              "deploy/lib deploy/database deploy/config",
         ],
     ),
     (

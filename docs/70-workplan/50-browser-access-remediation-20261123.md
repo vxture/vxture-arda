@@ -81,3 +81,17 @@ with real authenticated sessions before production promotion. Apply the same
 non-destructive increment to production via its human approval gate, then
 promote the accepted image through the separate production release approval.
 Do not deploy code requiring the new table before that environment's migration.
+
+### A1-A4 CI and first beta migration attempt
+
+PR234 merged as c56587d38d7c134db85b4ee523b43f6de6bf8fcc. PR CI45102164283
+and main CI45102335739 pass. CI:87 tests,86 passed,0 failed,1 pre-existing
+hosted-storage integration test skipped. The new real Redis and PostgreSQL
+checks ran and passed; they are not part of that skip.
+
+Beta db-init45102428117 failed before SQL execution: Missing reviewed integration
+profile. The workflow staged deploy/lib and deploy/database but omitted the
+release-owned deploy/config required by01-env.sh. This is an Arda workflow defect,
+not a platform configuration/variable problem. The follow-up includes the reviewed
+profiles in staging, tests both release and db-init layouts, and guards that
+transfer contract. No beta application tag or production operation was started.

@@ -137,7 +137,7 @@ jobs:
           ssh $ssh_opts "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$staging'"
           # shellcheck disable=SC2086
           rsync -az --delete -e "ssh $ssh_opts" \
-            deploy/lib deploy/database \
+            deploy/lib deploy/database deploy/config \
             "$DEPLOY_USER@$DEPLOY_HOST:$staging/"
 
           # The service-role password rides stdin, never argv on the host.
