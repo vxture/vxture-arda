@@ -1,7 +1,8 @@
 # ADR-014: Event-driven browser access synchronization
 
 Date: 2026-11-22
-Status: Architecture baseline; implementation and live acceptance pending.
+Status: Architecture baseline; implementation candidate prepared2026-11-23;
+CI, migration, beta and production acceptance tracked separately in workplan50.
 Scope: Arda. No platform source, configuration or production changes in this ADR.
 
 ## Problem and evidence
@@ -245,3 +246,27 @@ mechanism; this ADR does not remove it. Heartbeats, delivery retries, expiry and
 reconciliation timers have different purposes from browser entitlement polling.
 Immediate UI convergence is conditional on upstream event coverage and healthy
 delivery. Missing upstream events remain an explicit gap, not a solved guarantee.
+
+## Implementation refinement - 2026-11-23
+
+The first candidate uses a durable latest-version snapshot rather than retained
+per-browser event replay. These messages only invalidate authority; replaying
+obsolete permission decisions is unnecessary. PostgreSQL access_revision stores
+the monotonic workspace generation and pending-publication marker in the same
+transaction as lifecycle/delivery state. Redis atomically publishes newer versions;
+missing Redis keys recover from that durable snapshot. Every reconnect subscribes
+before rereading the RP session and current workspace version. A new browser,
+changed snapshot/context or observed reset causes authoritative synchronization.
+Revoked/expired sessions cannot reopen a stream. An unchanged reconnect does not
+repeat C2. Token refresh closes the old stream so the next handshake derives the
+new context. No browser cursor, tenant or session input expands the subscription.
+
+This replaces the proposed retained Redis stream/cursor/epoch mechanism for the
+first implementation. Redis restart repairs from PostgreSQL; restoring PostgreSQL
+to older data while retaining a newer Redis instance requires coordinated cache
+reset and is not claimed as automatically handled by this candidate.
+
+Rollout uses checked beta/production tags after controlled DDL0004 application,
+without adding a server-variable feature switch. Production remains unchanged
+until the required human database/release approvals. Exact acceptance and remaining
+upstream notification limits are in70-workplan/50-browser-access-remediation-20261123.md.

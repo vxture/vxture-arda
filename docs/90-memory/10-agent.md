@@ -59,6 +59,15 @@ it does not own or run nginx.
 
 ## Current State
 
+Active browser-access remediation2026-11-23: see
+`../70-workplan/50-browser-access-remediation-20261123.md` (A1-A6).
+ADR-014 implementation candidate connects durable workspace invalidation,
+atomic logout notifications, authenticated SSE and browser coordination.
+Focus/visibility/input authority triggers are removed in the combined candidate.
+This is not yet deployed or accepted. DDL0004 must precede deployment in each
+environment; production database and application approvals remain human-only.
+No platform source, server variables, routes or grants may be changed.
+
 Arda is in active shell development. The OIDC RP, subscription gate, and
 entitlement resolver are implemented. The `arda` claim from accounts.vxture.com
 is read at session creation; a `MockEntitlementResolver` covers local dev and

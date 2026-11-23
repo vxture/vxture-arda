@@ -7,4 +7,6 @@ export async function register(): Promise<void> {
   startProvisioningReconciliation();
   const { startUsageWorker } = await import("./app/usage/lib/worker");
   startUsageWorker();
+  const { startAccessOutbox } = await import("./app/events/outbox");
+  startAccessOutbox();
 }

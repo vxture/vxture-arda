@@ -43,7 +43,10 @@ export function EntitlementGate({ children }: { children: ReactNode }) {
   useEffect(() => { void check(); return () => { controller.current?.abort(); lock.current = false; }; }, [check, account?.revision]);
 
   const state = failed || !subscription || !user ? "access-unavailable" : accessState(subscription, user);
-  const connected = !checking && state === "connected";
+  // A repeated check is not a new entry. Keep this scope's mounted work visible
+  // until an authoritative result arrives. Errors/denials below still block;
+  // AccountGate independently invalidates work on identity/scope changes.
+  const connected = state === "connected" && (entered || !checking);
   return <>
     {entered && <div hidden={!connected} inert={!connected}><SubscriptionContext.Provider value={subscription}>{children}</SubscriptionContext.Provider></div>}
     {!connected && <EntryScreen state={checking || state === "connected" ? "checking-access" : state} user={user}

@@ -5,7 +5,7 @@ import { hasProductAccess, type Subscription } from "../../entitlement/types";
 const USAGE_ROLES = ["org:owner", "workspace:owner", "workspace:manager", "workspace:member", "workspace:readonly", "workspace:guest"];
 
 export function sessionScope(user: SessionUser): string {
-  return JSON.stringify([user.sub, user.orgId, user.workspaceId, [...user.roles].sort()]);
+  return JSON.stringify([user.sub, user.orgId, user.workspaceId, [...user.roles].sort(), user.accountStatus]);
 }
 
 export function accessState(subscription: Subscription, user: SessionUser): "connected" | "subscription" | "expired" | "unassigned" | "access-unavailable" {

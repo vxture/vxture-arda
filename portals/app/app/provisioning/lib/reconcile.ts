@@ -4,6 +4,7 @@ import { getEntitlementResolver } from "../../entitlement/resolver";
 import { getProvisioningReadClient } from "../../platform/provisioning-read";
 import { acknowledgeProvisioning } from "./ack";
 import { applyLifecycle, lockWorkspace } from "./handler";
+import { tryPublishWorkspaceRevision } from "../../events/outbox";
 
 const identifier = z.string().min(1).max(200).regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]*$/);
 export const reconciliationPage = z.object({
@@ -25,6 +26,7 @@ async function apply(item: Item): Promise<void> {
       seq: item.seq, state });
   }, { timeout: 15_000 });
   getEntitlementResolver().invalidateCache(item.workspace_id);
+  await tryPublishWorkspaceRevision(item.workspace_id);
   if (state === "provisioned") await acknowledgeProvisioning(item.workspace_id, item.seq);
 }
 

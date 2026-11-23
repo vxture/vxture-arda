@@ -483,6 +483,14 @@ CREATE INDEX "app_instance_status_idx" ON "vx_provision"."app_instance"("status"
 -- CreateIndex
 CREATE INDEX "webhook_delivery_workspaceId_idx" ON "vx_provision"."webhook_delivery"("workspaceId");
 
+CREATE TABLE "vx_provision"."access_revision" (
+  "workspaceId" TEXT NOT NULL,
+  "generation" BIGINT NOT NULL DEFAULT 1 CHECK ("generation" > 0),
+  "publishedGeneration" BIGINT NOT NULL DEFAULT 0 CHECK ("publishedGeneration" >= 0 AND "publishedGeneration" <= "generation"),
+  "updatedAt" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+  CONSTRAINT "access_revision_pkey" PRIMARY KEY ("workspaceId")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "TemplateVersion_templateId_version_key" ON "TemplateVersion"("templateId", "version");
 

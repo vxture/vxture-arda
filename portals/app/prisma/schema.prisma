@@ -506,6 +506,16 @@ model TemplateVersion {
 /// idempotencyKey: caller-supplied; replayed platform calls return replayed:true.
 /// flushed: false until the platform consume call returns 200 or 409 (quota
 /// exhausted counts as consumed). Failed calls remain flushed=false for retry.
+model AccessRevision {
+  workspaceId         String   @id
+  generation          BigInt   @default(1)
+  publishedGeneration BigInt   @default(0)
+  updatedAt           DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("access_revision")
+  @@schema("vx_provision")
+}
+
 model UsageRaw {
   id             String   @id @default(cuid())
   workspaceId    String

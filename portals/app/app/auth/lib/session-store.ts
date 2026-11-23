@@ -12,6 +12,7 @@ import { randomToken } from "./pkce";
 import { setTimeout as delay } from "node:timers/promises";
 import type { OidcConfig } from "./config";
 import type { ArdaClaim } from "../../entitlement/types";
+import { eventChannel, sessionTarget } from "../../events/bus";
 
 export interface AuthRequest {
   codeVerifier: string;
@@ -60,6 +61,11 @@ export interface TokenBundle {
 }
 
 let client: Redis | null = null;
+
+export async function closeSessionStore(): Promise<void> {
+  const current = client; client = null;
+  if (current) await current.quit();
+}
 
 function redis(cfg: OidcConfig): Redis {
   if (!client) {
@@ -157,8 +163,10 @@ export async function putRotatedSession(cfg: OidcConfig, rpsid: string,
   const saved = await redis(cfg).eval(
     "if redis.call('exists', KEYS[1]) == 0 or redis.call('exists', KEYS[2]) == 0 then return 0 end "
     + "redis.call('set', KEYS[1], ARGV[1], 'KEEPTTL', 'XX'); "
-    + "redis.call('set', KEYS[2], ARGV[2], 'KEEPTTL', 'XX'); return 1",
-    2, sessKey(rpsid), tokKey(rpsid), JSON.stringify(identity), JSON.stringify(tokens));
+    + "redis.call('set', KEYS[2], ARGV[2], 'KEEPTTL', 'XX'); "
+    + "redis.call('publish',ARGV[3],ARGV[4]); return 1",
+    2, sessKey(rpsid), tokKey(rpsid), JSON.stringify(identity), JSON.stringify(tokens),
+    eventChannel(cfg.clientId), JSON.stringify({ target: sessionTarget(rpsid), kind: "refresh" }));
   if (saved !== 1) throw new Error("session_ended_during_update");
 }
 
@@ -171,27 +179,21 @@ export async function putIdentity(cfg: OidcConfig, rpsid: string, identity: Iden
 
 /** Destroy a single RP session and drop it from its sid index. */
 export async function destroySession(cfg: OidcConfig, rpsid: string): Promise<void> {
-  const r = redis(cfg);
-  const identity = await getIdentity(cfg, rpsid);
-  const pipe = r.multi().del(sessKey(rpsid)).del(tokKey(rpsid));
-  if (identity?.sid) pipe.srem(sidKey(identity.sid), rpsid);
-  await pipe.exec();
+  await redis(cfg).eval(
+    "local raw=redis.call('get',KEYS[1]); "
+    + "if raw then local ok,s=pcall(cjson.decode,raw); "
+    + "if ok and s.sid then redis.call('srem','sid:'..s.sid,ARGV[1]) end end; "
+    + "redis.call('del',KEYS[1],KEYS[2]); redis.call('publish',ARGV[2],ARGV[3]); return 1",
+    2, sessKey(rpsid), tokKey(rpsid), rpsid, eventChannel(cfg.clientId),
+    JSON.stringify({ target: sessionTarget(rpsid), kind: "revoked" }));
 }
 
 /** Destroy every RP session for a central sid (back-channel logout). */
 export async function destroyBySid(cfg: OidcConfig, sid: string): Promise<number> {
-  const r = redis(cfg);
-  const rpsids = await r.smembers(sidKey(sid));
-  if (rpsids.length === 0) {
-    await r.del(sidKey(sid));
-    return 0;
-  }
-  const pipe = r.multi();
-  for (const rpsid of rpsids) {
-    pipe.del(sessKey(rpsid));
-    pipe.del(tokKey(rpsid));
-  }
-  pipe.del(sidKey(sid));
-  await pipe.exec();
-  return rpsids.length;
+  return Number(await redis(cfg).eval(
+    "local ids=redis.call('smembers',KEYS[1]); for _,id in ipairs(ids) do "
+    + "redis.call('del','rpsess:'..id,'rptok:'..id); "
+    + "redis.call('publish',ARGV[1],cjson.encode({target='session:'..id,kind='revoked'})); end; "
+    + "redis.call('del',KEYS[1]); return #ids",
+    1, sidKey(sid), eventChannel(cfg.clientId)));
 }
