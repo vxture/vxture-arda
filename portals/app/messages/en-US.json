@@ -208,7 +208,7 @@
     "adminFlows": "Flow Configuration",
     "adminDict": "Parameters & Dictionary",
     "adminNotif": "Notifications & Alerts",
-    "adminPlatform": "Platform Console",
+    "adminPlatform": "Product members",
     "storIngest": "Data Ingest",
     "storTables": "Table Management",
     "storJobs": "Ingest Jobs"
