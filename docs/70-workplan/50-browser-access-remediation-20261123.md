@@ -109,3 +109,6 @@ catalog already owns the real table, and fails closed if the shadow contains
 rows. Real PostgreSQL regression replays all increments repeatedly against
 split and legacy domain layouts, including the failed-run shadow artifact.
 No platform configuration or server variables are changed.
+
+Successful migrate now runs the read-only schema/role verification in the same
+approved job, so release readiness does not depend on a separate manual action.
