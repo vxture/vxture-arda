@@ -49,7 +49,7 @@ Historical financial assumptions are not a promise for the reconstructed apps.
 | I2 | IN PROGRESS - PARTIAL | Explicit persisted roles deployed;owner roster/protection pass;test member display ID supplied | Resolve actual subject/workspace;readonly/none/guest/revoke/regrant live tests;no real-owner transfer |
 | I3 | IN PROGRESS - EXTERNAL BLOCK | Revision/outbox/SSE deployed;anonymous/cross-origin rejection and protocol regressions pass | Live role-event/reconnect/multi-replica trace and platform731/726 delivery contract |
 | I4 | EXTERNAL BLOCK | Product release profiles and canonical readiness pass;latest legacy-host failure recorded | Managed old-host retirement/no redirect via721/727;live registry read |
-| I5 | IN PROGRESS - PARTIAL | Four public tiers/annual10months/Free retirement,C2 admission,Arda single-call and Karda ingest evidence retained | Pool/reset/gauge/receipt/dedup/lifecycle/ACK/OBO live acceptance;platform715/717/718/719/720/728 |
+| I5 | IN PROGRESS - PARTIAL | Four public tiers/annual10months/Free retirement,C2 admission,Arda single-call and Karda ingest evidence retained | Minimal metering acceptance; separate subscription lifecycle/ACK and delegated-access checks |
 | I6 | NOT COMPLETE | Scope/evidence/issue register exists | Final acceptance or explicit external-blocked handoff after I1-I5 |
 
 I0 -> I1 -> I2 -> I3 is the main order. Independent I4/I5 reads may run earlier.
@@ -80,9 +80,10 @@ A browser/member/platform dependency does not block independent work.
 - [ ] I4.2 Legacy hosts retired via managed configuration;registry/callback set re-read.
 - [x] I5.1 Approved four public tiers,annual10months,Enterprise contact sales and Free retirement.
 - [x] I5.2 Existing production C2 and isolated usage evidence recorded.
-- [ ] I5.3 Remaining generic quota/reset/gauge/receipt/ACK/OBO contracts and live acceptance.
+- [ ] I5.3 Subscription/entitlement lifecycle, ACK and delegated-access acceptance (separate from metering).
 - [x] I5.4 Cross-product source audit of gauge durability and recovery completed.
-- [ ] I5.5 Product-owned durable gauge recovery corrections and isolated acceptance.
+- [ ] I5.5 Implement and accept the minimal metering contract below.
+- [x] I5.6 Record retained meters, capacity limits and legacy compatibility.
 - [ ] I6.1 Final reconstruction handoff with accepted/blocked/replaced dispositions.
 
 ## Acceptance matrix
@@ -237,7 +238,7 @@ Browser access remains unavailable;no customer permissions were changed.
 Next: I2 resolve the designated member's actual subject/workspace through the
 supported roster,then isolated role acceptance;I3 awaits reliable platform events.
 No platform code,server variable,DDL or customer subscription change occurred.
-## I5.4 gauge recovery audit and I5.5 implementation batch
+## I5.4 gauge recovery audit (historical findings)
 
 Source audit completed;not live platform receipt or fault-injection acceptance.
 Browser control was rechecked after I1.7 and still reports local browser access
@@ -252,24 +253,36 @@ unavailable. I1.4-I1.6 and I2.3 remain open;no repeated login is requested.
 | Ordering | application timestamp before query;no durable monotonic revision | DB clock plus previous observation+1ms under workspace lock | Require monotonic observations across replicas and restart |
 | Retry exhaustion | no durable retry state | background selects attempts<10;pending survives but automatic selection stops | Specify observable exhaustion and supported replay;not unlimited success claim |
 
-Implementation order for I5.5:
-1. Arda durable per-workspace absolute snapshot and pending state,including zero.
-   Commit snapshot with authoritative inventory change;retain trusted tenant anchor.
-   Keep generic delivery adapter independent of old source/quality operations.
-2. Reuse the exact immutable observation on ambiguous response/retry;validate
-   scope/value/time receipt before clearing pending. A newer snapshot must not
-   be cleared by an older in-flight response. Never send storage through consume.
-3. Independent bounded fair recovery,backoff and explicit exhausted-state
-   visibility/replay for both products. Reuse existing managed configuration;
-   do not add server-variable edits or browser authority polling.
-4. Isolated tests: commit/send crash,remote apply with lost response,restart with
-   no subsequent writes,zero after delete,concurrent observations,stale ACK,
-   exhausted replay and workspace isolation. Any schema increment needs normal
-   DDL pipeline and owner production approval;no schema operation executed here.
-5. Only after source/isolated checks pass,verify a supported platform receipt and
-   shared C2 attribution. Platform728 owns its receipt/pool contract evidence;
-   product durable retry is not a platform-code request or a reason to alter seats.
+## I5.5 minimum metering contract (current)
 
-Old business storage implementation is not being rebuilt. This batch preserves
-only generic accounting/recovery foundations for reconstruction. I5.4 is COMPLETE;
-I5.5 is NOT IMPLEMENTED and overall I5 remains PARTIAL.
+| Metric | Applies to | Required behavior |
+| --- | --- | --- |
+| storage.bytes | Arda and Karda | Each product reports its current hosted bytes; platform owns the shared balance. Keep one pending latest observation per workspace/product, retry the same observation after transient failure, and clear only on matching acknowledgement. A confirmed deletion can report zero. External source capacity is excluded. |
+| ai.credit | Arda and Karda | Charge for actual inference only. Platform converts provider usage into credits; products read the platform balance and do not submit a second credit charge. |
+| service.api.call | Arda | Count one eligible external service invocation under the existing contract. Use its stable invocation key on retry. Internal UI and health requests are not billable service calls. |
+
+Seats, datasets, data connections, published services and knowledge bases are
+capacity limits, not consumption events. Read entitlement limits and count
+current resources at admission. New Karda plans retain no content-count cap;
+respect a cap when explicitly present on an existing version.
+
+Quality-check runs and Karda ingest/search/ask counts are excluded from the
+reconstruction metering target. Keep operational statistics local if needed.
+Arda's published versions include quality-check allowances. Existing plan
+versions, usage records, limits and report paths retain their current behavior
+until the managed replacement is approved and verified. Do not disable Karda
+legacy ingest reporting in the current runtime as a side effect of this scope
+change. Reconcile plan/catalog dependencies before retiring legacy emission.
+
+Acceptance is limited to: hosted-byte decrease/zero and restart retry without
+another user action; AI attribution with no second charge; external-call
+retry without a second count; and the platform's monthly reset for monthly
+allowances on annual plans. Use the existing delivery path and platform
+configuration. No new generic queue, operator console, metering dashboard or
+exhausted-state workflow is required in this batch. Retain existing bounded
+recovery and verify that the latest unsent storage value is not discarded.
+Subscription lifecycle/ACK and delegated authorization stay in I5.3 because
+they are integration obligations, not additional consumption metrics.
+
+I5.6 scope recorded. I5.5 implementation and live acceptance remain open.
+Published plans, runtime emission and platform configuration did not change.
