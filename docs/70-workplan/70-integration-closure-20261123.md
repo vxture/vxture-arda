@@ -81,6 +81,8 @@ A browser/member/platform dependency does not block independent work.
 - [x] I5.1 Approved four public tiers,annual10months,Enterprise contact sales and Free retirement.
 - [x] I5.2 Existing production C2 and isolated usage evidence recorded.
 - [ ] I5.3 Remaining generic quota/reset/gauge/receipt/ACK/OBO contracts and live acceptance.
+- [x] I5.4 Cross-product source audit of gauge durability and recovery completed.
+- [ ] I5.5 Product-owned durable gauge recovery corrections and isolated acceptance.
 - [ ] I6.1 Final reconstruction handoff with accepted/blocked/replaced dispositions.
 
 ## Acceptance matrix
@@ -235,3 +237,39 @@ Browser access remains unavailable;no customer permissions were changed.
 Next: I2 resolve the designated member's actual subject/workspace through the
 supported roster,then isolated role acceptance;I3 awaits reliable platform events.
 No platform code,server variable,DDL or customer subscription change occurred.
+## I5.4 gauge recovery audit and I5.5 implementation batch
+
+Source audit completed;not live platform receipt or fault-injection acceptance.
+Browser control was rechecked after I1.7 and still reports local browser access
+unavailable. I1.4-I1.6 and I2.3 remain open;no repeated login is requested.
+
+| Concern | Arda source | Karda source | Disposition |
+| --- | --- | --- | --- |
+| Failed gauge snapshot | usage/lib/gauge.ts logs only;no durable pending record | kb/storage/gauge.ts stores pending/value/observedAt | Arda product-owned gap |
+| Zero after hard delete | lifecycle/sweep.ts marks hard_deleted before best-effort report;later sweeps exclude it | confirmed deletion queues durable lower snapshot | Arda zero must survive failed delivery and restart |
+| Independent recovery | jobs/refresh.ts retries only workspaces with sources/rules,skips wiped workspaces,caps50 without cursor | storage/worker.ts seeds missing and retries pending snapshots | Source refresh is not a generic reliable recovery mechanism |
+| Acknowledgement | HTTP ok only;body not checked | exact workspace/product/metric/value/observation receipt validation | Product adapter must bind acknowledgement to sent snapshot |
+| Ordering | application timestamp before query;no durable monotonic revision | DB clock plus previous observation+1ms under workspace lock | Require monotonic observations across replicas and restart |
+| Retry exhaustion | no durable retry state | background selects attempts<10;pending survives but automatic selection stops | Specify observable exhaustion and supported replay;not unlimited success claim |
+
+Implementation order for I5.5:
+1. Arda durable per-workspace absolute snapshot and pending state,including zero.
+   Commit snapshot with authoritative inventory change;retain trusted tenant anchor.
+   Keep generic delivery adapter independent of old source/quality operations.
+2. Reuse the exact immutable observation on ambiguous response/retry;validate
+   scope/value/time receipt before clearing pending. A newer snapshot must not
+   be cleared by an older in-flight response. Never send storage through consume.
+3. Independent bounded fair recovery,backoff and explicit exhausted-state
+   visibility/replay for both products. Reuse existing managed configuration;
+   do not add server-variable edits or browser authority polling.
+4. Isolated tests: commit/send crash,remote apply with lost response,restart with
+   no subsequent writes,zero after delete,concurrent observations,stale ACK,
+   exhausted replay and workspace isolation. Any schema increment needs normal
+   DDL pipeline and owner production approval;no schema operation executed here.
+5. Only after source/isolated checks pass,verify a supported platform receipt and
+   shared C2 attribution. Platform728 owns its receipt/pool contract evidence;
+   product durable retry is not a platform-code request or a reason to alter seats.
+
+Old business storage implementation is not being rebuilt. This batch preserves
+only generic accounting/recovery foundations for reconstruction. I5.4 is COMPLETE;
+I5.5 is NOT IMPLEMENTED and overall I5 remains PARTIAL.
