@@ -3,6 +3,11 @@
 Date: 2026-11-23. Scope: Arda only. Architecture: ADR-014.
 This tracker separates implementation, release and live acceptance.
 
+Current continuation: [I0-I6 integration closure](70-integration-closure-20261123.md).
+A1-A4 are deployed in v0.13.5/e3b9802. A5/A6 release approval and rollout are
+complete; authenticated stream/visibility/recovery acceptance continues in I1/I3.
+Old pending-release checkpoints below are historical, not current deployment status.
+
 ## Batches
 
 | Batch | Deliverable | Acceptance | Status |
@@ -11,8 +16,8 @@ This tracker separates implementation, release and live acceptance.
 | A2 | Durable workspace revision/outbox and atomic session revocation notifications | Commit/publish crash recovery, duplicate/out-of-order events and multi-replica invalidation; no dropped logout on Redis failure | Merged; real PostgreSQL/Redis CI pass; production DDL0004 verified |
 | A3 | Authenticated same-origin SSE and authoritative reconnect handshake | Session/workspace isolation, expiry, slow consumers, Redis disconnect/reset and missed-event recovery; no tokens in browser | Merged; CI pass; real edge and failure acceptance pending |
 | A4 | Browser message coordinator and removal of focus/input permission triggers | 100 ordinary tab switches cause zero session/entitlement reads and zero gate flashes; change bursts coalesce; same-scope drafts persist | Merged; coordinator CI passes; browser acceptance pending |
-| A5 | Direct production deployment and end-to-end acceptance | Real edge streaming, logout to idle browser, reconnect/restart, subscription changes and authorization regression; record actual results | Pending |
-| A6 | Production acceptance and delivery | Required human production approval; promote validated commit/image; repeat production checks and record limitations | Pending |
+| A5 | Direct production deployment and end-to-end acceptance | Real edge streaming, logout to idle browser, reconnect/restart, subscription changes and authorization regression; record actual results | v0.13.5 deployed; live acceptance continues I1/I3/I5 |
+| A6 | Production acceptance and delivery | Required human production approval; promote validated commit/image; repeat production checks and record limitations | Human approval/rollout/readiness pass; final acceptance I6 open |
 
 A1 was first prepared while retaining return/activity checks. The combined A1-A4
 candidate now removes those triggers with the event/recovery path in the same

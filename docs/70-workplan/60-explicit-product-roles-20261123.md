@@ -1,5 +1,10 @@
 # Explicit product roles delivery - 2026-11-23
 
+Current continuation: [I0-I6 integration closure](70-integration-closure-20261123.md).
+Production roles are deployed in Arda v0.13.5 and Karda v0.11.8. Historical
+checkpoints below retain their time-specific evidence; the current batch table
+and final production section supersede old pending-release descriptions.
+
 ## Scope and policy
 
 Owner authorization: finish Arda and Karda autonomously; pause only for identity
@@ -25,10 +30,10 @@ roles. No polling on browser focus, input or a permission timer was added.
 | Batch | Deliverable | Status |
 | --- | --- | --- |
 | R1 | Five-role policy and owner boundaries | Implemented; owner decision recorded |
-| R2 | Persistent assignments, owner anchor, append-only audit, least-privilege DDL | Authored; production migration pending |
-| R3 | Server entry/read/write/export/AI/publication/management checks and role UI | Implemented; CI and production acceptance pending |
+| R2 | Persistent assignments, owner anchor, append-only audit, least-privilege DDL | Production DDL and application rollout complete |
+| R3 | Server entry/read/write/export/AI/publication/management checks and role UI | Deployed; owner admission/roster pass; synthetic member acceptance I2 open |
 | R4 | Current authorized roster, serialized role changes, durable invalidations, OBO user role checks | Implemented; reliable upstream idle revocation events remain platform731/726 |
-| R5 | Real PostgreSQL concurrency/denial/transfer tests, required CI, separate DB/application release and live acceptance | In verification; not released |
+| R5 | Real PostgreSQL concurrency/denial/transfer tests, required CI, separate DB/application release and live acceptance | CI/DB/application release pass; live matrix continues in I1-I5 |
 
 ## Storage and migration
 

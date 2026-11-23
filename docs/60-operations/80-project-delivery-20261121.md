@@ -1,6 +1,10 @@
 # Arda project delivery: design through production
 
-Snapshot: 2026-11-21. This consolidated record supersedes early status statements
+Historical snapshot: 2026-11-21. Current scope/status:
+[I0-I6 integration closure](../70-workplan/70-integration-closure-20261123.md).
+The owner now excludes old product features for reconstruction; those items are
+reconstruction-replaced, not current integration blockers or accepted features.
+This consolidated record supersedes early status statements
 in the cumulative [ledger](60-delivery-ledger-20261121.md), without rewriting
 historical evidence. Implemented, configured, deployed and accepted are separate.
 
@@ -32,10 +36,11 @@ No Karda code, configuration, subscription or release has been changed. See the
 
 ## Final status
 
-- Production v0.13.1 / 6295744 is deployed at https://arda.ruyin.work.
+- Production v0.13.5 / e3b9802 is deployed at https://arda.ruyin.work.
 - CoSpace v1.3.1 and independent Arda entry design v1.0.0 are frozen.
-- Four v2 plans are published in invitation mode. Free is retired; two legacy
-  subscriptions are preserved. Public self-service sales are not enabled.
+- Four public tiers are published. Starter/Pro/Business use v3 and monthly
+  199/499/1499,annual1990/4990/14990; Enterprise is contact sales. Free is retired.
+  Existing subscriptions retain their plan versions; no forced migration.
 - Production login, Business admission, readiness, provisioning reads/reconcile,
   one actual service call and automatic accounting, cleanup and customer logout
   have evidence. This is not acceptance of every business feature or interface.
@@ -166,10 +171,10 @@ Review tenant/environment information before sharing evidence externally.
 
 ## Remaining work and ownership
 
-Arda still needs authorized real source queries, masking and quality execution;
-actual Curator/Atlas inference and token-to-credit evidence; live lifecycle stop,
-re-enable and missed-delivery repair. Intermittent C2 errors need separate root
-cause evidence; failed legacy fixtures do not prove a paid-workspace defect.
+Source queries,masking,quality and Curator are reconstruction-replaced by owner
+decision2026-11-23; do not continue old-feature acceptance. Generic AI attribution,
+live lifecycle stop/re-enable,missed-delivery recovery,roles and interface evidence
+remain in I1-I5. Old failed fixtures do not prove a paid-workspace defect.
 
 Platform issues in https://github.com/vxture-platform/vxture-platform/issues/:
 
