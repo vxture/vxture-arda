@@ -1,3 +1,4 @@
+import { AccessDeniedPanel } from "../entitlement/access-denied-panel";
 import type { ReactNode } from "react";
 import { Shell } from "../ui/shell";
 import { AccountGate } from "../ui/account-gate";
@@ -51,7 +52,7 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
   return (
     <AccountGate>
       <EntitlementGate>
-        <Shell isAdmin={isProductManager(admittedAccess)}>{children}</Shell>
+        <Shell isAdmin={isProductManager(admittedAccess)}>{admittedAccess && !permits(admittedAccess,"data.read") ? <AccessDeniedPanel/> : children}</Shell>
       </EntitlementGate>
     </AccountGate>
   );
