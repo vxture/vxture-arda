@@ -286,3 +286,17 @@ they are integration obligations, not additional consumption metrics.
 
 I5.6 scope recorded. I5.5 implementation and live acceptance remain open.
 Published plans, runtime emission and platform configuration did not change.
+
+### I5.5 Arda storage implementation checkpoint
+
+- [x] Product implementation: one durable latest byte snapshot per workspace;
+  source sync and retention sweep commit it with inventory writes. Existing
+  usage worker sends it, retries the same observation, and requires a matching
+  receipt. No new metrics, processes or server settings.
+- [ ] Merged CI, production DDL0006, application release and live acceptance.
+- [ ] AI attribution, external-call deduplication and monthly reset acceptance.
+
+Zero means the measured hosted inventory is empty. This change does not expand
+the retention sweep's deletion scope or backfill all historical workspaces.
+The snapshot tracks existing measurement points; old product code is not
+being rebuilt to add new measurement points.

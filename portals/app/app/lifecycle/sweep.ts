@@ -1,6 +1,6 @@
 import { prisma } from "../lib/db";
 import { RETENTION_DAYS } from "../lib/workspace-state";
-import { reportStorageGauge } from "../usage/lib/gauge";
+import { queueStorageGauge } from "../usage/lib/gauge";
 import { writeAudit } from "../lib/audit";
 
 /**
@@ -59,12 +59,8 @@ export async function sweepWipedWorkspaces(now: Date = new Date()): Promise<Swee
         target: workspaceId,
         metadata: { rowsDeleted: deleted, wipedAt: ws.wipedAt?.toISOString(), retentionDays: RETENTION_DAYS },
       });
+      await queueStorageGauge(tx, workspaceId);
     });
-  }
-
-  // Hard deletes drop each workspace's watermark to zero - tell the platform.
-  for (const ws of due) {
-    await reportStorageGauge(ws.id);
   }
 
   return { workspaces: due.length, rowsDeleted };

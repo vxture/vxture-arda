@@ -516,6 +516,17 @@ model AccessRevision {
   @@schema("vx_provision")
 }
 
+model StorageGauge {
+  workspaceId String   @id
+  value       BigInt
+  observedAt  DateTime @db.Timestamptz(3)
+  retryAt     DateTime? @db.Timestamptz(3) // null after acknowledgement
+
+  @@index([retryAt, workspaceId])
+  @@map("storage_gauge")
+  @@schema("local_usage")
+}
+
 model UsageRaw {
   id             String   @id @default(cuid())
   workspaceId    String

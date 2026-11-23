@@ -491,6 +491,16 @@ CREATE TABLE "vx_provision"."access_revision" (
   CONSTRAINT "access_revision_pkey" PRIMARY KEY ("workspaceId")
 );
 
+CREATE TABLE "local_usage"."storage_gauge" (
+  "workspaceId" TEXT NOT NULL,
+  "value" BIGINT NOT NULL CHECK ("value" >= 0),
+  "observedAt" TIMESTAMPTZ(3) NOT NULL,
+  "retryAt" TIMESTAMPTZ(3),
+  CONSTRAINT "storage_gauge_pkey" PRIMARY KEY ("workspaceId")
+);
+CREATE INDEX "storage_gauge_retryAt_workspaceId_idx"
+  ON "local_usage"."storage_gauge"("retryAt", "workspaceId");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "TemplateVersion_templateId_version_key" ON "TemplateVersion"("templateId", "version");
 

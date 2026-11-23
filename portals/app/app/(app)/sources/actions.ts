@@ -7,7 +7,7 @@ import { canUseFeature } from "../../entitlement/capability";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { prisma } from "../../lib/db";
 import { seal, unseal, type SealedSecret } from "../../lib/seal";
-import { reportStorageGauge } from "../../usage/lib/gauge";
+import { queueStorageGauge } from "../../usage/lib/gauge";
 import { getConnector } from "./connectors";
 import { datasetCode, planSync } from "./sync-core";
 import { featureKeyForSourceType } from "./source-types";
@@ -223,10 +223,8 @@ export async function syncDataSource(sourceId: string): Promise<SyncSourceResult
         skippedByQuota: plan.skippedByQuota,
       },
     });
+    await queueStorageGauge(tx, session.workspaceId);
   });
-
-  // Watermark moved (sizes upserted): report the absolute storage gauge.
-  await reportStorageGauge(session.workspaceId);
 
   revalidatePath("/sources");
   revalidatePath("/catalog");

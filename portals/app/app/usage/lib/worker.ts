@@ -1,5 +1,6 @@
 /** Drain the durable C3 outbox in the long-running Node service. */
 import { flushUsage } from "./flush";
+import { flushStorageGauges } from "./gauge";
 let started = false;
 export function startUsageWorker(): void {
   if (started) return;
@@ -12,6 +13,10 @@ export function startUsageWorker(): void {
       const result = await flushUsage();
       if (result.processed || result.exhausted) console.info("[usage/flush]", result);
     } catch { console.error("[usage/flush] unavailable; retry scheduled"); }
+    try {
+      const result = await flushStorageGauges();
+      if (result.failed) console.warn("[storage/gauge] pending retry", result.failed);
+    } catch { console.error("[storage/gauge] unavailable; retry scheduled"); }
     finally { running = false; }
   };
   // Platform idempotency keys make retries safe across workers/restarts.

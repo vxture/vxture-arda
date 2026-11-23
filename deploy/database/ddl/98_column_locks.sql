@@ -91,6 +91,10 @@ GRANT UPDATE ("generation", "publishedGeneration", "updatedAt")
 REVOKE DELETE ON "vx_provision"."access_revision" FROM arda_svc;
 
 -- Flush bookkeeping only; the metering identity of a usage record is locked.
+GRANT UPDATE ("value", "observedAt", "retryAt")
+  ON "local_usage"."storage_gauge" TO arda_svc;
+REVOKE DELETE ON "local_usage"."storage_gauge" FROM arda_svc;
+
 GRANT UPDATE ("flushed", "flushAttempts", "flushError", "flushedAt")
   ON "local_usage"."raw" TO arda_svc;
 
