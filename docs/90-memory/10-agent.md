@@ -162,4 +162,9 @@ Keep identity/session,explicit roles,platform authorization/messages,managed
 domain/configuration,commercial/C2/C3/gauge/lifecycle/OBO and handoff.
 Both old domains still serve200; managed retirement stays platform721/727.
 Browser access unavailable in this chat; do not confuse that with login failure.
-Dedicated non-owner test member requested; no real privileges/subscriptions changed.
+Dedicated non-owner test-member display identifier supplied in local handoff;
+actual authorized subject/workspace unresolved. No privileges/subscriptions changed.
+I0 COMPLETE: Arda245/740b368,main45126707329;Karda263/4e59ac1,main45126741617,
+both CI and secret scans pass. Current batch I1 IN PROGRESS/PARTIAL;I2 PARTIAL;
+I3 EXTERNAL BLOCK/PARTIAL;I4 EXTERNAL BLOCK;I5 PARTIAL;I6 NOT COMPLETE.
+Use the explicit checkbox list in70-integration-closure-20261123.md.

@@ -42,19 +42,46 @@ Historical financial assumptions are not a promise for the reconstructed apps.
 
 ## Ordered batches
 
-| ID | Deliverable and exit condition | Current state | Owner/dependency |
+| ID | Status | Completed evidence | Remaining exit condition / dependency |
 | --- | --- | --- | --- |
-| I0 | One scope/status baseline, reconstruction-replaced items, linked evidence and issue ownership | Scope/status/issue matrix delivered; gate/merge receipts on linked delivery PRs | Both product repos |
-| I1 | Accounts login/refresh/logout, workforce isolation, full tab-visibility trace; ordinary switching makes no authority read or gate flash | Existing acceptance retained; anonymous contract checks pass; fresh authenticated/browser trace blocked by browser access | Both products;726 for context notifications |
-| I2 | New authorized member gets persisted readonly once; roleless/guest deny; revoked platform eligibility overrides local role; owner protection/isolation | Implemented/deployed; owner roster accepted; test member display ID supplied,actual subject/workspace unresolved | Both products; platform roster/browser access |
-| I3 | Actual local role event and upstream context/seat events; duplicates/out-of-order/reconnect/multi-replica recovery; bounded idle convergence | Deployed local revision/outbox/SSE; anonymous/origin denial passes; live delivery and upstream contract open | Products plus platform731/726 |
-| I4 | Registration/client/callback/logout/webhook/logo/web-only configuration agrees; only canonical host serves app, no legacy redirect | Product release profiles correct; canonical ready passes; both legacy hosts still serve200 | Platform721/727; live registry read needs workforce session |
-| I5 | Published plans/C2/usage/gauge/lifecycle/ACK and delegated calls agree with platform records, including deny/retry/dedup | Prior plan/C2/Arda single-call/ingest evidence retained; remaining positive/negative contract checks open | Products plus platform715/717/718/719/720/728 |
-| I6 | Evidence matrix, config/contract register and remaining external handoff; each item accepted/blocked/reconstruction-replaced | Pending I1-I5 closure or explicit external-blocked handoff | Both repos |
+| I0 | COMPLETE | Scope/status/issue matrix merged;Arda245/740b368 and Karda263/4e59ac1;both main CI and secret scans pass | None for scope-baseline delivery |
+| I1 | IN PROGRESS - PARTIAL | Production login/owner entry,prior logout/isolation,anonymous session/cache and local session/coordinator regressions pass | Current authenticated baseline,both logout directions and full tab/network trace;browser access required |
+| I2 | IN PROGRESS - PARTIAL | Explicit persisted roles deployed;owner roster/protection pass;test member display ID supplied | Resolve actual subject/workspace;readonly/none/guest/revoke/regrant live tests;no real-owner transfer |
+| I3 | IN PROGRESS - EXTERNAL BLOCK | Revision/outbox/SSE deployed;anonymous/cross-origin rejection and protocol regressions pass | Live role-event/reconnect/multi-replica trace and platform731/726 delivery contract |
+| I4 | EXTERNAL BLOCK | Product release profiles and canonical readiness pass;latest legacy-host failure recorded | Managed old-host retirement/no redirect via721/727;live registry read |
+| I5 | IN PROGRESS - PARTIAL | Four public tiers/annual10months/Free retirement,C2 admission,Arda single-call and Karda ingest evidence retained | Pool/reset/gauge/receipt/dedup/lifecycle/ACK/OBO live acceptance;platform715/717/718/719/720/728 |
+| I6 | NOT COMPLETE | Scope/evidence/issue register exists | Final acceptance or explicit external-blocked handoff after I1-I5 |
 
 I0 -> I1 -> I2 -> I3 is the main order. Independent I4/I5 reads may run earlier.
 No percent-complete estimate mixes implementation, release and live acceptance.
 A browser/member/platform dependency does not block independent work.
+
+## Explicit completion checklist
+
+- [x] I0.1 Owner scope excludes legacy product functionality for reconstruction.
+- [x] I0.2 Both current production releases and public-plan baseline recorded.
+- [x] I0.3 Current tracker,index/memory and historical ledgers cross-linked.
+- [x] I0.4 Both delivery PRs merged and required main checks passed.
+- [x] I1.1 Anonymous session response and no-store boundary accepted.
+- [x] I1.2 Prior production login/owner admission evidence retained.
+- [x] I1.3 Prior Karda logout/workforce isolation and Arda-to-idle-Karda logout accepted.
+- [ ] I1.4 Fresh authenticated baseline on current releases.
+- [ ] I1.5 Full actual tab-visibility and authority-request trace,including repeated switches.
+- [ ] I1.6 Current-release reverse logout and signed-backchannel delivery evidence.
+- [ ] I1.7 Arda strict logout-event validation and explicit retryable503 deployed;
+  Karda equivalent behavior retained. Implementation/test progress below is
+  separate from production acceptance.
+- [x] I2.1 Explicit role storage/enforcement deployed;owner roster/protection accepted.
+- [x] I2.2 Owner designated a non-owner test-member display identifier.
+- [ ] I2.3 Resolve its actual authorized subject/workspace and perform isolated role tests.
+- [x] I3.1 Local durable invalidations and transport/origin boundaries delivered.
+- [ ] I3.2 Real role-event,reconnect and upstream grant/revoke convergence acceptance.
+- [x] I4.1 Canonical public endpoints and repo-owned production URL profiles verified.
+- [ ] I4.2 Legacy hosts retired via managed configuration;registry/callback set re-read.
+- [x] I5.1 Approved four public tiers,annual10months,Enterprise contact sales and Free retirement.
+- [x] I5.2 Existing production C2 and isolated usage evidence recorded.
+- [ ] I5.3 Remaining generic quota/reset/gauge/receipt/ACK/OBO contracts and live acceptance.
+- [ ] I6.1 Final reconstruction handoff with accepted/blocked/replaced dispositions.
 
 ## Acceptance matrix
 
@@ -113,6 +140,13 @@ Delivery PRs:
 [Karda263](https://github.com/vxture/vxture-karda/pull/263).
 Required checks gate squash merges; neither PR publishes an application.
 
+I0 completion receipts:
+Arda245 merged740b368b876ca1603856bbefeba081b112ef97fc;
+main45126707329 and secret-scan45126707180 succeeded.
+Karda263 merged4e59ac15af43803cb793aa399856069a97798397;
+main45126741617 and secret-scan45126741605 succeeded.
+This is an explicit completed baseline,not a pending-merge checkpoint.
+
 - 2026-11-23 14:38 CST: canonical readiness passes; both legacy domains still
   serve the current app at /api/ready with200 and no redirect.
 - Browser inventory attempt reports local browser access unavailable for this
@@ -141,7 +175,24 @@ Required checks gate squash merges; neither PR publishes an application.
 
 ## Next executable work and exact prerequisites
 
-1. Finish I0 PR/main gates; this documentation/probe delivery needs no new app
+I1 continuation checkpoint: Arda receiver previously accepted an array-valued
+backchannel event and whitespace sid/jti,allowed inverted token lifetime,and
+let deletion failure escape as a generic500. The candidate now rejects those
+claims before deletion and maps deletion failure to503 with no-store,allowing
+the same signed delivery to retry. RS256/issuer/audience/expiry verification
+still runs before claims parsing. No delivery is marked consumed before delete.
+The handler tests cover invalid forms/signatures,malformed verified payloads,
+store failure,successful retry and duplicate idempotent completion.
+These are adapter/regression results,not captured real Accounts deliveries.
+Karda already has equivalent strict claims and503 handling; no Karda runtime
+change is required. Application release is still required for Arda I1.7.
+Local focused results: Arda6pass/0fail/1existing isolated-Redis skip;all three new
+receiver tests pass. Karda5pass/0fail/0skip for logout/response contracts. Full
+hosted gates remain required before merging/releasing the Arda runtime change.
+Browser API still reports unavailable in this continuation; no native-browser
+retry or security-barrier bypass was attempted. I1.4-I1.6 remain unchecked.
+
+1. I0 is COMPLETE. Continue I1; progress-marker/document updates need no new app
    deployment,DDL or production approval.
 2. When browser access returns,establish product+workforce sessions,resolve the
    designated test member in the current workspace roster,and record the actual
