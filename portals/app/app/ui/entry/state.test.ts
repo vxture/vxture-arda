@@ -28,7 +28,7 @@ test("unknown context and operational suspension never become a purchase prompt"
 
 test("recovery scope changes invalidate old work, role ordering does not", () => {
   const key = sessionScope(user);
-  for (const change of [{ sub: "u2" }, { orgId: "o2" }, { workspaceId: "w2" }, { roles: ["workspace:owner"] }]) assert.notEqual(sessionScope({ ...user, ...change }), key);
+  for (const change of [{ sub: "u2" }, { orgId: "o2" }, { workspaceId: "w2" }, { roles: ["workspace:owner"] }, { accountStatus: "disabled" }]) assert.notEqual(sessionScope({ ...user, ...change }), key);
   assert.equal(sessionScope({ ...user, roles: ["org:owner", "workspace:member"] }), sessionScope({ ...user, roles: ["workspace:member", "org:owner"] }));
 });
 

@@ -4,7 +4,7 @@ import Redis from "ioredis";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { withSessionLock, createSession, getIdentity, getTokens, destroyBySid, putRotatedSession,
-  type IdentityClaims, type TokenBundle } from "./session-store";
+  closeSessionStore, type IdentityClaims, type TokenBundle } from "./session-store";
 import type { OidcConfig } from "./config";
 
 // Explicit isolated Redis only; never point this test at a product database.
@@ -40,6 +40,6 @@ test("concurrent resolution waits; global logout deletes all sessions and refres
       assert.equal(await getIdentity(cfg, first), null);
     } finally {
       await observer.quit();
-      // Run with node --test-force-exit: session-store holds its runtime client.
+      await closeSessionStore();
     }
   });

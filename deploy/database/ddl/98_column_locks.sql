@@ -86,6 +86,10 @@ GRANT UPDATE ("lastSeq", "updatedAt")
   ON "vx_provision"."provision_seq" TO arda_svc;
 
 -- local_usage -----------------------------------------------------------------
+GRANT UPDATE ("generation", "publishedGeneration", "updatedAt")
+  ON "vx_provision"."access_revision" TO arda_svc;
+REVOKE DELETE ON "vx_provision"."access_revision" FROM arda_svc;
+
 -- Flush bookkeeping only; the metering identity of a usage record is locked.
 GRANT UPDATE ("flushed", "flushAttempts", "flushError", "flushedAt")
   ON "local_usage"."raw" TO arda_svc;

@@ -4,6 +4,7 @@ import { prisma } from "../../lib/db";
 import { getEntitlementResolver } from "../../entitlement/resolver";
 import { writeAudit } from "../../lib/audit";
 import type { ProvisioningPayload } from "./payload";
+import { advanceAccessRevision, tryPublishWorkspaceRevision } from "../../events/outbox";
 export type { ProvisioningPayload } from "./payload";
 export type HandleResult =
   | { outcome: "processed" } | { outcome: "duplicate" }
@@ -37,6 +38,7 @@ export async function applyLifecycle(tx: Prisma.TransactionClient, input: {
   }
   await tx.provisionSeq.upsert({ where: key,
     create: { workspaceId, productCode: "arda", lastSeq: seq }, update: { lastSeq: seq } });
+  await advanceAccessRevision(tx, workspaceId);
   return { outcome: "processed" };
 }
 export async function handleProvisioningEvent(payload: ProvisioningPayload,
@@ -60,6 +62,9 @@ export async function handleProvisioningEvent(payload: ProvisioningPayload,
         tenantId: payload.tenant_id, seq: payload.seq!, plan: payload.plan,
         state: payload.type === "tenant.provisioned" ? "provisioned" : "deprovisioned" });
     }
+    if (payload.type === "subscription_changed" || payload.type === "grant.invalidated") {
+      await advanceAccessRevision(tx, payload.workspace_id);
+    }
     await tx.webhookDelivery.create({ data: {
       id: payload.id, workspaceId: payload.workspace_id, tenantId: payload.tenant_id,
       eventType: payload.type,
@@ -70,5 +75,6 @@ export async function handleProvisioningEvent(payload: ProvisioningPayload,
   }, { timeout: 15_000 });
   // Retry duplicates also evict in case the previous worker died after commit.
   getEntitlementResolver().invalidateCache(payload.workspace_id);
+  if (db === prisma) await tryPublishWorkspaceRevision(payload.workspace_id);
   return result;
 }

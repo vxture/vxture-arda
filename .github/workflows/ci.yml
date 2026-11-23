@@ -230,6 +230,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
+      session-redis:
+        image: redis:7-alpine
+        ports:
+          - 6379/tcp
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
       provisioning-db:
         image: postgres:18-alpine
         env:
@@ -326,6 +335,7 @@ jobs:
         working-directory: portals
         env:
           ARDA_PROVISIONING_TEST_DATABASE_URL: postgresql://postgres:local-qa-only@127.0.0.1:${{ job.services.provisioning-db.ports['5432'] }}/arda_provisioning_test
+          ARDA_TEST_REDIS_URL: redis://127.0.0.1:${{ job.services.session-redis.ports['6379'] }}/15
         run: |
           set -euo pipefail
           pnpm --filter @arda/app run prisma:generate

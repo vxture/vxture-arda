@@ -29,7 +29,26 @@ test("invalidation during an in-flight C2 read cannot restore the old decision",
   let release!: (value: ReturnType<typeof result>) => void;
   const resolver = new PlatformEntitlementResolver(() => new Promise(resolve => { release = resolve; }));
   const pending = resolver.resolve(null, "w1");
+  while (!release) await Promise.resolve();
   resolver.invalidateCache("w1");
+  release(result());
+  await assert.rejects(pending, /changed_during_read/);
+});
+
+test("another replica's durable revision invalidates cached and in-flight authority", async () => {
+  let version = "1", reads = 0;
+  const resolver = new PlatformEntitlementResolver(async () => { reads++; return result(); }, () => 0, async () => version);
+  await resolver.resolve(null, "w1");
+  await resolver.resolve(null, "w1");
+  assert.equal(reads, 1);
+  version = "2";
+  await resolver.resolve(null, "w1");
+  assert.equal(reads, 2);
+  let release!: (value: ReturnType<typeof result>) => void;
+  const racing = new PlatformEntitlementResolver(() => new Promise(resolve => { release = resolve; }), () => 0, async () => version);
+  const pending = racing.resolve(null, "w1");
+  while (!release) await Promise.resolve();
+  version = "3";
   release(result());
   await assert.rejects(pending, /changed_during_read/);
 });

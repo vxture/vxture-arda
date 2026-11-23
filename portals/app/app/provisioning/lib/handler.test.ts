@@ -6,6 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../../generated/prisma/client";
 import { handleProvisioningEvent, applyLifecycle, lockWorkspace } from "./handler";
 import type { ProvisioningPayload } from "./payload";
+import { advanceAccessRevision, publishWorkspaceRevision } from "../../events/outbox";
 
 const databaseUrl = process.env.ARDA_PROVISIONING_TEST_DATABASE_URL;
 test("real PG serializes reversed/duplicate events and versionless notifications without watermark regression",
@@ -31,6 +32,27 @@ test("real PG serializes reversed/duplicate events and versionless notifications
     const notification: ProvisioningPayload = { id: "notify1", type: "subscription_changed",
       occurred_at: 1_795_000_000, workspace_id: "w1", tenant_id: "o1", application: "arda", data: {} };
     await handleProvisioningEvent(notification, db);
+    const generation = (await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!.generation;
+    await handleProvisioningEvent(notification, db);
+    assert.equal((await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!.generation, generation);
+    assert.equal((await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!.publishedGeneration, 0n,
+      "a committed but unpublished invalidation remains recoverable");
+    await assert.rejects(publishWorkspaceRevision("w1", db, async () => { throw new Error("redis-unavailable"); }), /redis-unavailable/);
+    assert.equal((await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!.publishedGeneration, 0n);
+    await publishWorkspaceRevision("w1", db, async () => {
+      await db.$transaction(tx => advanceAccessRevision(tx, "w1"));
+    });
+    assert.equal((await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!.publishedGeneration, 0n,
+      "a concurrent newer commit cannot be acknowledged by an older publisher");
+    await publishWorkspaceRevision("w1", db, async () => {});
+    const published = (await db.accessRevision.findUnique({ where: { workspaceId: "w1" } }))!;
+    assert.equal(published.publishedGeneration, published.generation);
+    await assert.rejects(db.$transaction(async tx => {
+      await lockWorkspace(tx, "rollback-ws");
+      await applyLifecycle(tx, { workspaceId: "rollback-ws", tenantId: "o1", state: "provisioned", seq: 1 });
+      throw new Error("abort-transaction");
+    }), /abort-transaction/);
+    assert.equal(await db.accessRevision.findUnique({ where: { workspaceId: "rollback-ws" } }), null);
     assert.equal((await db.provisionSeq.findFirst())!.lastSeq, 5);
     assert.equal((await db.webhookDelivery.findUnique({ where: { id: "notify1" } }))!.seq, 0);
     await handleProvisioningEvent(event(6), db);
