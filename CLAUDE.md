@@ -1,6 +1,8 @@
 # Arda Repository Standards
 
-## Current owner scope - 2026-11-23
+## Current owner scope - 2026-11-24
+
+Read docs/90-memory/20-platform-integration-handoff.md first for platform ownership, post-delivery verification and the user-paused I1 scope.
 
 Only integration closure I0-I6 is active:
 docs/70-workplan/70-integration-closure-20261123.md.
