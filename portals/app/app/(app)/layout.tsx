@@ -18,8 +18,7 @@ export const dynamic = "force-dynamic";
 
 // Section group layout: every page under (app) renders inside the DS shell
 // (header + left section nav + footer). Entry gating (AccountGate then
-// EntitlementGate) also lives here, scoped to this group only - the sibling
-// (demo) group (status, entitlement-matrix) is intentionally public.
+// EntitlementGate) also lives here, scoped to this group only.
 //
 // First-entry seed: on entry we resolve the caller's workspace and, if it is
 // marked for seeding (or autofill is on for a never-seen workspace), fill it

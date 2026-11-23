@@ -31,8 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Providers>
           {/* Entry gating (AccountGate + EntitlementGate) lives in the (app)
-              group layout, not here: the (demo) group (status,
-              entitlement-matrix) is intentionally public. */}
+              group layout. Standalone information pages handle their own access. */}
           <I18nProvider messages={messages}>{children}</I18nProvider>
         </Providers>
       </body>
