@@ -20,6 +20,40 @@ test("real PG serializes reversed/duplicate events and versionless notifications
   process.env.MOCK_AUTH = "true";
   try {
     await pg.query(await readFile(new URL("../../../../../deploy/database/ddl/00_baseline.sql", import.meta.url), "utf8"));
+    // Replay the exact db-init sequence across both historical domain layouts.
+    // Each file gets a fresh public search_path, as separate psql invocations do.
+    await pg.query("CREATE ROLE arda_svc NOLOGIN");
+    const increments = ["0001_access_request.sql", "0002_drop_platform_sentinel.sql",
+      "0003_schema_split.sql", "0004_access_revision.sql"];
+    const replay = async () => {
+      for (const name of increments) {
+        await pg.query("SET search_path TO public");
+        await pg.query(await readFile(new URL(`../../../../../deploy/database/ddl/incr/${name}`, import.meta.url), "utf8"));
+      }
+      const count = await pg.query("SELECT count(*)::int AS n FROM pg_tables WHERE schemaname IN ('public','catalog','vx_provision','local_usage','local_authz')");
+      assert.equal(count.rows[0].n, 23, "replay must not create public shadow tables");
+      assert.equal((await pg.query(`SELECT to_regclass('public."AccessRequest"') AS shadow`)).rows[0].shadow, null);
+    };
+    await replay();
+    await pg.query('CREATE TABLE public."AccessRequest" (LIKE catalog."AccessRequest" INCLUDING ALL)');
+    await replay();
+    await pg.query(`CREATE TABLE public."AccessRequest" (id TEXT); INSERT INTO public."AccessRequest" VALUES ('must-preserve')`);
+    await assert.rejects(replay(), /Nonempty public AccessRequest shadow/);
+    await pg.query("ROLLBACK");
+    assert.equal((await pg.query('SELECT id FROM public."AccessRequest"')).rows[0].id, "must-preserve");
+    await pg.query('DROP TABLE public."AccessRequest"');
+    // Recreate the pre-ADR-012 domain location, then migrate it forward again.
+    const tables = await pg.query("SELECT tablename FROM pg_tables WHERE schemaname='catalog'");
+    for (const { tablename } of tables.rows) {
+      assert.match(tablename, /^[A-Za-z]+$/);
+      await pg.query(`ALTER TABLE catalog."${tablename}" SET SCHEMA public`);
+    }
+    for (const name of ["AssetLevel", "QualityStatus", "AssetScope"]) {
+      await pg.query(`ALTER TYPE catalog."${name}" SET SCHEMA public`);
+    }
+    await pg.query("DROP SCHEMA catalog");
+    await replay();
+    await replay();
     const event = (seq: number, type: "tenant.provisioned" | "tenant.deprovisioned" = "tenant.provisioned"): ProvisioningPayload => ({
       id: `d${seq}`, type, seq, occurred_at: 1_795_000_000,
       workspace_id: "w1", tenant_id: "o1", application: "arda", data: {},
@@ -68,6 +102,7 @@ test("real PG serializes reversed/duplicate events and versionless notifications
   } finally {
     await db.$disconnect();
     await pg.query('DROP SCHEMA IF EXISTS catalog CASCADE; DROP SCHEMA IF EXISTS vx_provision CASCADE; DROP SCHEMA IF EXISTS local_usage CASCADE; DROP SCHEMA IF EXISTS local_authz CASCADE');
+    await pg.query('DROP ROLE IF EXISTS arda_svc');
     await pg.end();
   }
 });
