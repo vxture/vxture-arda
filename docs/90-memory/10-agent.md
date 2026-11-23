@@ -149,4 +149,17 @@ Owner login restored; both members pages show the authorized product owner and
 disable ordinary role editing of that owner. No manual bootstrap submitted.
 Tab-switch inputs preserved Arda's page; full visibility trace is still open.
 Synthetic-member/roleless/revocation/notification/OBO acceptance remains pending.
-No real member/owner/seat changes. Platform731/726 and Atlas147 remain open.
+No real member/owner/seat changes. Platform731/726 remain active integration gaps.
+
+## Current owner scope - 2026-11-23 integration closure
+
+Use [I0-I6 tracker](../70-workplan/70-integration-closure-20261123.md) as current
+authority. Legacy product features will be rebuilt: stop Curator/source/quality
+and Karda index/retrieval/answer optimization or acceptance. Mark them
+reconstruction-replaced, never accepted. Atlas147 is external history, not a
+blocker for this closure; generic AI attribution/credit contracts stay in I5.
+Keep identity/session,explicit roles,platform authorization/messages,managed
+domain/configuration,commercial/C2/C3/gauge/lifecycle/OBO and handoff.
+Both old domains still serve200; managed retirement stays platform721/727.
+Browser access unavailable in this chat; do not confuse that with login failure.
+Dedicated non-owner test member requested; no real privileges/subscriptions changed.

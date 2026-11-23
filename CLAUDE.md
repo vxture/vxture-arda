@@ -1,5 +1,15 @@
 # Arda Repository Standards
 
+## Current owner scope - 2026-11-23
+
+Only integration closure I0-I6 is active:
+docs/70-workplan/70-integration-closure-20261123.md.
+Old product functions will be rebuilt; stop Curator/source/quality feature work
+and old-feature acceptance. Keep Accounts,authorization/roles/messages,managed
+configuration/domains,subscriptions/C2/C3/gauge/lifecycle/OBO and handoff.
+Current production:v0.13.5/e3b9802. Platform code,server variables,manual edge
+routes and real customer privileges are outside this task.
+
 Authoritative working agreement for this repo. The goal is a clean, predictable
 branch and deploy flow with no direct human writes to protected branches.
 

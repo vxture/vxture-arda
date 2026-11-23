@@ -1,3 +1,11 @@
+# Current scope notice - 2026-11-23
+
+This file is a cumulative historical ledger. Current scope and ordered batches:
+[I0-I6 integration closure](../70-workplan/70-integration-closure-20261123.md).
+Production:v0.13.5/e3b9802. Four public plans,annual10months,Free retired.
+Legacy product functions will be rebuilt; unfinished Curator/source/quality
+acceptance is reconstruction-replaced. Keep integration contracts and evidence.
+
 # Arda delivery ledger - 2026-11-21
 
 This is the cumulative handoff for Arda integration and subsequent Karda work.
